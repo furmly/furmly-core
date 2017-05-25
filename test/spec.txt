@@ -1,0 +1,36 @@
+1)  A process is a sequence of steps an actor or actors take to achieve a business goal.
+
+2)  A process must be uniquely identifiable system wide.
+
+3)  There can be several steps in a process but there must be atleast one step.
+
+4)  Steps can either involve collecting input from a user or from another system generated event.
+
+5)  A step must be uniquely identifiable within a process.
+
+6)  Steps can have a chain of processors but the chain must have atleast one.
+
+7)  Steps can have a chain of post processors but no minimum is required.
+
+8)  Steps requiring user input must contain a form.
+
+9)  A step's form contains all the information a user needs to process it (i.e input fields, lists, selects from existing entities,order of form items).
+
+10) Steps can run offline.
+
+11) Processors can modify the regular flow of steps.
+
+12) Processors are uniquely identifiable system wide.
+
+13) Processors can create entities.
+
+14) Processors can edit entities.
+
+15) Processors can delete entities.
+
+16) A process can be returned to when not completed.
+
+17) A form can contain asynchronous validators.
+
+18) A form must contain atleast one element.
+

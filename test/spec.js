@@ -3,9 +3,13 @@ var sinon = require('sinon'),
 
 describe('A process must be uniquely identifiable system wide', function() {
 
-
+	it('is true', function(done) {
+		done();
+	});
 });
 
 describe('There can be several steps in a process but there must be atleast one step', function() {
-
+	it('is true', function(done) {
+		done();
+	});
 });
