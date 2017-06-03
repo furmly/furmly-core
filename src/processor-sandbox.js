@@ -1,37 +1,46 @@
 /*jshint loopfunc: true */
 this.SANDBOX_CONTEXT = true;
 var module_context = this;
+module_context.skip = {};
 module.exports = {
 	getResult: function(fn) {
-		var firstProcessor = context.processors[0];
-		tasks.push(function(callback) {
-			firstProcessor.process.call(module_context, callback);
-		});
-		for (var i = 0; i < context.processors.length; i++)
-			tasks.push(function(result, callback) {
-				context.processors[i].process.call(module_context, callback);
-			});
+		var firstProcessor = context.processors[0],
+			tasks = [];
+		tasks.push(async.timeout(function(cb) {
+			firstProcessor.process.call(module_context, cb);
+		}, context.processorsTimeout));
+
+		function process(i, list, timeout) {
+			return async.timeout(function(result, cb) {
+				if (!module_context.skip[list[i]._id] && !module_context.completed) {
+					list[i].process.call(module_context, result, cb);
+					return;
+				}
+				cb(null, result);
+			}, timeout);
+		}
+
+		for (var i = 1; i < context.processors.length; i++) {
+			tasks.push(process(i, context.processors, context.processorsTimeout || 1500));
+		}
 
 		async.waterfall(tasks, function(er, result) {
 			if (er) return fn(er);
-
-			if (context.postprocessors) {
-				tasks.length = 0;
+			if (context.postprocessors && context.postprocessors.length) {
+				var postTasks = [];
 				var first = context.postprocessors[0];
-				tasks.push(function(callback) {
-					first.process.call(module_context, callback);
-				});
-				for (var i = 0; i < context.postprocessors; i++)
-					tasks.push(function(result, callback) {
-						context.postprocessors[i].process.call(module_context, callback);
-					});
-
-				context.postprocessors.splice(0, 0, first);
+				postTasks.push(async.timeout(function(cb) {
+					first.process.call(module_context, cb);
+				}, context.postprocessorsTimeout));
+				for (var i = 1; i < context.postprocessors; i++)
+					postTasks.push(process(i, context.postprocessors, context.postprocessorsTimeout || 1500));
 
 				async.waterfall(tasks, function(er, result) {
-					fn(er, result);
+					if (er) {
+						//write to some error log somewhere.
+						console.log('postprocessors failed:' + JSON.stringify(er));
+					}
 				});
-				return;
 			}
 
 			fn(er, result);

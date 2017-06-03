@@ -4,7 +4,7 @@
   "description": "This is the backend processor for configurable dynamic tasks",
   "main": "server.js",
   "scripts": {
-    "test": "mocha --require test-helpers/chai.js"
+    "test": "set profile=unitTest&& mocha --require test-helpers/chai.js"
   },
   "keywords": [
     "dynamo",
@@ -21,6 +21,10 @@
     "sinon": "^2.3.1"
   },
   "dependencies": {
+    "async": "^2.4.1",
+    "glob": "^7.1.2",
+    "mongoose": "^4.10.2",
+    "mongoose-gen": "^2.1.1",
     "sandboxed-module": "^2.0.3"
   }
 }

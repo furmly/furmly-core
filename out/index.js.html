@@ -1,4 +1,32 @@
-var assert = require('assert'),
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: index.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: index.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>var assert = require('assert'),
 	config = (require('../config'))[process.env.profile || 'dev'],
 	async = require('async'),
 	SandBox = require('sandboxed-module'),
@@ -33,7 +61,7 @@ var getDirectories = function(src, callback) {
  */
 var isNotDefined = function(prop) {
 	return function(item) {
-		return typeof item == "object" && typeof item[prop] == 'undefined';
+		return typeof item == "object" &amp;&amp; typeof item[prop] == 'undefined';
 	};
 };
 
@@ -55,7 +83,7 @@ var typeOf = function(value) {
  */
 var getOne = function(fn) {
 	return function(er, result) {
-		if (result && result.length) {
+		if (result &amp;&amp; result.length) {
 			result = result[0];
 		}
 		return fn(er, result);
@@ -87,7 +115,7 @@ var systemEntities = {
 function createConstants() {
 	function Constant() {
 		var array = Array.prototype.slice.call(arguments);
-		for (var i = 0; i < array.length; i++) {
+		for (var i = 0; i &lt; array.length; i++) {
 			if (typeof array[i] == 'string') {
 				this[array[i]] = array[i];
 				continue;
@@ -101,7 +129,7 @@ function createConstants() {
 	}
 	Constant.prototype.in = function(val) {
 		for (var i in this) {
-			if (this.hasOwnProperty(i) && this[i] == val)
+			if (this.hasOwnProperty(i) &amp;&amp; this[i] == val)
 				return true;
 		}
 		return false;
@@ -109,16 +137,15 @@ function createConstants() {
 
 	return {
 		PROCESSSTATUS: new Constant('COMPLETED', 'RUNNING'),
-		STEPSTATUS: new Constant('COMPLETED', 'RUNNING'),
 		PROCESSORTYPE: new Constant('SERVER', 'CLIENT'),
 		STEPTYPE: new Constant('OFFLINE', 'CLIENT')
 	};
 }
 
-/**
- * this represents a dynamo step. Steps could be either require userinput or not.
- * @param {Any} opts Object representation of a step or string of _id
- */
+/*********
+ *   DynamoStep Class:- this represents a dynamo step. Steps could be either require userinput or not.
+ *
+ ***********/
 function DynamoStep(opts) {
 	var self = this;
 	if (!opts.processors || !opts.processors.length)
@@ -135,7 +162,7 @@ function DynamoStep(opts) {
 	this.stepType = opts.stepType;
 	this._save = opts.save;
 	var postprocessors = opts.postprocessors || [];
-	var _state = getState.call(this, opts);
+	_state = getState.call(this, opts);
 
 
 	Object.defineProperties(this, {
@@ -164,11 +191,7 @@ function DynamoStep(opts) {
 			}
 		}
 	});
-	/**
-	 * Offline State
-	 * @param {Step} parent State Owner
-	 * @param {Any} opts   Setup options passed to parent
-	 */
+
 	function Offline(parent, opts) {
 		this.run = function(context, fn) {
 			//start offline process...
@@ -185,11 +208,6 @@ function DynamoStep(opts) {
 		};
 	}
 
-	/**
-	 * Returns Step State
-	 * @param  {Any} opts options passed to parent
-	 * @return {State}      Object State
-	 */
 	function getState(opts) {
 		switch (opts.stepType) {
 			case constants.STEPTYPE.OFFLINE:
@@ -198,11 +216,7 @@ function DynamoStep(opts) {
 				return new Client(this, opts);
 		}
 	}
-	/**
-	 * Client State
-	 * @param {Step} parent State Owner
-	 * @param {Any} opts   Setup options passed to parent
-	 */
+
 	function Client(parent, opts) {
 		if (!opts.form)
 			throw new Error('Client Step must have a form');
@@ -210,15 +224,13 @@ function DynamoStep(opts) {
 		if (!opts.entityRepo)
 			throw new Error('opts.entityRepo is required for this type of processor');
 
-
+		//
 		assert.equal(typeof opts.form.describe == 'function', true);
 
 		this.form = opts.form;
 		this.entityRepo = opts.entityRepo;
 
-
 		function prepareContext(opts) {
-
 			var _context = opts.args ? _.cloneDeep(opts.args) : {};
 			_context.postprocessors = _.cloneDeep(opts.postprocessors);
 			_context.processors = _.cloneDeep(opts.processors);
@@ -238,46 +250,33 @@ function DynamoStep(opts) {
 		//this calls all the processors of the step.
 		this.run = function(context, fn) {
 			var self = this;
-
-
-			var serverProcessors = parent.processors, // _.filter(parent.processors, ['processorType', constants.PROCESSORTYPE.SERVER]),
+			var serverProcessors = _.filter(parent.processors, ['processorType', constants.PROCESSORTYPE.SERVER]),
 				_context = prepareContext({
 					processors: serverProcessors,
 					args: context,
-					postprocessors: parent.postprocessors //(parent.postprocessors && _.find(parent.postprocessors, q) ? _.filter(parent.postprocessors, q) : null)
+					postprocessors: (parent.postprocessors &amp;&amp; _.find(parent.postprocessors, q) ? _.filter(parent.postprocessors, q) : null)
+				}),
+				handle = SandBox.require('./processor-sandbox', {
+					locals: {
+						context: _context,
+						constants: constants,
+						entityRepo: self.entityRepo,
+						async: async,
+					}
 				});
-
-			var handle = SandBox.require('./processor-sandbox', {
-				locals: {
-					context: _context,
-					constants: constants,
-					entityRepo: self.entityRepo,
-					async: async,
-				}
-			});
 			handle.getResult(function(er, result) {
 				if (er) return fn(er);
-
 				return parent.status = constants.STEPSTATUS.COMPLETED, fn(null, result);
 			});
 		};
 
 		this.describe = function(fn) {
-			this.form.describe(function(er, form) {
-				if (er) return fn(er);
-				fn(null, {
-					form: form
-				});
-			});
+			this.form.describe(fn);
 		};
 	}
 
 }
-/**
- * Persists step to storage
- * @param  {Function} fn callback
- * @return {Object}      saved object
- */
+
 DynamoStep.prototype.save = function(fn) {
 
 	var self = this;
@@ -332,9 +331,7 @@ DynamoStep.prototype.save = function(fn) {
 	], fn);
 
 };
-/**
- * Enforce Class invariant
- */
+
 DynamoStep.prototype.validate = function() {
 	if (!this._id)
 		throw new Error('opts._id is null or undefined');
@@ -357,7 +354,7 @@ DynamoStep.prototype.describe = function(fn) {
 				if (!sent) {
 					collected++;
 					dest.push(p);
-					if (collected == total && !sent) {
+					if (collected == total &amp;&amp; !sent) {
 						return step.processors = _processors,
 							step.postprocessors = _postprocessors,
 							sent = true, fn(null, step);
@@ -370,16 +367,14 @@ DynamoStep.prototype.describe = function(fn) {
 	self.state.describe(function(er, res) {
 		if (er) return fn(er);
 
-
-		// 
 		_.assign(step, res);
 
-		for (i = 0; i < self.processors.length; i++) {
+		for (i = 0; i &lt; self.processors.length; i++) {
 			self.processors[i].describe(collect(_processors));
 		}
 
-		if (self.postprocessors && self.postprocessors.length)
-			for (i = 0; i < self.postprocessors.length; i++)
+		if (self.postprocessors &amp;&amp; self.postprocessors.length)
+			for (i = 0; i &lt; self.postprocessors.length; i++)
 				self.postprocessors[i].describe(collect(_postprocessors));
 	});
 
@@ -392,10 +387,10 @@ DynamoStep.prototype.run = function(context, fn) {
 
 
 
-/**
- * this is a class constructor for a dynamo process.
- * @param {Any} opts constructor parameters
- */
+/***********
+ *   DynamoProcess Class:- this represents a dynamo process.
+ *
+ ***********/
 function DynamoProcess(opts) {
 	var self = this;
 	if (!opts)
@@ -407,7 +402,7 @@ function DynamoProcess(opts) {
 	if (!opts.title)
 		throw new Error('Process must have a title');
 
-	if (!opts.store && opts.steps.length > 1)
+	if (!opts.store &amp;&amp; opts.steps.length > 1)
 		throw new Error('Process with more than one step requires a store');
 
 	if (!opts.save)
@@ -434,68 +429,36 @@ function DynamoProcess(opts) {
 		'store': {
 			enumerable: false,
 			get: function() {
-				return opts.store;
+				return store;
 			}
 		}
 	});
 }
 
-/**
- * Enforce class invariant
- * 
- */
-DynamoProcess.prototype.validate = function() {
+DynamoProcess.prototype.validate = function(fn) {
 	if (!this._id)
 		throw new Error('Process must have an id');
 };
 
-/**
- * Thisi function chooses and runs the current step
- * @param  {Any}   context contains the details of the request in question.
- * @param  {Function} fn      callback
- * @return {Any}           result passed from processor chain.
- */
-DynamoProcess.prototype.run = function(context, fn) {
+DynamoProcess.prototype.processCurrentStep = function(context, fn) {
 	var self = this;
 	this.validate();
 
 	function processStep(args) {
-
 		var step = self.steps[self.currentStepIndex || 0];
 		assert.equal(step instanceof DynamoStep, true);
-		//
-		step.describe(function(er, description) {
-
-		});
 		step.run(context, function(er, message) {
 			if (er) return fn(er);
 
 			self.currentStepIndex = self.steps.indexOf(step) + 1;
-
-
-			var result = _.assign({
-				message: message,
-				status: constants.PROCESSSTATUS.COMPLETED
-			}, args || {});
-
-			if (self.steps.length > self.currentStepIndex) {
-				//
-				result.status = constants.PROCESSSTATUS.RUNNING;
-				self.store.update(args.instanceId || context.instanceId, self.currentStepIndex, function(er) {
-					fn(er, result);
-				});
-				return;
-			}
-
-			if (context.instanceId) {
-				self.store.remove(context.instanceId, function(er) {
-					if (er) return fn(er);
-					fn(null, result);
-				});
-				return;
-			}
-
-			fn(null, result);
+			fn(null, _.assign(self.steps.length &lt;= self.currentStepIndex ?
+				(self.status = constants.PROCESSSTATUS.RUNNING, {
+					status: self.status,
+					message: message
+				}) : (self.status = constants.PROCESSSTATUS.COMPLETED, {
+					status: self.status,
+					message: message
+				}), args || {}));
 		});
 	}
 	if (this.steps.length > 1) {
@@ -503,32 +466,28 @@ DynamoProcess.prototype.run = function(context, fn) {
 			if (er) return fn(er);
 
 			if (currentStep) {
-
 				self.currentStepIndex = currentStep.value;
-				processStep.call(self, {
+				processStep.call({
 					instanceId: context.instanceId
 				});
 			} else {
-				self.store.keep(self.currentStepIndex || 0, function(er, data) {
+				self.store.keep(currentStepIndex, function(er, data) {
 					if (er) return fn(er);
 					return processStep({
-						instanceId: data.insertedId
+						instanceId: data._id
 					});
 				});
 			}
 
 		});
 
+
+
 		return;
 	}
 	processStep();
 };
 
-/**
- * saves the processes children using persistence service.
- * @param  {Function} fn callback
- * @return {Any}      saved object.
- */
 DynamoProcess.prototype.save = function(fn) {
 	var self = this;
 	var unsaved = _.filter(this.steps, isNotDefined('_id'));
@@ -546,7 +505,7 @@ DynamoProcess.prototype.save = function(fn) {
 		function(ids, callback) {
 			//ids will contain the newly saved ids
 			var mergedIds = _.filter(self.steps, function(x) {
-				return (typeof x == 'object' && x._id) || typeof x == 'string';
+				return (typeof x == 'object' &amp;&amp; x._id) || typeof x == 'string';
 			}).concat(_.map(ids, '_id'));
 
 			self._save({
@@ -558,15 +517,10 @@ DynamoProcess.prototype.save = function(fn) {
 	], fn);
 };
 
-/**
- * Creates a description of the process a client can consume
- * @param  {Function} fn callback
- * @return {Object}      object representing the process.
- */
 DynamoProcess.prototype.describe = function(fn) {
 	this.validate();
 	var self = this,
-		proc = _.pickBy(self, notAFunction),
+		proc = _.pickBy(self,notAFunction),
 		_allSteps = [];
 
 	function collect(er, s) {
@@ -586,14 +540,15 @@ DynamoProcess.prototype.describe = function(fn) {
 };
 
 
-/**
- * The Engine represents the boundary between the problem domain and the outside world.
- * @param {[type]} opts [description]
- */
+/***********
+ *   DynamoEngine Class:- this represents a dynamo engine. Engine represents the boundary between the problem domain and the outside world.
+ *
+ ***********/
 function DynamoEngine(opts) {
 	var self = this;
 	if (!opts)
 		throw new Error('opts must be valid');
+
 
 	if (!opts.entitiesRepository)
 		throw new Error('opts.entitiesRepository must be valid');
@@ -603,72 +558,29 @@ function DynamoEngine(opts) {
 
 }
 
-/**
- * Initializes the system
- * @param  {Function} fn callback
- * @return {Any}      nothing
- */
 DynamoEngine.prototype.init = function(fn) {
 	//create all system required configs if they dont exist.
 	this.entitiesRepository.init(fn);
 
 };
 
-/**
- * Creates an Entity Schema configuration 
- * @param  {String}   name   Name of Schema Config
- * @param  {String}   config Configuration
- * @param  {Function} fn     callback
- * @return {Any}           nothing
- */
 DynamoEngine.prototype.createEntityConfiguration = function(name, config, fn) {
 	this.entitiesRepository.createConfig(name, config, fn);
 };
 
-/**
- * Updates an existing Entity Schema configuration 
- * @param  {String}   name   Name of Schema Config
- * @param  {String}   config Configuration
- * @param  {Function} fn     callback
- * @return {Any}             nothing
- */
 DynamoEngine.prototype.updateEntityConfiguration = function(name, config, fn) {
 	this.entitiesRepository.updateConfig(name, config, fn);
 };
 
-/**
- * Updates an instance of an Entity Schema  
- * @param  {String}   name   Name of Schema Config
- * @param  {String}   data instance
- * @param  {Function} fn     callback
- * @return {Object}          updated instance
- */
 DynamoEngine.prototype.updateEntityInstance = function(name, data, fn) {
 	this.entitiesRepository.updateEntity(name, data, fn);
 };
 
-/**
- * Creates an instance of an Entity Schema
- * @param  {String}   name Name of Schema Config
- * @param  {Object}   data object containing info to save
- * @param  {Function} fn   callback
- * @return {Object}        created instance.
- */
 DynamoEngine.prototype.createEntityInstance = function(name, data, fn) {
 	this.entitiesRepository.createEntity(name, data, fn);
 };
-
-/**
- * Queries for instance(s) of supplied Entity
- * @param  {String}   name    Name of Schema Config
- * @param  {Object}   filter  Object filter for schema eg .._id=value
- * @param  {Object}   options Options for changing behavior of the function , options include full,one..etc
- * @param  {Function} fn      callback
- * @return {Any}              either an array of entity instances or a single instance
- */
 DynamoEngine.prototype.query = function(name, filter, options, fn) {
-
-	this.entitiesRepository.queryEntity(name, filter, options, fn);
+	this.entitiesRepository.query(name, filter, options, fn);
 };
 
 //---------------------------------------------------------------------------
@@ -683,25 +595,18 @@ Object.keys(systemEntities).forEach(function(key) {
 		}
 		this.entitiesRepository.queryEntity(entName, filter, options, fn);
 	};
-	DynamoEngine.prototype['save' + cap] = function(data, options, fn) {
-		var self = this;
-		if (Array.prototype.slice.call(arguments).length == 2) {
-			fn = options;
-			options = null;
-		}
+	DynamoEngine.prototype['save' + cap] = function(data, fn) {
+
 		if (this.entitiesRepository.transformers[entName]) {
+
+			//data.save = this.entitiesRepository.getSaveService(entName);
 			var model = this.entitiesRepository.transformers[entName](data, function(er, model) {
 				if (er) return fn(er);
-				model.save(function(er, item) {
-					if (er) return fn(er);
-					if (options && options.retrieve) {
-						self.entitiesRepository.queryEntity(entName, item, function(e, x) {
-							fn(e, x[0]);
-						});
-						return;
-					}
-					fn(er, item);
-				});
+
+
+
+				//
+				model.save(fn);
 			});
 			return;
 		}
@@ -715,11 +620,6 @@ Object.keys(systemEntities).forEach(function(key) {
 
 //-------------------------------------------------------------------------
 
-
-/**
- * Class representing DynamoElement
- * @param {Any} opts Constructor options
- */
 function DynamoElement(opts) {
 
 	if (!opts)
@@ -744,11 +644,6 @@ function DynamoElement(opts) {
 	this.asyncValidators = opts.asyncValidators || [];
 	this.validators = opts.validators || [];
 }
-/**
- * Creates a description of an element  a client can consume
- * @param  {Function} fn callback
- * @return {Object}      object representing the element.
- */
 DynamoElement.prototype.describe = function(fn) {
 	fn(null, {
 		name: this.name,
@@ -760,36 +655,26 @@ DynamoElement.prototype.describe = function(fn) {
 		asyncValidators: _.map(this.asyncValidators, '_id')
 	});
 };
-/**
- * saves using persistence service.
- * @param  {Function} fn callback
- * @return {[type]}      saved object.
- */
-DynamoElement.prototype.save = function(fn) {
-	var self = this;
-	async.parallel(_.map(this.asyncValidators, function(x) {
-		return x.save.bind(x);
-	}), function(er, asyncValidators) {
-		self._save({
-			_id: self._id,
-			name: self.name,
-			label: self.label,
-			elementType: self.elementType,
-			args: self.args,
-			description: self.description,
-			validators: self.validators,
-			asyncValidators: _.map(asyncValidators, '_id')
-		}, fn);
-	});
 
+DynamoElement.prototype.save = function(fn) {
+	this._save({
+		_id: this._id,
+		name: this.name,
+		label: this.label,
+		elementType: this.elementType,
+		args: this.args,
+		description: this.description,
+		validators: this.validators,
+		asyncValidators: _.map(this.asyncValidators, '_id')
+	}, fn);
 };
 
 
 
-/**
- * Form used by Client based Steps
- * @param {Any} opts Contructor arguments
- */
+/******************************************
+ *   DynamoForm Class:-
+ *
+ *****************************************/
 function DynamoForm(opts) {
 	if (!opts || !opts.elements || !opts.elements.length)
 		throw new Error('Form does not contain any elements');
@@ -797,11 +682,7 @@ function DynamoForm(opts) {
 
 	this.elements = opts.elements;
 }
-/**
- * Creates a description of a form a client can consume
- * @param  {Function} fn callback
- * @return {Object}      object representing the form.
- */
+
 DynamoForm.prototype.describe = function(fn) {
 	async.parallel(_.map(this.elements, function(e) {
 		return e.describe.bind(e);
@@ -812,11 +693,7 @@ DynamoForm.prototype.describe = function(fn) {
 		});
 	});
 };
-/**
- * saves the form using the persistence service.
- * @param  {Function} fn callback
- * @return {Any}      saved object.
- */
+
 DynamoForm.prototype.save = function(fn) {
 	async.parallel(_.map(this.elements, function(x) {
 		return x.save.bind(x);
@@ -828,11 +705,14 @@ DynamoForm.prototype.save = function(fn) {
 	});
 };
 
-/**
- * Class Constuctor for a DynamoProcessor
- * @param {Any} opts Constructor arguments
- */
+/*********
+ *   DynamoProcessor Class:- this represents a dynamo engine. Engine represents the boundary between the problem domain and the outside world.
+ *
+ ***********/
+
 function DynamoProcessor(opts) {
+
+
 
 	if (!opts.code)
 		throw new Error('Processor must include code to run');
@@ -849,12 +729,6 @@ function DynamoProcessor(opts) {
 	this.code = opts.code;
 	this.title = opts.title;
 	this._save = opts.save;
-	/**
-	 *  User customisable code ran in sandbox.
-	 * @param  {Any}   result  passed in result for previous processor.
-	 * @param  {Function} callback callback function.
-	 * @return {Any}            result of process.
-	 */
 	this.process = function(result, callback) {
 		self.validate();
 		if (typeof result == 'function') {
@@ -868,20 +742,12 @@ function DynamoProcessor(opts) {
 		/* jshint ignore:end */
 	};
 }
-/**
- * Class invariant function
- * @return {Void} nothing
- */
+
 DynamoProcessor.prototype.validate = function() {
 	if (!this._id)
 		throw new Error('Processor requires a valid _id');
 };
 
-/**
- * Creates a description of the processor a client can consume
- * @param  {Function} fn callback
- * @return {Object}      object representing the processor.
- */
 DynamoProcessor.prototype.describe = function(fn) {
 	fn(null, {
 		title: this.title,
@@ -889,13 +755,8 @@ DynamoProcessor.prototype.describe = function(fn) {
 	});
 };
 
-/**
- * Persists this object using passed in persistence service
- * @param  {Function} fn calllback
- * @return {Any}      saved object
- */
 DynamoProcessor.prototype.save = function(fn) {
-
+	//
 	this._save({
 		_id: this._id,
 		code: this.code,
@@ -903,23 +764,11 @@ DynamoProcessor.prototype.save = function(fn) {
 	}, fn);
 };
 
-/**
- * Inherits from processor. Runs user editable code for validation. It is used to validate elements before submission.
- * @param {[type]} opts [description]
- */
 function DynamoAsyncValidator(opts) {
 	var self = this;
 	DynamoProcessor.call(this, opts);
-
-
 	var _process = this.process;
 	//convert result to boolean value.
-	/**
-	 * Runs user editable code and returns a boolean.
-	 * @param  {Any}   result result of previous processor in chain
-	 * @param  {Function} fn     callback
-	 * @return {Any}          result of processing sent to client
-	 */
 	this.process = function(result, fn) {
 		_process.call(this, result, function(er, result) {
 			fn(er, {
@@ -929,13 +778,8 @@ function DynamoAsyncValidator(opts) {
 	};
 
 }
-util.inherits(DynamoAsyncValidator, DynamoProcessor);
 
 
-/**
- * This class contains the persistence logic for entities.
- * @param {Object} opts Class constructor parameters , includes ext,folder,delimiter,store...etc
- */
 function EntityRepo(opts) {
 	var self = this;
 	opts = opts || {};
@@ -967,19 +811,6 @@ function EntityRepo(opts) {
 					_id: id
 				}, fn);
 			},
-			update: function(id, info, fn) {
-				collection.update({
-					_id: id
-				}, {
-					value: info,
-					createdOn: new Date()
-				}, fn);
-			},
-			remove: function(id, fn) {
-				collection.deleteOne({
-					_id: id
-				}, fn);
-			},
 			keep: function(info, fn) {
 				createIndex(function() {
 					collection.insertOne({
@@ -998,7 +829,6 @@ function EntityRepo(opts) {
 	};
 
 	this.transformers[systemEntities.process] = function(item, fn) {
-
 		if (!(item instanceof DynamoProcess)) {
 			var tasks = [];
 			if (typeof item == "string" || item instanceof ObjectID) {
@@ -1010,16 +840,12 @@ function EntityRepo(opts) {
 				}));
 			} else {
 				tasks.push(function(callback) {
-					if (!item.steps) {
-						return callback(new Error('Processor must include atleast on step'));
-					}
 					if (!item.save)
 						item.save = self.getSaveService(systemEntities.process);
 					if (item.steps.length > 1) {
 						item.store = self.store;
 					}
 					var itasks = [];
-					//console.log(item);
 					item.steps.forEach(function(step) {
 						itasks.push(self.transformers[systemEntities.step].bind(self, step));
 					});
@@ -1097,8 +923,6 @@ function EntityRepo(opts) {
 		return fn(null, item);
 	};
 	this.transformers[systemEntities.asyncValidator] = function(item, fn) {
-
-
 		if (!(item instanceof DynamoAsyncValidator)) {
 
 			if (typeof item == "string" || item instanceof ObjectID) {
@@ -1155,10 +979,7 @@ function EntityRepo(opts) {
 			if (!item.save)
 				item.save = self.getSaveService(systemEntities.element);
 
-
-
 			async.parallel(_.map(item.asyncValidators, function(x) {
-
 				return self.transformers[systemEntities.asyncValidator].bind(self, x);
 			}), function(er, asyncValidators) {
 				if (er) return fn(er);
@@ -1207,12 +1028,15 @@ EntityRepo.prototype.getSaveService = function(entName) {
 	return function(info, fn) {
 
 		function transformResult(er, result) {
+
 			if (er) return fn(er);
-			fn(null, {
+			self.queryEntity(entName, {
 				_id: result._id
+			}, function(e, x) {
+
+				fn(e, x[0]);
 			});
 		}
-
 		if (!info._id)
 			self.createEntity(entName, info, transformResult);
 		else
@@ -1271,24 +1095,24 @@ EntityRepo.prototype.updateConfig = function(name, config, fn) {
 
 EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 	var self = this,
-		circularDepth = options && options.circularDepth ? options.circularDepth : 1,
+		circularDepth = options &amp;&amp; options.circularDepth ? options.circularDepth : 1,
 		referenceCount = {},
 		keys;
 	if (Array.prototype.slice.call(arguments).length == 3) {
 		fn = options;
 		options = null;
 	}
-	//console.trace('query entity!!!');
 
 	function populate(arr, result, parent) {
 		arr.forEach(function(item) {
 
-			if (parent && new RegExp(item.path + '$').test(parent)) {
+			//
+			if (parent &amp;&amp; new RegExp(item.path + '$').test(parent)) {
 				referenceCount[item.model] = referenceCount[item.model] ? referenceCount[item.model] + 1 : 1;
 			}
 
 			result.push((parent ? parent + '.' : '') + item.path);
-			if (self.refs[item.model] && (referenceCount[item.model] || 0) < circularDepth) {
+			if (self.refs[item.model] &amp;&amp; (referenceCount[item.model] || 0) &lt; circularDepth) {
 				populate(self.refs[item.model], result, result[result.length - 1]);
 			}
 		});
@@ -1302,7 +1126,7 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 				return self.transformers[name].bind(self.transformers, x);
 			}), function(er, transformed) {
 				if (er) return fn(er);
-				if (options && options.one && transformed && transformed.length)
+				if (options &amp;&amp; options.one &amp;&amp; transformed &amp;&amp; transformed.length)
 					transformed = transformed[0];
 
 				fn(null, transformed);
@@ -1313,45 +1137,53 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 		fn(null, result);
 	}
 
-	var query = this.models[name].find(filter);
-	if ((options && options.full) && this.refs[name] && this.refs[name].length !== 0) {
-		var populateString = populate(self.refs[name], []);
-		populateString.forEach(function(string) {
-			if ((string.match(/\./ig) || []).length >= 1) {
-				var cur = '',
-					temp = '',
-					m = {},
-					iterator = function(x, index, arr) {
-						cur += x;
-						temp += x;
-						if (index < (arr.length - 1)) {
-							if (populateString.indexOf(temp) !== -1)
-								cur += '|';
-							else {
-								cur += '.';
-							}
-							temp += '.';
-						}
-					},
-					reducer = function(sum, c) {
-						if (!sum.path) {
-							sum.path = c;
-							return sum;
-						}
-						sum.populate = {
-							path: c
-						};
-						return sum.populate;
-					};
-				string.split('.').forEach(iterator);
-				_.reduce(cur.split('|'), reducer, m);
-				query.populate(m);
-				return;
-			}
-
-			query.populate(string);
-		});
+	if ((options &amp;&amp; !options.full) || !this.refs[name] || this.refs[name].length === 0) {
+		this.models[name].find(filter).lean().exec(transformResult);
+		return;
 	}
+
+	var query = this.models[name].find(filter);
+	var populateString = populate(self.refs[name], []);
+
+	populateString.forEach(function(string) {
+		query.populate(string);
+		// if (string.indexOf('.') == -1)
+		// 	query.populate(string);
+		// else {
+		// 	var p = {},
+		// 		splitString = string.split('.'),
+		// 		curr = '',
+		// 		sv = [];
+
+		// 	splitString.forEach(function(x) {
+		// 		if (populateString.indexOf(x) == -1) {
+		// 			curr += x + '.';
+		// 		} else {
+		// 			curr += '|' + x;
+		// 		}
+		// 	});
+		// 	//curr = curr.substring(0, curr.length - 1);
+		// 	
+		// 	_.reduce(curr.split('|'), function(m, n) {
+		// 		if (!m.path) {
+		// 			m.path = n;
+		// 			return m;
+		// 		}
+		// 		m.populate = {
+		// 			path: n
+		// 		};
+		// 		return m.populate;
+
+		// 	}, p);
+
+
+		// 	
+		// 	query.populate(p);
+		// }
+
+	});
+
+
 	if (options) {
 		if (options.sort) {
 			query = query.sort(options.sort);
@@ -1417,7 +1249,7 @@ EntityRepo.prototype.createSchemas = function(fn) {
 				return _.isEqual(self.schemas[that.prop][k], v);
 			});
 			var change = Object.keys(diff);
-			if (diff && change.length) {
+			if (diff &amp;&amp; change.length) {
 				existing.schema.add(generator.convert(diff));
 				self.models[this.prop] = existing;
 				self.schemas[this.prop] = newSchema;
@@ -1557,4 +1389,26 @@ module.exports = {
 	systemEntities: systemEntities,
 	EntityRepo: EntityRepo,
 	Element: DynamoElement
-};
+};</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#capitalizeText">capitalizeText</a></li><li><a href="global.html#getDirectories">getDirectories</a></li><li><a href="global.html#getOne">getOne</a></li><li><a href="global.html#isNotDefined">isNotDefined</a></li><li><a href="global.html#typeOf">typeOf</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Fri Jun 02 2017 15:19:06 GMT+0100 (W. Central Africa Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

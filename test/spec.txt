@@ -1,36 +1,51 @@
 1)  A process is a sequence of steps an actor or actors take to achieve a business goal.
 
-2)  A process must be uniquely identifiable system wide.
+2)  A process must be uniquely identifiable system wide. ............passing
 
-3)  There can be several steps in a process but there must be atleast one step.
+3)  There can be several steps in a process but there must be atleast one step. ...........passing
 
 4)  Steps can either involve collecting input from a user or from another system generated event.
 
-5)  A step must be uniquely identifiable within a process.
+5)  A step must be uniquely identifiable within a process. .................passing
 
-6)  Steps can have a chain of processors but the chain must have atleast one.
+6)  Steps can have a chain of processors but the chain must have atleast one. .................passing
 
-7)  Steps can have a chain of post processors but no minimum is required.
+7)  Steps can have a chain of post processors but no minimum is required. .....................passing
 
-8)  Steps requiring user input must contain a form.
+8)  Steps requiring user input must contain a form. .............................passing
 
-9)  A step's form contains all the information a user needs to process it (i.e input fields, lists, selects from existing entities,order of form items).
+9)  A process can describe its required steps. .................................passing
 
-10) Steps can run offline.
+9)  A step can describe its form and processors. ...............................passing
 
-11) Processors can modify the regular flow of steps.
+9)  A form can describe its elements properties and validators. .......................passing
 
-12) Processors are uniquely identifiable system wide.
+10) Processess are created with a unique id,title,description and steps. ......................passing
 
-13) Processors can create entities.
+11) Steps are created with id ,type and processors. .............................................passing
 
-14) Processors can edit entities.
+12) Client Steps require a form. ............................................passing
 
-15) Processors can delete entities.
+12) Processors can modify the regular flow of steps. ........................ passing
 
-16) A process can be returned to when not completed.
+13) Processors are uniquely identifiable system wide. 
 
-17) A form can contain asynchronous validators.
+14) Processors can create entities................................passing
 
-18) A form must contain atleast one element.
+15) Processors can edit entities. ..............................passing
+
+16) Processors can delete entities. ............................. pending
+
+17) A process can be returned to when not completed.
+
+18) A form must contain atleast one element. ........................................passing.
+
+19) An element can contain any number of validators. ................................passing.
+
+20) Validators can either run on the clients machine or externally.
+
+Integration Tests
+-------------------------------------------------
+21) A process can run its steps.
+
 
