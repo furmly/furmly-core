@@ -13,6 +13,7 @@ var assert = require('assert'),
 	path = require('path'),
 	mongoose = require('mongoose');
 
+mongoose.Promise = global.Promise;
 
 mongoose.connect(config.data.url);
 
@@ -75,10 +76,14 @@ function capitalizeText(txt) {
 	return txt ? txt.charAt(0).toUpperCase() + txt.slice(1) : txt;
 }
 
+/**
+ * Contants for default entities
+ * @type {Object}
+ */
 var systemEntities = {
 	step: '_0Step',
 	processor: '_0Processor',
-	commandProcessor: '_0CommandProcessor',
+	//commandProcessor: '_0CommandProcessor',
 	process: '_0Process',
 	asyncValidator: '_0AsyncValidator',
 	element: '_0Element'
@@ -238,7 +243,7 @@ function DynamoStep(opts) {
 		//this calls all the processors of the step.
 		this.run = function(context, fn) {
 			var self = this;
-
+			//console.log(this.entityRepo);
 
 			var serverProcessors = parent.processors, // _.filter(parent.processors, ['processorType', constants.PROCESSORTYPE.SERVER]),
 				_context = prepareContext({
@@ -251,7 +256,7 @@ function DynamoStep(opts) {
 				locals: {
 					context: _context,
 					constants: constants,
-					entityRepo: self.entityRepo,
+					entityRepo: this.entityRepo,
 					async: async,
 				}
 			});
@@ -281,8 +286,8 @@ function DynamoStep(opts) {
 DynamoStep.prototype.save = function(fn) {
 
 	var self = this;
-	var unsavedProcessors = _.filter(this.processors, isNotDefined('_id'));
-	var unsavedPostProcessors = _.filter(this.postprocessors, isNotDefined('_id'));
+	var unsavedProcessors = _.filter(this.processors, _.isObject);
+	var unsavedPostProcessors = _.filter(this.postprocessors, _.isObject);
 	var tasks = [],
 		saveFn = function(list) {
 			return function(pending) {
@@ -312,14 +317,10 @@ DynamoStep.prototype.save = function(fn) {
 		},
 		function(ids, callback) {
 			//ids will contain the newly saved ids
-			//
-
-			var processorIds = _.filter(self.processors, typeOf('string')).concat(_.map(ids.processors, '_id'));
-			var postprocessorIds = _.filter(self.postprocessors, typeOf('string')).concat(_.map(ids.postprocessors, '_id'));
+			var processorIds = _.map(ids.processors, '_id'); // _.filter(self.processors, typeOf('string')).concat(_.map(ids.processors, '_id'));
+			var postprocessorIds = _.map(ids.postprocessors, '_id'); //_.filter(self.postprocessors, typeOf('string')).concat(_.map(ids.postprocessors, '_id'));
+			//console.log(processorIds);
 			self.state.save(function(er, state) {
-
-
-
 				self._save(_.assign({
 					_id: self._id,
 					processors: processorIds,
@@ -525,13 +526,14 @@ DynamoProcess.prototype.run = function(context, fn) {
 };
 
 /**
- * saves the processes children using persistence service.
+ * saves the process/children using persistence service.
  * @param  {Function} fn callback
  * @return {Any}      saved object.
  */
 DynamoProcess.prototype.save = function(fn) {
+
 	var self = this;
-	var unsaved = _.filter(this.steps, isNotDefined('_id'));
+	var unsaved = _.filter(this.steps, _.isObject);
 	var tasks = [];
 	unsaved.forEach(function(pending) {
 		function s(callback) {
@@ -545,10 +547,7 @@ DynamoProcess.prototype.save = function(fn) {
 		async.parallel.bind(async, tasks),
 		function(ids, callback) {
 			//ids will contain the newly saved ids
-			var mergedIds = _.filter(self.steps, function(x) {
-				return (typeof x == 'object' && x._id) || typeof x == 'string';
-			}).concat(_.map(ids, '_id'));
-
+			var mergedIds = _.map(ids, '_id');
 			self._save({
 				title: self.title,
 				description: self.description,
@@ -667,7 +666,10 @@ DynamoEngine.prototype.createEntityInstance = function(name, data, fn) {
  * @return {Any}              either an array of entity instances or a single instance
  */
 DynamoEngine.prototype.query = function(name, filter, options, fn) {
-
+	if (Array.prototype.slice.call(arguments).length == 3) {
+		fn = options;
+		options = null;
+	}
 	this.entitiesRepository.queryEntity(name, filter, options, fn);
 };
 
@@ -797,6 +799,7 @@ function DynamoForm(opts) {
 
 	this.elements = opts.elements;
 }
+
 /**
  * Creates a description of a form a client can consume
  * @param  {Function} fn callback
@@ -992,9 +995,9 @@ function EntityRepo(opts) {
 
 	}());
 	this.processorEntityRepo = {
-		get: self.queryEntity,
-		update: self.updateEntity,
-		create: self.createEntity
+		get: self.queryEntity.bind(self),
+		update: self.updateEntity.bind(self),
+		create: self.createEntity.bind(self)
 	};
 
 	this.transformers[systemEntities.process] = function(item, fn) {
@@ -1048,7 +1051,7 @@ function EntityRepo(opts) {
 					one: true
 				}, fn);
 			} else {
-
+				//console.trace('here!!');
 				if (!item.save)
 					item.save = self.getSaveService(systemEntities.step);
 
@@ -1192,9 +1195,9 @@ EntityRepo.prototype.init = function(callback) {
 		fs.writeFile.bind(this, self.getPath(systemEntities.process), '{"title":{"type":"String","required":true},"description":{"type":"String","required":true},"steps":[{"type":"ObjectId","ref":"' + systemEntities.step + '"}]}'),
 		fs.writeFile.bind(this, self.getPath(systemEntities.step), '{"processors":[{"type":"ObjectId","ref":"' + systemEntities.processor + '"}],"postprocessors":[{"type":"ObjectId","ref":"' + systemEntities.processor + '"}],"stepType":{"type":"String","required":true},"form":{"elements":[{"type":"ObjectId","ref":"' + systemEntities.element + '"}]}}'),
 		fs.writeFile.bind(this, self.getPath(systemEntities.processor), '{"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
-		fs.writeFile.bind(this, self.getPath(systemEntities.commandProcessor), '{"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
+		//fs.writeFile.bind(this, self.getPath(systemEntities.commandProcessor), '{"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
 		fs.writeFile.bind(this, self.getPath(systemEntities.asyncValidator), '{"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
-		fs.writeFile.bind(this, self.getPath(systemEntities.element), '{"name":{"type":"String","required":true},"label":{"type":"String","required":true},"description":{"type":"String"},"elementType":{"type":"String","enum":["INPUT","LARGEINPUT","COMMAND","SECTION","TABS","SELECT","LIST","IMAGE"]},"asyncValidators":[{"type":"ObjectId","ref":"' + systemEntities.asyncValidator + '"}],"validators":[{"validatorType":{"type":"String","enum":["REGULAR","SCRIPT"],"required":true},"args":{"type":"Mixed"}}],"args":{"type":"Mixed"}}')
+		fs.writeFile.bind(this, self.getPath(systemEntities.element), '{"name":{"type":"String","required":true},"label":{"type":"String","required":true},"description":{"type":"String"},"elementType":{"type":"String","enum":["INPUT","DESIGNER","LARGEINPUT","COMMAND","SECTION","TABS","SELECT","LIST","IMAGE"]},"asyncValidators":[{"type":"ObjectId","ref":"' + systemEntities.asyncValidator + '"}],"validators":[{"validatorType":{"type":"String","enum":["REGULAR","SCRIPT"],"required":true},"args":{"type":"Mixed"}}],"args":{"type":"Mixed"}}')
 	], function(er) {
 		if (er) return callback(er);
 		self.createSchemas(callback);
@@ -1208,6 +1211,8 @@ EntityRepo.prototype.getSaveService = function(entName) {
 
 		function transformResult(er, result) {
 			if (er) return fn(er);
+			if (!result._id)
+				console.log(arguments);
 			fn(null, {
 				_id: result._id
 			});
@@ -1296,6 +1301,7 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 	}
 
 	function transformResult(er, result) {
+		//console.log(result);
 		if (er) return fn(er);
 		if (self.transformers[name]) {
 			async.parallel(_.map(result, function(x) {
@@ -1379,9 +1385,17 @@ EntityRepo.prototype.updateEntity = function(name, data, fn) {
 			merged.save(fn);
 		});
 	} else {
+		//console.log('\n\nupdating model:' + name + '---------x\n\n');
+		//console.log(data);
+		//console.log('-----------------------------x\n\n');
 		this.models[name].update({
 			_id: data._id
-		}, data, fn);
+		}, data, function(er, stat) {
+			if (er) return fn(er);
+			fn(null, {
+				_id: data._id
+			});
+		});
 	}
 
 };

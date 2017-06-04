@@ -9,7 +9,6 @@ var sinon = require('sinon'),
 	async = require('async'),
 	mongoose = require('mongoose');
 
-mongoose.connect(config.data.url);
 
 function deleteFile(path) {
 	try {
@@ -48,8 +47,6 @@ describe('Process spec', function() {
 		};
 	});
 
-
-
 	it('can be several steps in a process but there must be atleast one step.', function(done) {
 		this.opts.steps.length = 0;
 		var fixture = this;
@@ -58,6 +55,7 @@ describe('Process spec', function() {
 		}, Error, 'Process must contain atleast one step');
 		done();
 	});
+
 	it('Processess are created with a unique id,title,description and steps', function(done) {
 		var processObj = new app.Process(this.opts),
 			fixture = this;
@@ -595,7 +593,7 @@ describe('Entity spec', function() {
 
 
 
-describe('integration tests...', function() {
+describe('Integration', function() {
 
 	describe('Process integration', function() {
 
@@ -619,11 +617,11 @@ describe('integration tests...', function() {
 				entityRepo: {},
 				stepType: app.constants.STEPTYPE.CLIENT,
 				processors: [{
-					code: 'console.log(\'\tProcessed the special task\'); callback(null);',
+					code: "console.log(\'\tRunning Task in sand-box,processed the special task\'); callback(null);",
 					title: 'Process special task',
 
 				}, {
-					code: 'console.log(\'\tEmailed result of special task\'); callback(null,{});',
+					code: "console.log(\'\tEmailed result of special task\'); callback(null,{});",
 					title: 'Email result',
 				}],
 				form: {
@@ -680,7 +678,7 @@ describe('integration tests...', function() {
 						fixture.engine.saveStep(fixture.stepInstance, callback);
 					},
 					function(step, callback) {
-		
+
 						fixture.processInstance.steps.push(step._id);
 						fixture.engine.saveProcess(fixture.processInstance, callback);
 					},
@@ -761,7 +759,7 @@ describe('integration tests...', function() {
 			});
 		});
 
-		it('(benchmark) can retrieve 1000 processes in less than 2 secs', function(done) {
+		it('can retrieve 1000 processes in less than 2 secs', function(done) {
 			var fixture = this,
 				copies = [];
 			this.timeout(4000);
@@ -786,6 +784,74 @@ describe('integration tests...', function() {
 				});
 			});
 
+		});
+
+		it('can edit an exiting process/step/asyncValidator/processor/element', function(done) {
+			var fixture = this,
+				title = 'New title',
+				elementName = 'NewName',
+				code = 'console.log(\'Changed the processor\'); callback(null,{});';
+
+			fixture.processInstance.steps.push(fixture.stepInstance);
+			async.waterfall([
+				fixture.engine.init.bind(fixture.engine),
+				fixture.engine.saveProcess.bind(fixture.engine, fixture.processInstance, {
+					retrieve: true
+				}),
+				function(proc, callback) {
+					proc.steps[0].processors[0].code = code;
+					proc.steps[0].form.elements[0].name = elementName;
+					proc.title = title;
+					proc.steps[0].form.elements[0].asyncValidators[0].code = code;
+					proc.save(callback);
+				},
+				function(proc, callback) {
+
+					fixture.engine.queryProcess(proc._id, {
+						one: true
+					}, callback);
+				}
+			], function(er, proc) {
+				assert.equal(proc.title, title);
+				assert.equal(proc.steps[0].form.elements[0].name, elementName);
+				assert.equal(proc.steps[0].processors[0].code, code);
+				assert.equal(proc.steps[0].form.elements[0].asyncValidators[0].code, code);
+				assert.isNull(er);
+				done();
+			});
+
+
+		});
+		it('processor can create an entity', function(done) {
+			var fixture = this;
+			fixture.stepInstance.processors[0].code = 'console.log(\'\tCreating new user...\'); this.entityRepo.create(\'User\',{firstName:\'Chidi\'},function(er,r){if(!er)console.log(\'\tuser created\'); callback(er);});';
+			fixture.processInstance.steps.push(fixture.stepInstance);
+			async.waterfall([
+				fixture.engine.createEntityConfiguration.bind(fixture.engine, 'User', {
+					firstName: {
+						type: 'String',
+						required: true
+					}
+				}),
+				fixture.engine.saveProcess.bind(fixture.engine, fixture.processInstance, {
+					retrieve: true
+				}),
+				function(proc, callback) {
+					proc.run({}, callback);
+				},
+				function(result, callback) {
+					assert.isNotNull(result);
+					fixture.engine.query('User', {
+						firstName: 'Chidi'
+					}, callback);
+				}
+			], function(er, result) {
+				assert.isNull(er);
+				assert.isNotNull(result);
+				//console.log(result);
+				assert.equal(result[0].firstName, 'Chidi');
+				done();
+			});
 		});
 	});
 

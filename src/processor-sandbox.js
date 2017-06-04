@@ -1,9 +1,13 @@
 /*jshint loopfunc: true */
+//console.log(entityRepo);
 this.SANDBOX_CONTEXT = true;
 var module_context = this;
 module_context.skip = {};
+if (typeof entityRepo !== 'undefined')
+	module_context.entityRepo = entityRepo;
 module.exports = {
 	getResult: function(fn) {
+		//console.log(this);
 		var firstProcessor = context.processors[0],
 			tasks = [];
 		tasks.push(async.timeout(function(cb) {
