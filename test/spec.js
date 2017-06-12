@@ -613,7 +613,6 @@ describe('Integration', function() {
 				steps: []
 			};
 			this.stepInstance = {
-				//save: this.stepSaveService,
 				entityRepo: {},
 				stepType: app.constants.STEPTYPE.CLIENT,
 				processors: [{
@@ -665,6 +664,7 @@ describe('Integration', function() {
 				tasks.push(clearCollection.bind(self, app.systemEntities[key]));
 			});
 			async.parallel(tasks, done);
+			deleteFile('./src/entities/{0}.json'.replace('{0}', 'User'));
 		});
 
 		it('a process must be uniquely identifiable system-wide (must have a retrievable id)', function(done) {
@@ -822,6 +822,20 @@ describe('Integration', function() {
 
 
 		});
+		it('engine can run standalone processor', function(done) {
+			var fixture = this;
+			fixture.engine.saveProcessor({
+				title: 'Test Sample',
+				code: 'console.log(\'\tentityRepo is defined \'+(typeof this.entityRepo.get)); console.log(\'\tran standalone processor!!!!\'); callback(null,{test:true});'
+			}, {
+				retrieve: true
+			}, function(er, proc) {
+				fixture.engine.runProcessor(proc, function(er) {
+					assert.isNull(er);
+					done();
+				});
+			});
+		});
 		it('processor can create an entity', function(done) {
 			var fixture = this;
 			fixture.stepInstance.processors[0].code = 'console.log(\'\tCreating new user...\'); this.entityRepo.create(\'User\',{firstName:\'Chidi\'},function(er,r){if(!er)console.log(\'\tuser created\'); callback(er);});';
@@ -848,7 +862,6 @@ describe('Integration', function() {
 			], function(er, result) {
 				assert.isNull(er);
 				assert.isNotNull(result);
-				//console.log(result);
 				assert.equal(result[0].firstName, 'Chidi');
 				done();
 			});

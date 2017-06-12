@@ -67,28 +67,6 @@ var notAFunction = function(x) {
 	return typeof x !== "function";
 };
 
-/**
- * Capitalizes Text
- * @param  {String} txt
- * @return {String}
- */
-function capitalizeText(txt) {
-	return txt ? txt.charAt(0).toUpperCase() + txt.slice(1) : txt;
-}
-
-/**
- * Contants for default entities
- * @type {Object}
- */
-var systemEntities = {
-	step: '_0Step',
-	processor: '_0Processor',
-	//commandProcessor: '_0CommandProcessor',
-	process: '_0Process',
-	asyncValidator: '_0AsyncValidator',
-	element: '_0Element'
-};
-
 function createConstants() {
 	function Constant() {
 		var array = Array.prototype.slice.call(arguments);
@@ -116,9 +94,360 @@ function createConstants() {
 		PROCESSSTATUS: new Constant('COMPLETED', 'RUNNING'),
 		STEPSTATUS: new Constant('COMPLETED', 'RUNNING'),
 		PROCESSORTYPE: new Constant('SERVER', 'CLIENT'),
-		STEPTYPE: new Constant('OFFLINE', 'CLIENT')
+		STEPTYPE: new Constant('OFFLINE', 'CLIENT'),
+		ELEMENT_SELECT_SOURCETYPE: new Constant('PROCESSOR', 'FORM'),
+		VALIDATORTYPE: new Constant('REQUIRED', 'MAXLENGTH', 'MINLENGTH', 'REGEX'),
+		INPUTTYPE: new Constant(['TEXT', 'text'], ['NUMBER', 'number'], ['DATE', 'date']),
+		ELEMENTTYPE: new Constant("INPUT", "SCRIPT", "DESIGNER", "SELECTSET", "LABEL", "TITLE", "LARGEINPUT", "COMMAND", "SECTION", "TABS", "SELECT", "LIST", "IMAGE")
 	};
 }
+/**
+ * Function used for creating element objects
+ * @param  {String} name        Scope name of element
+ * @param  {String} label       Placeholder text
+ * @param  {String} description Description of elements purpose
+ * @param  {Sting} type        Type of element
+ * @param  {Array} asyncVals   Array of async validators required by element
+ * @param  {Array} validators  Array of clientside validators to be applied on element on the client
+ * @param  {Any} args        Specific Args of element required by the element type
+ * @return {Object}             Object representing an element
+ */
+var createElement = function(name, label, description, type, args, validators, asyncVals) {
+	return {
+		elementType: type,
+		label: label,
+		name: name,
+		args: args,
+		asyncValidators: asyncVals || [],
+		description: description,
+		validators: validators || []
+	};
+};
+
+/**
+ * Capitalizes Text
+ * @param  {String} txt
+ * @return {String}
+ */
+function capitalizeText(txt) {
+	return txt ? txt.charAt(0).toUpperCase() + txt.slice(1) : txt;
+}
+
+/**
+ * Contants for default entities
+ * @type {Object}
+ */
+var systemEntities = {
+	step: '_0Step',
+	processor: '_0Processor',
+	process: '_0Process',
+	asyncValidator: '_0AsyncValidator',
+	element: '_0Element'
+};
+
+var elementTypeListProcessorTitle = 'Element Type List',
+	processorsListProcessorTitle = 'List Processors',
+	inputTypeListTitle = 'List Input Types';
+createProcessProcessTitle = 'Create Process';
+/**
+ * Generic type processor. (returns selectable list populated by mapping items _id and displayLabel)
+ * @type {Object}
+ */
+var genericSelectProcessor = {
+	title: 'Generic Entity Processor',
+	code: 'console.log(this); var custom=JSON.parse(this.args.customArgs); this.entityRepo.get(custom.model,{},function(er,x){ if(er) return callback(er); callback(null,x.map(function(z){ return { displayLabel:z[custom.propertyName], _id:z._id}; })); })'
+};
+/**
+ * Processor that returns list of processors.
+ * @type {Object}
+ */
+var processorListProcessor = {
+	title: processorsListProcessorTitle,
+	code: 'this.entityRepo.get(\'{0}\',{},function(er,x){ if(er) return callback(er); callback(null,x.map(function(z){ return {_id:z._id,displayLabel:z.title}})); });'.replace('{0}', systemEntities.processor)
+};
+
+/**
+ * Default Element Type processor (returns selectable list)
+ * @type {Object}
+ */
+var elementTypeListProcessor = {
+	title: elementTypeListProcessorTitle,
+	code: 'var list=[{0}]; callback(null,list.map(function(x){return {_id:x,displayLabel:x}; })); '.replace('{0}', _.map(Object.keys(constants.ELEMENTTYPE), function(x) {
+		return '\'' + x + '\'';
+	}).join(','))
+};
+
+var inputElementTypeListProcessor = {
+	title: elementTypeListProcessorTitle,
+	code: 'var list=[{0}]; callback(null,list.map(function(x){return {_id:x,displayLabel:x}; })); '.replace('{0}', _.map(Object.keys(constants.INPUTTYPE), function(x) {
+		return '\'' + x.toLowerCase() + '\'';
+	}).join(','))
+};
+
+/**
+ * Returns process definition for creating processes
+ * @param  {Object} elementTypeProcessorId      id of element list processor
+ * @param  {Object} inputElementTypeProcessorId id of processor list processor
+ * @return {Object}                             process definition object.
+ */
+function getProcessDefinition(inputElementTypeProcessorId, elementTypeProcessorId) {
+	function tag(obj, t) {
+		return {
+			dynamo_ref: t,
+			template: obj
+		};
+	}
+	var elementTag = '$elementTemplate$',
+		processorTag = '$processor$',
+		asyncValidatorTag = '$asyncValidator$',
+		validatorTag = '$validatorTag$';
+	return {
+		title: 'Create Process',
+		description: 'This process is used by system administrators to create new processes.',
+		steps: [{
+			stepType: constants.STEPTYPE.CLIENT,
+			processors: [{
+				code: "console.log(\'\tsaved new process successfully\'); console.log(this.args); callback(null);",
+				title: 'Create process',
+			}],
+			form: {
+				elements: [{
+					elementType: constants.ELEMENTTYPE.DESIGNER,
+					label: 'Process Creation',
+					name: 'processCreator',
+					args: {
+						elements: {
+							process: {
+								elements: [
+									createElement('title', 'Title of Process', 'This is what will be visible to users', constants.ELEMENTTYPE.INPUT, {
+										type: constants.INPUTTYPE.TEXT
+									}),
+									createElement('description', 'Description of Process', 'This description what will be visible to users.', constants.ELEMENTTYPE.INPUT, {
+										type: constants.INPUTTYPE.LARGEINPUT
+									})
+								],
+								relationships: {
+									hasMany: {
+										step: {
+											hasSelect: false
+										}
+									}
+								}
+							},
+							step: {
+								elements: [
+									createElement('description', '',
+										'A step is a single form in a process. Processes can have any number of steps.',
+										constants.ELEMENTTYPE.LABEL),
+									createElement('stepType', 'Type of Step', 'Type of Step.',
+										constants.ELEMENTTYPE.INPUT, {
+											disabled: true,
+											default: constants.STEPTYPE.CLIENT
+										})
+								],
+								relationships: {
+									has: {
+										form: {
+											hasSelect: false
+										}
+									},
+									hasMany: {
+										processor: 1
+									}
+								}
+							},
+							form: {
+								elements: [
+									createElement('description', '',
+										'A form contains elements that are displayed to the user when a step is requested',
+										constants.ELEMENTTYPE.LABEL)
+								],
+								relationships: {
+									hasMany: {
+										element: {
+											hasSelect: false
+										}
+									}
+								}
+							},
+							processor: {
+								elements: tag([
+									createElement('title', 'Title',
+										'Title',
+										constants.ELEMENTTYPE.INPUT),
+									createElement('code', 'This code runs when a client makes a request to the processor endpoint.',
+										'Title',
+										constants.ELEMENTTYPE.SCRIPT)
+								], processorTag)
+							},
+							validator: {
+								elements: [
+									createElement('validatorType', 'Type of Validator', '',
+										constants.ELEMENTTYPE.SELECTSET, {
+											path: 'args',
+											items: [{
+												id: constants.VALIDATORTYPE.REQUIRED,
+												label: 'Required',
+												elements: []
+											}, {
+												id: constants.VALIDATORTYPE.MAXLENGTH,
+												label: 'Maximum Number of Characters',
+												elements: [
+													createElement('max', 'Max', '', constants.ELEMENTTYPE.INPUT, {
+														type: constants.INPUTTYPE.NUMBER
+													})
+												]
+											}, {
+												id: constants.VALIDATORTYPE.MINLENGTH,
+												label: 'Minimum Number of Characters',
+												elements: [
+													createElement('min', 'Minimum', '', constants.ELEMENTTYPE.INPUT, {
+														type: constants.INPUTTYPE.NUMBER
+													})
+												]
+											}]
+										})
+								]
+							},
+							asyncValidator: {
+								elements: [
+									createElement('title', 'Title',
+										'Title',
+										constants.ELEMENTTYPE.INPUT),
+									createElement('code', 'This code runs when a client makes a request to the processor endpoint.',
+										'Title',
+										constants.ELEMENTTYPE.SCRIPT)
+								]
+							},
+							element: {
+								elements: tag([
+									createElement('elementType', 'Element type',
+										'The type of element',
+										constants.ELEMENTTYPE.SELECTSET, {
+											path: 'args',
+											items: [{
+												id: constants.ELEMENTTYPE.INPUT,
+												displayLabel: 'Input',
+												elements: [
+													createElement('type', 'Type of Input',
+														'The user interface uses this value to determine what type of input',
+														constants.ELEMENTTYPE.SELECT, {
+															type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+															value: inputElementTypeProcessorId
+														})
+												]
+											}, {
+												id: constants.ELEMENTTYPE.SELECT,
+												displayLabel: 'Select',
+												elements: [
+													createElement('type', 'Type of Select',
+														'The user interface uses this value to determine the available types',
+														constants.ELEMENTTYPE.SELECTSET, {
+															items: [{
+																id: constants.ELEMENT_SELECT_SOURCETYPE.FORM,
+																displayLabel: 'Another Element in the form.',
+																elements: [
+																	createElement('value', 'Name of Element',
+																		'This the name of the element that represents the source',
+																		constants.ELEMENTTYPE.INPUT),
+																	createElement('path', 'Property to bind to.',
+																		'Property of the element that contains list to bind to.',
+																		constants.ELEMENTTYPE.INPUT)
+																]
+															}, {
+																id: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																displayLabel: 'Processor',
+																elements: [
+																	createElement('value', 'Value', '', constants.ELEMENTTYPE.SELECT, {
+																		type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																		value: elementTypeProcessorId
+																	})
+																]
+															}],
+
+														})
+												]
+											}, {
+												id: constants.ELEMENTTYPE.SELECTSET,
+												displayLabel: 'Option Groups',
+												elements: [
+													createElement('path', 'Optional path', 'Processors will use this path to refer to items contained here',
+														constants.ELEMENTTYPE.INPUT, {
+															type: constants.INPUTTYPE.TEXT
+														}),
+													createElement('items', 'Options', 'Options under groups.',
+														constants.ELEMENTTYPE.LIST, {
+															itemTemplate: [
+																createElement('id', 'Result of Selection',
+																	'This is what is sent back to the processor as the value of this field',
+																	constants.ELEMENTTYPE.INPUT),
+																createElement('displayLabel', 'Label displayed to user', '',
+																	constants.ELEMENTTYPE.INPUT),
+																createElement('elements', 'Properties to add', '', constants.ELEMENTTYPE.LIST, {
+																	itemTemplate: {
+																		template_ref: elementTag
+																	}
+																})
+
+															]
+														})
+												]
+											}, {
+												id: constants.ELEMENTTYPE.LIST,
+												displayLabel: 'List',
+												elements: [
+													createElement('itemTemplate', 'Template', 'Template used to create and edit items in this list',
+														constants.ELEMENTTYPE.LIST, {
+															itemTemplate: {
+																template_ref: elementTag
+															}
+														})
+												]
+											}, {
+												id: constants.ELEMENTTYPE.SECTION,
+												displayLabel: 'Section',
+												elements: [createElement('elements', 'Elements in the section', 'Elements in the section',
+													constants.ELEMENTTYPE.LIST, {
+														itemTemplate: {
+															template_ref: elementTag
+														}
+													})]
+											}]
+										}),
+									createElement('name', 'Name',
+										'This is the name processors use when sending requests',
+										constants.ELEMENTTYPE.INPUT),
+									createElement('label', 'Label',
+										'This is the item used to display placeholder text for elements',
+										constants.ELEMENTTYPE.INPUT),
+									createElement('description', 'Description',
+										'Explanation of elements purpose',
+										constants.ELEMENTTYPE.INPUT)
+								], elementTag),
+								relationships: {
+									hasMany: {
+										validator: {
+											hasNew: false
+										},
+										asyncValidator: {
+											hasNew: false
+										}
+									}
+								}
+							}
+						}
+					},
+					asyncValidators: [],
+					description: 'Used to design/edit processes',
+					validators: []
+				}]
+			}
+		}]
+
+	};
+}
+
+
 
 /**
  * this represents a dynamo step. Steps could be either require userinput or not.
@@ -224,7 +553,8 @@ function DynamoStep(opts) {
 
 		function prepareContext(opts) {
 
-			var _context = opts.args ? _.cloneDeep(opts.args) : {};
+			var _context = {};
+			_context.args = opts.args;
 			_context.postprocessors = _.cloneDeep(opts.postprocessors);
 			_context.processors = _.cloneDeep(opts.processors);
 			_context.postprocessorsTimeout = config.postprocessors.ttl;
@@ -243,7 +573,7 @@ function DynamoStep(opts) {
 		//this calls all the processors of the step.
 		this.run = function(context, fn) {
 			var self = this;
-			//console.log(this.entityRepo);
+			//
 
 			var serverProcessors = parent.processors, // _.filter(parent.processors, ['processorType', constants.PROCESSORTYPE.SERVER]),
 				_context = prepareContext({
@@ -319,7 +649,7 @@ DynamoStep.prototype.save = function(fn) {
 			//ids will contain the newly saved ids
 			var processorIds = _.map(ids.processors, '_id'); // _.filter(self.processors, typeOf('string')).concat(_.map(ids.processors, '_id'));
 			var postprocessorIds = _.map(ids.postprocessors, '_id'); //_.filter(self.postprocessors, typeOf('string')).concat(_.map(ids.postprocessors, '_id'));
-			//console.log(processorIds);
+			//
 			self.state.save(function(er, state) {
 				self._save(_.assign({
 					_id: self._id,
@@ -392,6 +722,37 @@ DynamoStep.prototype.run = function(context, fn) {
 };
 
 
+/**
+ * Inner class used for running processors that are not part of a steps chain of processors
+ * @param {Object} opts Class constructor options , including entityRepo and processors.
+ */
+function DynamoSandbox(opts) {
+	var args;
+	if (!opts || !(opts instanceof DynamoProcessor) && (!opts.processors || !opts.processors.length))
+		throw new Error('A sandbox needs atleast one processor to run');
+
+	if (!opts.entityRepo && (opts instanceof DynamoProcessor) && (args = Array.prototype.slice.call(arguments)).length == 1)
+		throw new Error('EntityRepo is required by all processors');
+
+	var processors = opts instanceof DynamoProcessor ? [opts] : opts,
+		entityRepo = opts instanceof DynamoProcessor ? args[1] : opts.entityRepo;
+
+	this.run = function(fn) {
+		var handle = SandBox.require('./processor-sandbox.js', {
+			locals: {
+				context: {
+					processors: processors,
+					postprocessors: [],
+					processorsTimeout: 60000
+				},
+				constants: constants,
+				entityRepo: entityRepo,
+				async: async,
+			}
+		});
+		handle.getResult(fn);
+	};
+}
 
 /**
  * this is a class constructor for a dynamo process.
@@ -464,15 +825,10 @@ DynamoProcess.prototype.run = function(context, fn) {
 
 		var step = self.steps[self.currentStepIndex || 0];
 		assert.equal(step instanceof DynamoStep, true);
-		//
-		step.describe(function(er, description) {
-
-		});
 		step.run(context, function(er, message) {
 			if (er) return fn(er);
 
 			self.currentStepIndex = self.steps.indexOf(step) + 1;
-
 
 			var result = _.assign({
 				message: message,
@@ -587,7 +943,7 @@ DynamoProcess.prototype.describe = function(fn) {
 
 /**
  * The Engine represents the boundary between the problem domain and the outside world.
- * @param {[type]} opts [description]
+ * @param {Object} opts Constructor arguments
  */
 function DynamoEngine(opts) {
 	var self = this;
@@ -608,9 +964,69 @@ function DynamoEngine(opts) {
  * @return {Any}      nothing
  */
 DynamoEngine.prototype.init = function(fn) {
+	var self = this,
+		_processors;
 	//create all system required configs if they dont exist.
-	this.entitiesRepository.init(fn);
+	async.waterfall([
+		this.entitiesRepository.init.bind(this.entitiesRepository),
+		this.queryProcessor.bind(this, {
+			title: {
+				$in: [elementTypeListProcessorTitle, processorsListProcessorTitle, inputTypeListTitle]
+			}
+		}),
+		function(processors, callback) {
+			if (!processors || !processors.length) {
+				async.waterfall([
+					self.saveProcessor.bind(self, processorListProcessor),
+					function(p, c) {
+						self.saveProcessor(inputElementTypeListProcessor, function(er, proc) {
+							if (er) return callback(er);
+							callback(null, {
+								processorList: p._id,
+								elementList: proc._id
+							});
+						});
+					},
 
+				], callback);
+				return;
+			}
+			callback(null, processors);
+		},
+		function(processors, callback) {
+			_processors = processors;
+			callback();
+		},
+		this.queryProcess.bind(this, {
+			title: createProcessProcessTitle
+		}, {
+			one: true
+		}),
+		function(exists, callback) {
+
+			if (!exists) {
+				//it does not exist
+				var default_process = getProcessDefinition(_processors.elementList, _processors.processorList);
+
+				self.saveProcess(default_process, {
+					retrieve: true,
+					full: true
+				}, callback);
+				return;
+			}
+			callback();
+		}
+	], function(er, result) {
+
+
+		if (er) return fn(er);
+		fn();
+	});
+};
+
+DynamoEngine.prototype.runProcessor = function(processor, fn) {
+	var sandbox = new DynamoSandbox(processor, this.entitiesRepository.processorEntityRepo);
+	sandbox.run(fn);
 };
 
 /**
@@ -765,13 +1181,14 @@ DynamoElement.prototype.describe = function(fn) {
 /**
  * saves using persistence service.
  * @param  {Function} fn callback
- * @return {[type]}      saved object.
+ * @return {Object}      saved object.
  */
 DynamoElement.prototype.save = function(fn) {
 	var self = this;
 	async.parallel(_.map(this.asyncValidators, function(x) {
 		return x.save.bind(x);
 	}), function(er, asyncValidators) {
+		if (er) return fn(er);
 		self._save({
 			_id: self._id,
 			name: self.name,
@@ -859,16 +1276,24 @@ function DynamoProcessor(opts) {
 	 * @return {Any}            result of process.
 	 */
 	this.process = function(result, callback) {
-		self.validate();
+
 		if (typeof result == 'function') {
 			callback = result;
 			result = null;
 		}
-		/* jshint ignore:start */
-		if (this.SANDBOX_CONTEXT)
-		//added extra check to ensure this code never runs in engine context.
-			eval(self.code);
-		/* jshint ignore:end */
+		try {
+			self.validate();
+			/* jshint ignore:start */
+			if (this.SANDBOX_CONTEXT)
+			//added extra check to ensure this code never runs in engine context.
+				eval(self.code);
+			/* jshint ignore:end */
+		} catch (e) {
+			// statements
+			console.log(e);
+			callback(e);
+		}
+
 	};
 }
 /**
@@ -908,7 +1333,7 @@ DynamoProcessor.prototype.save = function(fn) {
 
 /**
  * Inherits from processor. Runs user editable code for validation. It is used to validate elements before submission.
- * @param {[type]} opts [description]
+ * @param {Object} opts [description]
  */
 function DynamoAsyncValidator(opts) {
 	var self = this;
@@ -1022,7 +1447,7 @@ function EntityRepo(opts) {
 						item.store = self.store;
 					}
 					var itasks = [];
-					//console.log(item);
+					//
 					item.steps.forEach(function(step) {
 						itasks.push(self.transformers[systemEntities.step].bind(self, step));
 					});
@@ -1195,9 +1620,12 @@ EntityRepo.prototype.init = function(callback) {
 		fs.writeFile.bind(this, self.getPath(systemEntities.process), '{"title":{"type":"String","required":true},"description":{"type":"String","required":true},"steps":[{"type":"ObjectId","ref":"' + systemEntities.step + '"}]}'),
 		fs.writeFile.bind(this, self.getPath(systemEntities.step), '{"processors":[{"type":"ObjectId","ref":"' + systemEntities.processor + '"}],"postprocessors":[{"type":"ObjectId","ref":"' + systemEntities.processor + '"}],"stepType":{"type":"String","required":true},"form":{"elements":[{"type":"ObjectId","ref":"' + systemEntities.element + '"}]}}'),
 		fs.writeFile.bind(this, self.getPath(systemEntities.processor), '{"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
-		//fs.writeFile.bind(this, self.getPath(systemEntities.commandProcessor), '{"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
 		fs.writeFile.bind(this, self.getPath(systemEntities.asyncValidator), '{"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
-		fs.writeFile.bind(this, self.getPath(systemEntities.element), '{"name":{"type":"String","required":true},"label":{"type":"String","required":true},"description":{"type":"String"},"elementType":{"type":"String","enum":["INPUT","DESIGNER","LARGEINPUT","COMMAND","SECTION","TABS","SELECT","LIST","IMAGE"]},"asyncValidators":[{"type":"ObjectId","ref":"' + systemEntities.asyncValidator + '"}],"validators":[{"validatorType":{"type":"String","enum":["REGULAR","SCRIPT"],"required":true},"args":{"type":"Mixed"}}],"args":{"type":"Mixed"}}')
+		fs.writeFile.bind(this, self.getPath(systemEntities.element), '{"name":{"type":"String","required":true},"label":{"type":"String","required":true},"description":{"type":"String"},"elementType":{"type":"String","enum":[' + (_.map(Object.keys(constants.ELEMENTTYPE), function(x) {
+			return '"' + x + '"';
+		}).join(',')) + ']},"asyncValidators":[{"type":"ObjectId","ref":"' + systemEntities.asyncValidator + '"}],"validators":[{"validatorType":{"type":"String","enum":[' + (_.map(Object.keys(constants.VALIDATORTYPE), function(x) {
+			return '"' + x + '"';
+		}).join(',')) + '],"required":true},"args":{"type":"Mixed"}}],"args":{"type":"Mixed"}}')
 	], function(er) {
 		if (er) return callback(er);
 		self.createSchemas(callback);
@@ -1301,15 +1729,15 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 	}
 
 	function transformResult(er, result) {
-		//console.log(result);
+		//
 		if (er) return fn(er);
 		if (self.transformers[name]) {
 			async.parallel(_.map(result, function(x) {
 				return self.transformers[name].bind(self.transformers, x);
 			}), function(er, transformed) {
 				if (er) return fn(er);
-				if (options && options.one && transformed && transformed.length)
-					transformed = transformed[0];
+				if (options && options.one && transformed)
+					transformed = transformed.length ? transformed[0] : null;
 
 				fn(null, transformed);
 			});
@@ -1385,9 +1813,9 @@ EntityRepo.prototype.updateEntity = function(name, data, fn) {
 			merged.save(fn);
 		});
 	} else {
-		//console.log('\n\nupdating model:' + name + '---------x\n\n');
-		//console.log(data);
-		//console.log('-----------------------------x\n\n');
+		//
+		//
+		//
 		this.models[name].update({
 			_id: data._id
 		}, data, function(er, stat) {

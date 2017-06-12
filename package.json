@@ -2,7 +2,7 @@
   "name": "dynamo",
   "version": "1.0.0",
   "description": "This is the backend processor for configurable dynamic tasks",
-  "main": "server.js",
+  "main": "./src/index.js",
   "scripts": {
     "test": "set profile=unitTest&& mocha --require test-helpers/chai.js"
   },

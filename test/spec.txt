@@ -44,8 +44,5 @@
 
 20) Validators can either run on the clients machine or externally.
 
-Integration Tests
--------------------------------------------------
-21) A process can run its steps.
 
 

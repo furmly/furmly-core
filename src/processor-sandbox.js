@@ -5,6 +5,8 @@ var module_context = this;
 module_context.skip = {};
 if (typeof entityRepo !== 'undefined')
 	module_context.entityRepo = entityRepo;
+
+module_context.args = context.args;
 module.exports = {
 	getResult: function(fn) {
 		//console.log(this);
