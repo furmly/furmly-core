@@ -52,7 +52,7 @@ var typeOf = function(value) {
 /**
  * Returns a function that returns the first child of an array result.
  * @param  {Function} fn
- * @return {Any}
+ * @return {Object}
  */
 var getOne = function(fn) {
 	return function(er, result) {
@@ -109,7 +109,7 @@ function createConstants() {
  * @param  {Sting} type        Type of element
  * @param  {Array} asyncVals   Array of async validators required by element
  * @param  {Array} validators  Array of clientside validators to be applied on element on the client
- * @param  {Any} args        Specific Args of element required by the element type
+ * @param  {Object} args        Specific Args of element required by the element type
  * @return {Object}             Object representing an element
  */
 var createElement = function(name, label, description, type, args, validators, asyncVals) {
@@ -184,12 +184,14 @@ var inputElementTypeListProcessor = {
 	}).join(','))
 };
 
+
 /**
  * Returns process definition for creating processes
  * @param  {Object} elementTypeProcessorId      id of element list processor
  * @param  {Object} inputElementTypeProcessorId id of processor list processor
  * @return {Object}                             process definition object.
  */
+
 function getProcessDefinition(inputElementTypeProcessorId, elementTypeProcessorId) {
 	function tag(obj, t) {
 		return {
@@ -197,10 +199,7 @@ function getProcessDefinition(inputElementTypeProcessorId, elementTypeProcessorI
 			template: obj
 		};
 	}
-	var elementTag = '$elementTemplate$',
-		processorTag = '$processor$',
-		asyncValidatorTag = '$asyncValidator$',
-		validatorTag = '$validatorTag$';
+	var elementTag = '$elementTemplate$';
 	return {
 		title: 'Create Process',
 		description: 'This process is used by system administrators to create new processes.',
@@ -213,27 +212,31 @@ function getProcessDefinition(inputElementTypeProcessorId, elementTypeProcessorI
 			form: {
 				elements: [{
 					elementType: constants.ELEMENTTYPE.DESIGNER,
-					label: 'Process Creation',
-					name: 'processCreator',
+					label: 'Manage a Process',
+					name: 'process',
 					args: {
-						elements: {
-							process: {
-								elements: [
-									createElement('title', 'Title of Process', 'This is what will be visible to users', constants.ELEMENTTYPE.INPUT, {
-										type: constants.INPUTTYPE.TEXT
-									}),
-									createElement('description', 'Description of Process', 'This description what will be visible to users.', constants.ELEMENTTYPE.INPUT, {
-										type: constants.INPUTTYPE.LARGEINPUT
-									})
-								],
-								relationships: {
-									hasMany: {
-										step: {
-											hasSelect: false
-										}
+						main: {
+							name: 'process',
+							elements: [
+								createElement('title', 'Title of Process', 'This is what will be visible to users', constants.ELEMENTTYPE.INPUT, {
+									type: constants.INPUTTYPE.TEXT
+								}),
+								createElement('description', 'Description of Process', 'This description what will be visible to users.', constants.ELEMENTTYPE.INPUT, {
+									type: constants.INPUTTYPE.LARGEINPUT
+								})
+							],
+							relationships: {
+								hasMany: {
+									step: {
+										path: 'steps',
+										hasSelect: false
 									}
 								}
-							},
+							}
+
+						},
+						elements: {
+
 							step: {
 								elements: [
 									createElement('description', '',
@@ -247,16 +250,15 @@ function getProcessDefinition(inputElementTypeProcessorId, elementTypeProcessorI
 								],
 								relationships: {
 									has: {
-										form: {
-											hasSelect: false
-										}
+										form: 'form'
 									},
 									hasMany: {
-										processor: 1
+										processor: 'processors'
 									}
 								}
 							},
 							form: {
+								hasPreview: true,
 								elements: [
 									createElement('description', '',
 										'A form contains elements that are displayed to the user when a step is requested',
@@ -264,21 +266,19 @@ function getProcessDefinition(inputElementTypeProcessorId, elementTypeProcessorI
 								],
 								relationships: {
 									hasMany: {
-										element: {
-											hasSelect: false
-										}
+										element: 'elements'
 									}
 								}
 							},
 							processor: {
-								elements: tag([
+								elements: [
 									createElement('title', 'Title',
 										'Title',
 										constants.ELEMENTTYPE.INPUT),
 									createElement('code', 'This code runs when a client makes a request to the processor endpoint.',
 										'Title',
 										constants.ELEMENTTYPE.SCRIPT)
-								], processorTag)
+								]
 							},
 							validator: {
 								elements: [
@@ -287,11 +287,11 @@ function getProcessDefinition(inputElementTypeProcessorId, elementTypeProcessorI
 											path: 'args',
 											items: [{
 												id: constants.VALIDATORTYPE.REQUIRED,
-												label: 'Required',
+												displayLabel: 'Required',
 												elements: []
 											}, {
 												id: constants.VALIDATORTYPE.MAXLENGTH,
-												label: 'Maximum Number of Characters',
+												displayLabel: 'Maximum Number of Characters',
 												elements: [
 													createElement('max', 'Max', '', constants.ELEMENTTYPE.INPUT, {
 														type: constants.INPUTTYPE.NUMBER
@@ -299,7 +299,7 @@ function getProcessDefinition(inputElementTypeProcessorId, elementTypeProcessorI
 												]
 											}, {
 												id: constants.VALIDATORTYPE.MINLENGTH,
-												label: 'Minimum Number of Characters',
+												displayLabel: 'Minimum Number of Characters',
 												elements: [
 													createElement('min', 'Minimum', '', constants.ELEMENTTYPE.INPUT, {
 														type: constants.INPUTTYPE.NUMBER
@@ -401,6 +401,27 @@ function getProcessDefinition(inputElementTypeProcessorId, elementTypeProcessorI
 															itemTemplate: {
 																template_ref: elementTag
 															}
+														}),
+													createElement('options', 'Options', 'Specific options that affects the lists behavior',
+														constants.ELEMENTTYPE.SELECTSET, {
+															path: 'behavior',
+															items: [{
+																id: 'TAG',
+																displayLabel: 'Tag Template',
+																elements: [createElement('dynamo_ref', 'Tag', '', constants.ELEMENTTYPE.INPUT, {
+																	type: constants.INPUTTYPE.TEXT
+																})]
+															}, {
+																id: 'REF',
+																displayLabel: 'Reference a Tag',
+																elements: [
+																	createElement('description', '', 'The item template with the referenced tag will override the configured template if found.',
+																		constants.ELEMENTTYPE.LABEL),
+																	createElement('template_ref', 'Referenced Tag', '', constants.ELEMENTTYPE.INPUT, {
+																		type: constants.INPUTTYPE.TEXT
+																	})
+																]
+															}]
 														})
 												]
 											}, {
@@ -426,12 +447,8 @@ function getProcessDefinition(inputElementTypeProcessorId, elementTypeProcessorI
 								], elementTag),
 								relationships: {
 									hasMany: {
-										validator: {
-											hasNew: false
-										},
-										asyncValidator: {
-											hasNew: false
-										}
+										validator: 'validators',
+										asyncValidator: 'asyncValidators'
 									}
 								}
 							}
