@@ -5,7 +5,7 @@ var sinon = require('sinon'),
 	Server = require('mongodb').Server,
 	_ = require('lodash'),
 	config = (require('../config'))[process.env.profile || 'dev'],
-	app = require('../src/index.js'),
+	app = require('../src/index.js')(config),
 	async = require('async'),
 	mongoose = require('mongoose');
 
