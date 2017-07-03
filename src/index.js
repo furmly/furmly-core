@@ -2,7 +2,7 @@
 var assert = require('assert'),
 	EventEmitter = require('events'),
 	async = require('async'),
-	SandBox = require('sandboxed-module'),
+	//SandBox = require('sandboxed-module'),
 	ObjectID = require("mongodb").ObjectID,
 	util = require('util'),
 	_ = require('lodash'),
@@ -12,7 +12,9 @@ var assert = require('assert'),
 	glob = require('glob'),
 	path = require('path'),
 	mongoose = require('mongoose');
-
+const {
+	NodeVM
+} = require('vm2');
 
 function init(config) {
 	var constants = createConstants();
@@ -278,8 +280,10 @@ function init(config) {
 						postprocessors: parent.postprocessors //(parent.postprocessors && _.find(parent.postprocessors, q) ? _.filter(parent.postprocessors, q) : null)
 					});
 
-				var handle = SandBox.require('./processor-sandbox', {
-					locals: {
+				var vm = new NodeVM({
+					require: false,
+					requireExternal: false,
+					sandbox: {
 						context: _context,
 						systemEntities: systemEntities,
 						constants: constants,
@@ -287,6 +291,7 @@ function init(config) {
 						async: async,
 					}
 				});
+				var handle = vm.run(fs.readFileSync('./src/processor-sandbox.js'));
 				handle.getResult(function(er, result) {
 					if (er) return fn(er);
 
@@ -453,8 +458,10 @@ function init(config) {
 
 		this.run = function(context, fn) {
 
-			var handle = SandBox.require('./processor-sandbox.js', {
-				locals: {
+			let vm = new NodeVM({
+				require: false,
+				requireExternal: false,
+				sandbox: {
 					context: {
 						args: context,
 						processors: processors,
@@ -467,6 +474,7 @@ function init(config) {
 					async: async,
 				}
 			});
+			var handle = vm.run(fs.readFileSync('./src/processor-sandbox.js'));
 			handle.getResult(fn);
 		};
 	}
