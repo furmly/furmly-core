@@ -1,11 +1,11 @@
+/*jshint esversion: 6 */
 var assert = require('assert'),
-	//config = (require('../config'))[process.env.profile || 'dev'],
+	EventEmitter = require('events'),
 	async = require('async'),
 	SandBox = require('sandboxed-module'),
 	ObjectID = require("mongodb").ObjectID,
 	util = require('util'),
 	_ = require('lodash'),
-
 	vm = require('vm'),
 	fs = require('fs'),
 	generator = require('mongoose-gen'),
@@ -97,35 +97,25 @@ function init(config) {
 			PROCESSSTATUS: new Constant('COMPLETED', 'RUNNING'),
 			STEPSTATUS: new Constant('COMPLETED', 'RUNNING'),
 			PROCESSORTYPE: new Constant('SERVER', 'CLIENT'),
+			GRIDMODE: new Constant('DEFAULT', 'CRUD'),
+			GRIDCOMMANDTYPE: new Constant('PROCESSOR', 'NAV'),
+			STEPMODE: new Constant('VIEW'),
 			STEPTYPE: new Constant('OFFLINE', 'CLIENT'),
 			ELEMENT_SELECT_SOURCETYPE: new Constant('PROCESSOR', 'FORM'),
 			VALIDATORTYPE: new Constant('REQUIRED', 'MAXLENGTH', 'MINLENGTH', 'REGEX'),
-			INPUTTYPE: new Constant(['TEXT', 'text'], ['NUMBER', 'number'], ['DATE', 'date']),
-			ELEMENTTYPE: new Constant("INPUT", "SCRIPT", "DESIGNER", "SELECTSET", "LABEL", "TITLE", "LARGEINPUT", "COMMAND", "SECTION", "TABS", "SELECT", "LIST", "IMAGE")
+			INPUTTYPE: new Constant(['TEXT', 'text'], ['NUMBER', 'number'], ['DATE', 'date'], ['CHECKBOX', 'checkbox']),
+			NAVIGATIONTYPE: new Constant('CLIENT', 'DYNAMO'),
+			IMAGETYPE: new Constant('REL', 'DATA'),
+			UIDS: {
+				LIB: new Constant(['CONVERT_FILTER', 'convertFilter']),
+				PROCESSOR: new Constant('LIST_ENTITY_GENERIC', 'LIST_ASYNC_VALIDATORS', 'LIST_PROCESSES', 'LIST_PROCESSORS', 'LIST_INPUT_TYPES', 'LIST_ELEMENT_TYPES', 'FETCH_PROCESS', 'CREATE_PROCESS', 'CREATE_ENTITY', 'UPDATE_ENTITY', 'FETCH_ENTITY'),
+				PROCESS: new Constant('CREATE_PROCESS', 'MANAGE_PROCESS', 'MANAGE_PROCESSOR', 'MANAGE_LIBS')
+			},
+			ENTITYTYPE: new Constant(["STRING", "String"], ["NUMBER", "Number"], ["DATE", "Date"], ["BOOLEAN", "Boolean"]),
+			ELEMENTTYPE: new Constant("INPUT", "SCRIPT", "DESIGNER", "GRID", "NAV", "FILEUPLOAD", "SELECTSET", "LABEL", "TITLE", "LARGEINPUT", "COMMAND", "SECTION", "TABS", "SELECT", "LIST", "IMAGE")
 		};
 	}
-	/**
-	 * Function used for creating element objects
-	 * @param  {String} name        Scope name of element
-	 * @param  {String} label       Placeholder text
-	 * @param  {String} description Description of elements purpose
-	 * @param  {Sting} type        Type of element
-	 * @param  {Array} asyncVals   Array of async validators required by element
-	 * @param  {Array} validators  Array of clientside validators to be applied on element on the client
-	 * @param  {Object} args        Specific Args of element required by the element type
-	 * @return {Object}             Object representing an element
-	 */
-	var createElement = function(name, label, description, type, args, validators, asyncVals) {
-		return {
-			elementType: type,
-			label: label,
-			name: name,
-			args: args,
-			asyncValidators: asyncVals || [],
-			description: description,
-			validators: validators || []
-		};
-	};
+
 
 	/**
 	 * Capitalizes Text
@@ -141,370 +131,16 @@ function init(config) {
 	 * @type {Object}
 	 */
 	var systemEntities = {
-		step: '_0Step',
-		processor: '_0Processor',
-		process: '_0Process',
-		asyncValidator: '_0AsyncValidator',
-		element: '_0Element'
-	};
-
-	var elementTypeListProcessorTitle = 'Element Type List',
-		processorsListProcessorTitle = 'List Processors',
-		inputTypeListTitle = 'List Input Types';
-	createProcessProcessTitle = 'Create Process';
-	/**
-	 * Generic type processor. (returns selectable list populated by mapping items _id and displayLabel)
-	 * @type {Object}
-	 */
-	var genericSelectProcessor = {
-		title: 'Generic Entity Processor',
-		code: 'console.log(this); var custom=JSON.parse(this.args.customArgs); this.entityRepo.get(custom.model,{},function(er,x){ if(er) return callback(er); callback(null,x.map(function(z){ return { displayLabel:z[custom.propertyName], _id:z._id}; })); })'
-	};
-	/**
-	 * Processor that returns list of processors.
-	 * @type {Object}
-	 */
-	var processorListProcessor = {
-		title: processorsListProcessorTitle,
-		code: 'this.entityRepo.get(\'{0}\',{},function(er,x){ if(er) return callback(er); callback(null,x.map(function(z){ return {_id:z._id,displayLabel:z.title}})); });'.replace('{0}', systemEntities.processor)
-	};
-
-	/**
-	 * Default Element Type processor (returns selectable list)
-	 * @type {Object}
-	 */
-	var elementTypeListProcessor = {
-		title: elementTypeListProcessorTitle,
-		code: 'var list=[{0}]; callback(null,list.map(function(x){return {_id:x,displayLabel:x}; })); '.replace('{0}', _.map(Object.keys(constants.ELEMENTTYPE), function(x) {
-			return '\'' + x + '\'';
-		}).join(','))
-	};
-
-	var inputElementTypeListProcessor = {
-		title: elementTypeListProcessorTitle,
-		code: 'var list=[{0}]; callback(null,list.map(function(x){return {_id:x,displayLabel:x}; })); '.replace('{0}', _.map(Object.keys(constants.INPUTTYPE), function(x) {
-			return '\'' + x.toLowerCase() + '\'';
-		}).join(','))
-	};
-
-
-	/**
-	 * Returns process definition for creating processes
-	 * @param  {Object} elementTypeProcessorId      id of element list processor
-	 * @param  {Object} inputElementTypeProcessorId id of processor list processor
-	 * @return {Object}                             process definition object.
-	 */
-
-	function getProcessDefinition(inputElementTypeProcessorId, elementTypeProcessorId) {
-		function tag(obj, t) {
-			return {
-				dynamo_ref: t,
-				template: obj
-			};
-		}
-		var elementTag = '$elementTemplate$',
-			validatorTag = '$validatorTemplate$',
-			asyncValidatorTag = '$asyncValidatorTemplate$';
-		return {
-			title: 'Create Process',
-			description: 'This process is used by system administrators to create new processes.',
-			steps: [{
-				stepType: constants.STEPTYPE.CLIENT,
-				processors: [{
-					code: "console.log(\'\tsaved new process successfully\'); console.log(this.args); callback(null);",
-					title: 'Create process',
-				}],
-				form: {
-					elements: [{
-						elementType: constants.ELEMENTTYPE.DESIGNER,
-						label: 'Manage a Process',
-						name: 'process',
-						args: {
-							main: {
-								name: 'process',
-								elements: [
-									createElement('title', 'Title of Process', 'This is what will be visible to users', constants.ELEMENTTYPE.INPUT, {
-										type: constants.INPUTTYPE.TEXT
-									}),
-									createElement('description', 'Description of Process', 'This description what will be visible to users.', constants.ELEMENTTYPE.INPUT, {
-										type: constants.INPUTTYPE.LARGEINPUT
-									})
-								],
-								relationships: {
-									hasMany: {
-										step: {
-											path: 'steps',
-											hasSelect: false
-										}
-									}
-								}
-
-							},
-							elements: {
-
-								step: {
-									elements: [
-										createElement('description', '',
-											'A step is a single form in a process. Processes can have any number of steps.',
-											constants.ELEMENTTYPE.LABEL),
-										createElement('stepType', 'Type of Step', 'Type of Step.',
-											constants.ELEMENTTYPE.INPUT, {
-												disabled: true,
-												default: constants.STEPTYPE.CLIENT
-											})
-									],
-									relationships: {
-										has: {
-											form: 'form'
-										},
-										hasMany: {
-											processor: 'processors'
-										}
-									}
-								},
-								form: {
-									hasPreview: true,
-									elements: [
-										createElement('description', '',
-											'A form contains elements that are displayed to the user when a step is requested',
-											constants.ELEMENTTYPE.LABEL)
-									],
-									relationships: {
-										hasMany: {
-											element: 'elements'
-										}
-									}
-								},
-								processor: {
-									elements: [
-										createElement('title', 'Title',
-											'Title',
-											constants.ELEMENTTYPE.INPUT),
-										createElement('code', 'This code runs when a client makes a request to the processor endpoint.',
-											'Title',
-											constants.ELEMENTTYPE.SCRIPT)
-									]
-								},
-								validator: {
-									elements: tag([
-										createElement('validatorType', 'Type of Validator', '',
-											constants.ELEMENTTYPE.SELECTSET, {
-												path: 'args',
-												items: [{
-													id: constants.VALIDATORTYPE.REQUIRED,
-													displayLabel: 'Required',
-													elements: []
-												}, {
-													id: constants.VALIDATORTYPE.MAXLENGTH,
-													displayLabel: 'Maximum Number of Characters',
-													elements: [
-														createElement('max', 'Max', '', constants.ELEMENTTYPE.INPUT, {
-															type: constants.INPUTTYPE.NUMBER
-														})
-													]
-												}, {
-													id: constants.VALIDATORTYPE.MINLENGTH,
-													displayLabel: 'Minimum Number of Characters',
-													elements: [
-														createElement('min', 'Minimum', '', constants.ELEMENTTYPE.INPUT, {
-															type: constants.INPUTTYPE.NUMBER
-														})
-													]
-												}]
-											})
-									], validatorTag)
-								},
-								asyncValidator: {
-									elements: tag([
-										createElement('title', 'Title',
-											'Title',
-											constants.ELEMENTTYPE.INPUT),
-										createElement('code', 'This code runs when a client makes a request to the processor endpoint.',
-											'Title',
-											constants.ELEMENTTYPE.SCRIPT)
-									], asyncValidatorTag)
-								},
-								element: {
-									elements: tag([
-										createElement('elementType', 'Element type',
-											'The type of element',
-											constants.ELEMENTTYPE.SELECTSET, {
-												path: 'args',
-												items: [{
-													id: constants.ELEMENTTYPE.INPUT,
-													displayLabel: 'Input',
-													elements: [
-														createElement('type', 'Type of Input',
-															'The user interface uses this value to determine what type of input',
-															constants.ELEMENTTYPE.SELECT, {
-																type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																value: inputElementTypeProcessorId
-															})
-													]
-												}, {
-													id: constants.ELEMENTTYPE.SELECT,
-													displayLabel: 'Select',
-													elements: [
-														createElement('type', 'Type of Select',
-															'The user interface uses this value to determine the available types',
-															constants.ELEMENTTYPE.SELECTSET, {
-																items: [{
-																	id: constants.ELEMENT_SELECT_SOURCETYPE.FORM,
-																	displayLabel: 'Another Element in the form.',
-																	elements: [
-																		createElement('value', 'Name of Element',
-																			'This the name of the element that represents the source',
-																			constants.ELEMENTTYPE.INPUT),
-																		createElement('path', 'Property to bind to.',
-																			'Property of the element that contains list to bind to.',
-																			constants.ELEMENTTYPE.INPUT)
-																	]
-																}, {
-																	id: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																	displayLabel: 'Processor',
-																	elements: [
-																		createElement('value', 'Value', '', constants.ELEMENTTYPE.SELECT, {
-																			type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																			value: elementTypeProcessorId
-																		})
-																	]
-																}],
-
-															})
-													]
-												}, {
-													id: constants.ELEMENTTYPE.SELECTSET,
-													displayLabel: 'Option Groups',
-													elements: [
-														createElement('path', 'Optional path', 'Processors will use this path to refer to items contained here',
-															constants.ELEMENTTYPE.INPUT, {
-																type: constants.INPUTTYPE.TEXT
-															}),
-														createElement('items', 'Options', 'Options under groups.',
-															constants.ELEMENTTYPE.LIST, {
-																itemTemplate: [
-																	createElement('id', 'Result of Selection',
-																		'This is what is sent back to the processor as the value of this field',
-																		constants.ELEMENTTYPE.INPUT),
-																	createElement('displayLabel', 'Label displayed to user', '',
-																		constants.ELEMENTTYPE.INPUT),
-																	createElement('elements', 'Properties to add', '', constants.ELEMENTTYPE.LIST, {
-																		itemTemplate: {
-																			template_ref: elementTag,
-																			extension: [
-																				createElement('validators', 'Validators', '', constants.ELEMENTTYPE.LIST, {
-																					itemTemplate: {
-																						template_ref: validatorTag
-																					}
-																				}),
-																				createElement('asyncValidators', 'Asynchronous Validators', '', constants.ELEMENTTYPE.LIST, {
-																					itemTemplate: {
-																						template_ref: asyncValidatorTag
-																					}
-																				})
-																			]
-																		}
-																	})
-
-																]
-															})
-													]
-												}, {
-													id: constants.ELEMENTTYPE.LIST,
-													displayLabel: 'List',
-													elements: [
-														createElement('itemTemplate', 'Template', 'Template used to create and edit items in this list',
-															constants.ELEMENTTYPE.LIST, {
-																itemTemplate: {
-																	template_ref: elementTag,
-																	extension: [
-																		createElement('validators', 'Validators', '', constants.ELEMENTTYPE.LIST, {
-																			itemTemplate: {
-																				template_ref: validatorTag
-																			}
-																		}),
-																		createElement('asyncValidators', 'Asynchronous Validators', constants.ELEMENTTYPE.LIST, {
-																			itemTemplate: {
-																				template_ref: asyncValidatorTag
-																			}
-																		})
-																	]
-
-																}
-															}),
-														createElement('options', 'Options', 'Specific options that affects the lists behavior',
-															constants.ELEMENTTYPE.SELECTSET, {
-																path: 'behavior',
-																items: [{
-																	id: 'TAG',
-																	displayLabel: 'Tag Template',
-																	elements: [createElement('dynamo_ref', 'Tag', '', constants.ELEMENTTYPE.INPUT, {
-																		type: constants.INPUTTYPE.TEXT
-																	})]
-																}, {
-																	id: 'REF',
-																	displayLabel: 'Reference a Tag',
-																	elements: [
-																		createElement('description', '', 'The item template with the referenced tag will override the configured template if found.',
-																			constants.ELEMENTTYPE.LABEL),
-																		createElement('template_ref', 'Referenced Tag', '', constants.ELEMENTTYPE.INPUT, {
-																			type: constants.INPUTTYPE.TEXT
-																		})
-																	]
-																}]
-															})
-													]
-												}, {
-													id: constants.ELEMENTTYPE.SECTION,
-													displayLabel: 'Section',
-													elements: [createElement('elements', 'Elements in the section', 'Elements in the section',
-														constants.ELEMENTTYPE.LIST, {
-															itemTemplate: {
-																template_ref: elementTag,
-																extension: [
-																	createElement('validators', 'Validators', '', constants.ELEMENTTYPE.LIST, {
-																		itemTemplate: {
-																			template_ref: validatorTag
-																		}
-																	}),
-																	createElement('asyncValidators', 'Asynchronous Validators', constants.ELEMENTTYPE.LIST, {
-																		itemTemplate: {
-																			template_ref: asyncValidatorTag
-																		}
-																	})
-																]
-															}
-														})]
-												}]
-											}),
-										createElement('name', 'Name',
-											'This is the name processors use when sending requests',
-											constants.ELEMENTTYPE.INPUT),
-										createElement('label', 'Label',
-											'This is the item used to display placeholder text for elements',
-											constants.ELEMENTTYPE.INPUT),
-										createElement('description', 'Description',
-											'Explanation of elements purpose',
-											constants.ELEMENTTYPE.INPUT)
-									], elementTag),
-									relationships: {
-										hasMany: {
-											validator: 'validators',
-											asyncValidator: 'asyncValidators'
-										}
-									}
-								}
-							}
-						},
-						asyncValidators: [],
-						description: 'Used to design/edit processes',
-						validators: []
-					}]
-				}
-			}]
-
-		};
-	}
+			step: '_0Step',
+			processor: '_0Processor',
+			process: '_0Process',
+			asyncValidator: '_0AsyncValidator',
+			element: '_0Element',
+			lib: '_0Lib'
+		},
+		defaultProcessors = require('./default-processors')(constants, systemEntities),
+		defaultLibs = require('./default-libs')(constants),
+		defaultProcesses = require('./default-processes')(constants, systemEntities);
 
 
 
@@ -514,7 +150,7 @@ function init(config) {
 	 */
 	function DynamoStep(opts) {
 		var self = this;
-		if (!opts.processors || !opts.processors.length)
+		if (!opts.processors || !opts.processors.length && opts.mode !== constants.STEPMODE.VIEW)
 			throw new Error('opts.processors must have atleast one processor');
 
 
@@ -527,6 +163,7 @@ function init(config) {
 		this._id = opts._id;
 		this.stepType = opts.stepType;
 		this._save = opts.save;
+		this.mode = opts.mode;
 		var postprocessors = opts.postprocessors || [];
 		var _state = getState.call(this, opts);
 
@@ -644,6 +281,7 @@ function init(config) {
 				var handle = SandBox.require('./processor-sandbox', {
 					locals: {
 						context: _context,
+						systemEntities: systemEntities,
 						constants: constants,
 						entityRepo: this.entityRepo,
 						async: async,
@@ -714,7 +352,8 @@ function init(config) {
 						_id: self._id,
 						processors: processorIds,
 						postprocessors: postprocessorIds,
-						stepType: self.stepType
+						stepType: self.stepType,
+						mode: self.mode,
 					}, state || {}), callback);
 				});
 
@@ -733,44 +372,14 @@ function init(config) {
 	DynamoStep.prototype.describe = function(fn) {
 		this.validate();
 		var self = this,
-			step = _.pickBy(self, notAFunction),
-			_processors = [],
-			_postprocessors = [],
-			sent = false,
-			collected = 0,
-			total = self.processors.length + (self.postprocessors ? self.postprocessors.length : 0),
-			collect = function(dest) {
-				return function(er, p) {
-					if (er) {
-						return sent = true, fn(er);
-					}
-					if (!sent) {
-						collected++;
-						dest.push(p);
-						if (collected == total && !sent) {
-							return step.processors = _processors,
-								step.postprocessors = _postprocessors,
-								sent = true, fn(null, step);
-						}
-					}
-
-				};
-			},
-			i = 0;
+			step = _.pickBy(self, notAFunction);
 		self.state.describe(function(er, res) {
 			if (er) return fn(er);
 
-
-			// 
 			_.assign(step, res);
 
-			for (i = 0; i < self.processors.length; i++) {
-				self.processors[i].describe(collect(_processors));
-			}
+			fn(null, step);
 
-			if (self.postprocessors && self.postprocessors.length)
-				for (i = 0; i < self.postprocessors.length; i++)
-					self.postprocessors[i].describe(collect(_postprocessors));
 		});
 
 	};
@@ -779,6 +388,52 @@ function init(config) {
 		this.validate();
 		this.state.run(context, fn);
 	};
+
+	/**
+	 * Loads these reusable classes during every processor run.
+	 * @param {Object} opts data for the lib
+	 */
+	function DynamoLib(opts) {
+		if (!opts)
+			throw new Error('missing opts to Dynamo Lib');
+
+		if (!opts.uid || /\s+/.exec(opts.uid))
+			throw new Error('a valid key is required by dynamo lib');
+
+		if (!opts.code)
+			throw new Error('code is required by dynamo lib');
+
+		this._id = opts._id;
+		this.code = opts.code;
+		this.uid = opts.uid;
+		this._save = opts.save;
+
+	}
+	/**
+	 * This loads its code into the holder object.
+	 * @param  {Object} holder Placeholder for returned function
+	 * @return {Object}        holder object
+	 */
+	DynamoLib.prototype.load = function(holder) {
+		var self = this;
+		if (holder[this.key])
+			throw new Error('key  ' + this.key + ' already exists');
+
+		return (function() {
+			let exports = {};
+			/* jshint ignore:start */
+			//added extra check to ensure this code never runs in engine context.
+			eval(self.code);
+			/* jshint ignore:end */
+			return holder[self.uid] = exports, holder;
+		})();
+
+	};
+
+	DynamoLib.prototype.save = function(fn) {
+		this._save(this, fn);
+	};
+
 
 
 	/**
@@ -796,14 +451,17 @@ function init(config) {
 		var processors = opts instanceof DynamoProcessor ? [opts] : opts,
 			entityRepo = opts instanceof DynamoProcessor ? args[1] : opts.entityRepo;
 
-		this.run = function(fn) {
+		this.run = function(context, fn) {
+
 			var handle = SandBox.require('./processor-sandbox.js', {
 				locals: {
 					context: {
+						args: context,
 						processors: processors,
 						postprocessors: [],
 						processorsTimeout: 60000
 					},
+					systemEntities: systemEntities,
 					constants: constants,
 					entityRepo: entityRepo,
 					async: async,
@@ -834,11 +492,18 @@ function init(config) {
 		if (!opts.save)
 			throw new Error('Process needs save service for persistence');
 
+		if (opts.fetchProcessor && !opts.entityRepo)
+			throw new Error('Fetch Processor needs the entityRepo to function');
+
 		var currentStep = null;
 		this._id = opts._id;
 		this.description = opts.description;
 		this.title = opts.title;
+		this.version = opts.version;
+		this.fetchProcessor = opts.fetchProcessor;
 		this._save = opts.save;
+		if (opts.uid)
+			this.uid = opts.uid;
 		Object.defineProperties(self, {
 			'steps': {
 				enumerable: false,
@@ -850,6 +515,12 @@ function init(config) {
 				enumerable: false,
 				get: function() {
 					return currentStep;
+				}
+			},
+			'entityRepo': {
+				enumerable: false,
+				get: function() {
+					return opts.entityRepo;
 				}
 			},
 			'store': {
@@ -871,7 +542,7 @@ function init(config) {
 	};
 
 	/**
-	 * Thisi function chooses and runs the current step
+	 * This function chooses and runs the current step
 	 * @param  {Any}   context contains the details of the request in question.
 	 * @param  {Function} fn      callback
 	 * @return {Any}           result passed from processor chain.
@@ -950,25 +621,35 @@ function init(config) {
 		var self = this;
 		var unsaved = _.filter(this.steps, _.isObject);
 		var tasks = [];
-		unsaved.forEach(function(pending) {
-			function s(callback) {
-				pending.save(function(er, result) {
-					callback(er, result);
-				});
-			}
-			tasks.push(s);
+		unsaved.forEach((pending) => {
+			tasks.push(pending.save.bind(pending));
 		});
+
 		async.waterfall([
 			async.parallel.bind(async, tasks),
-			function(ids, callback) {
+			(ids, callback) => {
 				//ids will contain the newly saved ids
+				var fetchProcessorId = null;
 				var mergedIds = _.map(ids, '_id');
-				self._save({
+				callback(null, {
 					title: self.title,
 					description: self.description,
+					uid: self.uid,
 					steps: mergedIds
-				}, callback);
-			}
+				});
+			},
+			(model, callback) => {
+				if (self.fetchProcessor && _.isObject(self.fetchProcessor)) {
+					self.fetchProcessor.save(function(er, obj) {
+						if (er) return fn(er);
+						model.fetchProcessor = obj._id;
+						callback(null, model);
+					});
+					return;
+				}
+				callback(null, model);
+			},
+			self._save
 		], fn);
 	};
 
@@ -977,7 +658,12 @@ function init(config) {
 	 * @param  {Function} fn callback
 	 * @return {Object}      object representing the process.
 	 */
-	DynamoProcess.prototype.describe = function(fn) {
+	DynamoProcess.prototype.describe = function(context, fn) {
+		if (Array.prototype.slice.call(arguments).length == 1) {
+			fn = context;
+			context = null;
+		}
+
 		this.validate();
 		var self = this,
 			proc = _.pickBy(self, notAFunction),
@@ -989,14 +675,22 @@ function init(config) {
 
 			if (self.steps.length == _allSteps.length) {
 				proc.steps = _allSteps;
+				//fetch data if context and fetch processor are defined.
+
+				if (self.fetchProcessor && context) {
+					new DynamoSandbox(self.fetchProcessor, self.entityRepo).run(context, function(er, result) {
+						if (er) return fn(new Error('An error occurred while running fetch processor'));
+
+						return fn(null, proc, result);
+					});
+					return;
+				}
 				return fn(null, proc);
 			}
 		}
 		self.steps.forEach(function(s) {
 			s.describe(collect);
 		});
-		proc.steps = _allSteps;
-		return proc;
 	};
 
 
@@ -1014,8 +708,15 @@ function init(config) {
 
 		this.entitiesRepository = opts.entitiesRepository;
 
+		//there should be a better way to do this but , it works for now so moving on...
+		this.entitiesRepository.processorEntityRepo.saveProcess = DynamoEngine.prototype.saveProcess.bind(this);
+		this.entitiesRepository.processorEntityRepo.getProcess = DynamoEngine.prototype.queryProcess.bind(this);
+		this.entitiesRepository.processorEntityRepo.getLib = DynamoEngine.prototype.queryLib.bind(this);
+
 
 	}
+
+	util.inherits(DynamoEngine, EventEmitter);
 
 	/**
 	 * Initializes the system
@@ -1024,68 +725,128 @@ function init(config) {
 	 */
 	DynamoEngine.prototype.init = function(fn) {
 		var self = this,
-			_processors;
+			_processors, dProcessors = Object.keys(defaultProcessors),
+			dLibs = Object.keys(defaultLibs),
+			dProcesses = Object.keys(defaultProcesses);
+
 		//create all system required configs if they dont exist.
 		async.waterfall([
 			this.entitiesRepository.init.bind(this.entitiesRepository),
 			this.queryProcessor.bind(this, {
-				title: {
-					$in: [elementTypeListProcessorTitle, processorsListProcessorTitle, inputTypeListTitle]
+				uid: {
+					$in: dProcessors
 				}
 			}),
-			function(processors, callback) {
-				if (!processors || !processors.length) {
-					async.waterfall([
-						self.saveProcessor.bind(self, processorListProcessor),
-						function(p, c) {
-							self.saveProcessor(inputElementTypeListProcessor, function(er, proc) {
-								if (er) return callback(er);
-								callback(null, {
-									processorList: p._id,
-									elementList: proc._id
-								});
-							});
-						},
+			(processors, callback) => {
+				if (!processors || processors.length !== dProcessors.length) {
 
-					], callback);
+					var uidsNotIn = _.differenceWith(dProcessors, processors, function(uid, obj) {
+							return uid == obj.uid;
+						}),
+						tasks = [];
+					for (var i = 0; i < uidsNotIn.length; i++)
+						tasks.push(self.saveProcessor.bind(self, defaultProcessors[uidsNotIn[i]], {
+							retrieve: true
+						}));
+
+					async.parallel(tasks, function(er, ps) {
+						if (er) return callback(er);
+
+						ps.forEach(x => self.emit('default-processor-created', _.cloneDeep(x)));
+						callback(null, ps);
+					});
 					return;
 				}
 				callback(null, processors);
 			},
-			function(processors, callback) {
+			(processors, callback) => {
 				_processors = processors;
 				callback();
 			},
-			this.queryProcess.bind(this, {
-				title: createProcessProcessTitle
-			}, {
-				one: true
+			this.queryLib.bind(this, {
+				uid: {
+					$in: dLibs
+				}
 			}),
-			function(exists, callback) {
+			(libs, callback) => {
+				//console.log(libs);
+				if (!libs || libs.length !== dLibs.length) {
+					//console.log('here');
+					var uidsNotIn = _.differenceWith(dLibs, libs, function(uid, obj) {
+							return uid == obj.uid;
+						}),
+						tasks = [];
+					//console.log(uidsNotIn);
+					//console.log(defaultLibs[uidsNotIn[0]]);
+					for (var i = 0; i < uidsNotIn.length; i++)
+						tasks.push(self.saveLib.bind(self, defaultLibs[uidsNotIn[i]], {
+							retrieve: true
+						}));
 
-				if (!exists) {
+					async.parallel(tasks, function(er, ps) {
+						if (er) return callback(er);
+						//console.log(ps);
+						callback();
+					});
+					return;
+				}
+				callback();
+			},
+			this.queryProcess.bind(this, {
+				uid: {
+					$in: dProcesses
+				}
+			}),
+			(exists, callback) => {
+
+				if (!exists || exists.length !== dProcesses.length) {
 					//it does not exist
-					var default_process = getProcessDefinition(_processors.elementList, _processors.processorList);
+					var tasks = [],
+						cb = (data, callback) => {
 
-					self.saveProcess(default_process, {
-						retrieve: true,
-						full: true
-					}, callback);
+							self.saveProcess(data, {
+								retrieve: true,
+								full: true
+							}, function(er, proc) {
+								if (er) return fn(er);
+
+								self.emit('default-process-created', _.cloneDeep(proc));
+								callback(null, proc);
+							});
+						},
+						doesntExist = _.differenceWith(dProcesses, exists, (uid, obj) => {
+							return uid == obj.uid;
+						}),
+						args = _processors.reduce((x, a) => {
+							x[a.uid] = a._id;
+							return x;
+						}, {});
+					for (var i = 0; i < doesntExist.length; i++)
+						tasks.push(cb.bind(self, defaultProcesses[doesntExist[i]](args)));
+
+					async.parallel(tasks, callback);
+
 					return;
 				}
 				callback();
 			}
-		], function(er, result) {
-
+		], (er, result) => {
 
 			if (er) return fn(er);
+
 			fn();
 		});
 	};
 
-	DynamoEngine.prototype.runProcessor = function(processor, fn) {
+
+	DynamoEngine.prototype.setUserManager = function(manager) {
+
+		this.entitiesRepository.setUserManager(manager);
+	};
+
+	DynamoEngine.prototype.runProcessor = function(context, processor, fn) {
 		var sandbox = new DynamoSandbox(processor, this.entitiesRepository.processorEntityRepo);
-		sandbox.run(fn);
+		sandbox.run(context, fn);
 	};
 
 	/**
@@ -1328,6 +1089,8 @@ function init(config) {
 		this.code = opts.code;
 		this.title = opts.title;
 		this._save = opts.save;
+		this.uid = opts.uid;
+
 		/**
 		 *  User customisable code ran in sandbox.
 		 * @param  {Any}   result  passed in result for previous processor.
@@ -1349,8 +1112,9 @@ function init(config) {
 				/* jshint ignore:end */
 			} catch (e) {
 				// statements
-				console.log(e);
-				callback(e);
+				//console.log(e);
+				console.log('caught by processor');
+				//callback(e);
 			}
 
 		};
@@ -1382,12 +1146,16 @@ function init(config) {
 	 * @return {Any}      saved object
 	 */
 	DynamoProcessor.prototype.save = function(fn) {
-
-		this._save({
+		var model = {
 			_id: this._id,
 			code: this.code,
-			title: this.title
-		}, fn);
+			title: this.title,
+		};
+		if (this.uid) {
+			model.uid = this.uid;
+		}
+
+		this._save(model, fn);
 	};
 
 	/**
@@ -1424,6 +1192,7 @@ function init(config) {
 	 * @param {Object} opts Class constructor parameters , includes ext,folder,delimiter,store...etc
 	 */
 	function EntityRepo(opts) {
+
 		var self = this;
 		opts = opts || {};
 		this.models = {};
@@ -1476,12 +1245,17 @@ function init(config) {
 					});
 				}
 			};
-
 		}());
 		this.processorEntityRepo = {
 			get: self.queryEntity.bind(self),
+			count: self.countEntity.bind(self),
 			update: self.updateEntity.bind(self),
-			create: self.createEntity.bind(self)
+			create: self.createEntity.bind(self),
+			createConfig: self.createConfig.bind(self),
+			updateConfig: self.updateConfig.bind(self),
+			userManager: function() {
+				return self.userManager;
+			}
 		};
 
 		this.transformers[systemEntities.process] = function(item, fn) {
@@ -1505,8 +1279,10 @@ function init(config) {
 						if (item.steps.length > 1) {
 							item.store = self.store;
 						}
+						if (item.fetchProcessor) {
+							item.entityRepo = self.processorEntityRepo;
+						}
 						var itasks = [];
-						//
 						item.steps.forEach(function(step) {
 							itasks.push(self.transformers[systemEntities.step].bind(self, step));
 						});
@@ -1514,6 +1290,15 @@ function init(config) {
 							if (er) return callback(er);
 
 							item.steps = steps;
+
+							if (item.fetchProcessor) {
+								self.transformers[systemEntities.processor](item.fetchProcessor, function(er, fp) {
+									if (er) return callback(er);
+									item.fetchProcessor = fp;
+									callback(null, new DynamoProcess(item));
+								});
+								return;
+							}
 							callback(null, new DynamoProcess(item));
 						});
 					});
@@ -1522,6 +1307,7 @@ function init(config) {
 			}
 			return fn(null, item);
 		};
+
 		this.transformers[systemEntities.step] = function(item, fn) {
 			if (!(item instanceof DynamoStep)) {
 				var tasks = [],
@@ -1535,7 +1321,7 @@ function init(config) {
 						one: true
 					}, fn);
 				} else {
-					//console.trace('here!!');
+
 					if (!item.save)
 						item.save = self.getSaveService(systemEntities.step);
 
@@ -1584,47 +1370,10 @@ function init(config) {
 			return fn(null, item);
 		};
 		this.transformers[systemEntities.asyncValidator] = function(item, fn) {
-
-
-			if (!(item instanceof DynamoAsyncValidator)) {
-
-				if (typeof item == "string" || item instanceof ObjectID) {
-					return self.queryEntity(systemEntities.asyncValidator, {
-						_id: item
-					}, {
-						full: true,
-						one: true
-					}, fn);
-
-				}
-
-				if (!item.save)
-					item.save = self.getSaveService(systemEntities.asyncValidator);
-
-				return fn(null, new DynamoAsyncValidator(item));
-			}
-			return fn(null, item);
+			basicTransformer(item, DynamoAsyncValidator, systemEntities.asyncValidator, fn);
 		};
 		this.transformers[systemEntities.processor] = function(item, fn) {
-
-			if (!(item instanceof DynamoProcessor)) {
-
-				if (typeof item == "string" || item instanceof ObjectID) {
-					//
-					return self.queryEntity(systemEntities.processor, {
-						_id: item
-					}, {
-						full: true,
-						one: true
-					}, fn);
-				}
-
-				if (!item.save)
-					item.save = self.getSaveService(systemEntities.processor);
-
-				return fn(null, new DynamoProcessor(item));
-			}
-			return fn(null, item);
+			basicTransformer(item, DynamoProcessor, systemEntities.processor, fn);
 		};
 		this.transformers[systemEntities.element] = function(item, fn) {
 			if (!(item instanceof DynamoElement)) {
@@ -1669,17 +1418,45 @@ function init(config) {
 			}
 			return fn(null, form);
 		};
+		this.transformers[systemEntities.lib] = function(item, fn) {
+			basicTransformer(item, DynamoLib, systemEntities.lib, fn);
+		};
+
+		function basicTransformer(item, clazz, entName, fn) {
+			if (!(item instanceof clazz)) {
+
+				if (typeof item == "string" || item instanceof ObjectID) {
+					//
+					return self.queryEntity(entName, {
+						_id: item
+					}, {
+						full: true,
+						one: true
+					}, fn);
+				}
+
+				if (!item.save)
+					item.save = self.getSaveService(entName);
+
+				return fn(null, new clazz(item));
+			}
+			return fn(null, item);
+		}
 
 	}
 
+	EntityRepo.prototype.setUserManager = function(manager) {
+		this.userManager = manager;
+	};
 	EntityRepo.prototype.init = function(callback) {
 		var self = this;
 
 		async.parallel([
-			fs.writeFile.bind(this, self.getPath(systemEntities.process), '{"title":{"type":"String","required":true},"description":{"type":"String","required":true},"steps":[{"type":"ObjectId","ref":"' + systemEntities.step + '"}]}'),
-			fs.writeFile.bind(this, self.getPath(systemEntities.step), '{"processors":[{"type":"ObjectId","ref":"' + systemEntities.processor + '"}],"postprocessors":[{"type":"ObjectId","ref":"' + systemEntities.processor + '"}],"stepType":{"type":"String","required":true},"form":{"elements":[{"type":"ObjectId","ref":"' + systemEntities.element + '"}]}}'),
-			fs.writeFile.bind(this, self.getPath(systemEntities.processor), '{"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
-			fs.writeFile.bind(this, self.getPath(systemEntities.asyncValidator), '{"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
+			fs.writeFile.bind(this, self.getPath(systemEntities.process), '{"fetchProcessor":{"type":"ObjectId","ref":"' + systemEntities.processor + '"},"uid":{"type":"String","unique":true,"sparse":true},"title":{"type":"String","required":true},"description":{"type":"String","required":true},"steps":[{"type":"ObjectId","ref":"' + systemEntities.step + '"}]}'),
+			fs.writeFile.bind(this, self.getPath(systemEntities.step), '{"mode":{"type":"String"},"processors":[{"type":"ObjectId","ref":"' + systemEntities.processor + '"}],"postprocessors":[{"type":"ObjectId","ref":"' + systemEntities.processor + '"}],"stepType":{"type":"String","required":true},"form":{"elements":[{"type":"ObjectId","ref":"' + systemEntities.element + '"}]}}'),
+			fs.writeFile.bind(this, self.getPath(systemEntities.processor), '{"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
+			fs.writeFile.bind(this, self.getPath(systemEntities.lib), '{"uid":{"type":"String","unique":true,"required":true},"code":{"type":"String","required":true}}'),
+			fs.writeFile.bind(this, self.getPath(systemEntities.asyncValidator), '{"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
 			fs.writeFile.bind(this, self.getPath(systemEntities.element), '{"name":{"type":"String","required":true},"label":{"type":"String","required":true},"description":{"type":"String"},"elementType":{"type":"String","enum":[' + (_.map(Object.keys(constants.ELEMENTTYPE), function(x) {
 				return '"' + x + '"';
 			}).join(',')) + ']},"asyncValidators":[{"type":"ObjectId","ref":"' + systemEntities.asyncValidator + '"}],"validators":[{"validatorType":{"type":"String","enum":[' + (_.map(Object.keys(constants.VALIDATORTYPE), function(x) {
@@ -1770,7 +1547,6 @@ function init(config) {
 			fn = options;
 			options = null;
 		}
-		//console.trace('query entity!!!');
 
 		function populate(arr, result, parent) {
 			arr.forEach(function(item) {
@@ -1872,9 +1648,7 @@ function init(config) {
 				merged.save(fn);
 			});
 		} else {
-			//
-			//
-			//
+
 			this.models[name].update({
 				_id: data._id
 			}, data, function(er, stat) {
@@ -1890,6 +1664,10 @@ function init(config) {
 	EntityRepo.prototype.createEntity = function(name, data, fn) {
 		var item = new(this.models[name])(data);
 		item.save(fn);
+	};
+
+	EntityRepo.prototype.countEntity = function(name, filter, fn) {
+		this.models[name].count(filter, fn);
 	};
 
 
@@ -2051,6 +1829,7 @@ function init(config) {
 		Engine: DynamoEngine,
 		Form: DynamoForm,
 		Process: DynamoProcess,
+		Lib: DynamoLib,
 		Step: DynamoStep,
 		Processor: DynamoProcessor,
 		constants: constants,

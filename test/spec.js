@@ -25,6 +25,12 @@ function clearCollection(name, fn) {
 	delete mongoose.modelSchemas[name];
 	delete mongoose.models[name];
 	mongoose.connection.db.dropCollection(name.toLowerCase() + 's', function(er) {
+		if (er) {
+			mongoose.connection.db.dropCollection(name.toLowerCase() + 'es', function() {
+				fn();
+			});
+			return;
+		}
 		fn();
 	});
 }
@@ -192,7 +198,7 @@ describe('Step spec', function() {
 		done();
 	});
 
-	it('client step can describe its form and processors', function(done) {
+	it('client step can describe its form ', function(done) {
 		var formDescription = {
 				form: 'this is a form'
 			},
@@ -220,10 +226,6 @@ describe('Step spec', function() {
 			assert.isNull(er);
 			assert.isDefined(description);
 			assert.equal(description.form, formDescription);
-			assert.deepEqual(description.postprocessors, [postprocessorDescription]);
-			assert.deepEqual(description.processors, [processorDescription]);
-			assert.equal(fixture.opts.processors[0].describe.callCount, 1);
-			assert.equal(fixture.opts.postprocessors[0].describe.callCount, 1);
 			done();
 		});
 	});
@@ -458,6 +460,23 @@ describe('Entity spec', function() {
 		});
 	});
 
+	it('can count entity instances', function(done) {
+		var repo = new app.EntityRepo(),
+			fixture = this;
+		repo.createConfig(this.modelName, this.model, function() {
+			repo.createEntity(fixture.modelName, fixture.instance, function(er) {
+				assert.isNull(er);
+				repo.countEntity(fixture.modelName, {}, function(er, count) {
+					assert.isNull(er);
+					assert.equal(count, 1);
+					done();
+				});
+
+
+			});
+		});
+	});
+
 	it('can query existing instances', function(done) {
 		var repo = new app.EntityRepo(),
 			fixture = this;
@@ -647,7 +666,7 @@ describe('Integration', function() {
 			Object.keys(app.systemEntities).forEach(function(e) {
 				e = app.systemEntities[e];
 				var name = e != app.systemEntities.process ? (e.toLowerCase() + 's') : e.toLowerCase() + 'es';
-				//console.log('deleting collection ..' + name);
+
 				var collection = mongoose.connection.db.collection(name);
 				tasks.push(collection.deleteMany.bind(collection, {}));
 			});
@@ -690,7 +709,6 @@ describe('Integration', function() {
 						}, callback);
 					}
 				], function(er, result) {
-
 					assert.isNull(er);
 					assert.isDefined(result);
 					assert.equal(result.length, 1);
@@ -713,8 +731,6 @@ describe('Integration', function() {
 					assert.equal(x.title, fixture.processInstance.title);
 					assert.equal(x.description, fixture.processInstance.description);
 					assert.equal(x.steps.length, 1);
-					assert.isDefined(x.steps[0].processors);
-					assert.equal(x.steps[0].processors.length, 2);
 					assert.isDefined(x.steps[0].form);
 					assert.isDefined(x.steps[0].form.elements);
 					assert.equal(x.steps[0].form.elements.length, 1);
@@ -822,18 +838,83 @@ describe('Integration', function() {
 
 
 		});
+		it('process can call fetchProcessor', function(done) {
+			var fixture = this,
+				d = '{"indomie":"Hungry man size"}';
+			fixture.processInstance.steps.push(fixture.stepInstance);
+			fixture.processInstance.fetchProcessor = {
+				title: 'Fetch Noodles',
+				code: 'console.log("\tfetching noodles "+this.args.message); callback(null,' + d + ');'
+			};
+			fixture.engine.saveProcess(fixture.processInstance, {
+				retrieve: true
+			}, function(er, proc) {
+				assert.isObject(proc);
+				assert.isNull(er);
+				proc.describe({
+					message: 'shap shap'
+				}, function(er, description, data) {
+					assert.isNull(er);
+					assert.isNotNull(description);
+					assert.deepEqual(data, JSON.parse(d));
+					done();
+				});
+			});
+		});
+
 		it('engine can run standalone processor', function(done) {
 			var fixture = this;
 			fixture.engine.saveProcessor({
 				title: 'Test Sample',
-				code: 'console.log(\'\tentityRepo is defined \'+(typeof this.entityRepo.get)); console.log(\'\tran standalone processor!!!!\'); callback(null,{test:true});'
+				code: ' console.log(\'\tentityRepo is defined \'+(typeof this.entityRepo.get)); console.log(\'\tran standalone processor!!!!\'); callback(null,{test:true});'
 			}, {
 				retrieve: true
 			}, function(er, proc) {
-				fixture.engine.runProcessor(proc, function(er) {
+				fixture.engine.runProcessor({}, proc, function(er) {
 					assert.isNull(er);
 					done();
 				});
+			});
+		});
+
+
+		it('processor sandbox context loads libs', function(done) {
+			var fixture = this;
+			fixture.engine.init(function(er) {
+				assert.isUndefined(er);
+				fixture.engine.saveLib({
+					code: 'exports=function(x){return x * x;}',
+					uid: 'multiply'
+				}, function(er) {
+					assert.isNull(er);
+					fixture.engine.saveProcessor({
+						title: 'Test Sample',
+						code: 'callback(null,this.libs.multiply(2));'
+					}, {
+						retrieve: true
+					}, function(er, proc) {
+						fixture.engine.runProcessor({}, proc, function(er, ans) {
+							assert.isNull(er);
+							assert.equal(ans, 4);
+							done();
+						});
+					});
+				});
+
+			});
+
+		});
+		it('init fires default-process event', function(done) {
+			var fixture = this,
+				flag = false;
+			fixture.engine.on('default-process-created', function(proc) {
+				flag = true;
+				assert.isObject(proc);
+			});
+			fixture.engine.init(function(er) {
+				assert.isUndefined(er);
+				assert.isTrue(flag);
+				done();
 			});
 		});
 		it('processor can create an entity', function(done) {
