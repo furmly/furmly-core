@@ -10,7 +10,7 @@ module.exports = function(constants) {
 		}
 		if (!this.libs) {
 			this.libs = {};
-			this.libs = createLib.bind(this);
+			this.createLib = createLib.bind(this);
 		}
 
 		this.libs[uid] = {
@@ -39,15 +39,18 @@ module.exports = function(constants) {
 			}
 			exports = convertFilter;
 		}).getFunctionBody(), constants.UIDS.LIB.CONVERT_FILTER)
-		.createLib(((prop, list) => {
-			if (Array.prototype.slice.call(arguments) == 1) {
-				list = prop;
-				prop = null;
+		.createLib((() => {
+			function convert(prop, list) {
+				if (Array.prototype.slice.call(arguments) == 1) {
+					list = prop;
+					prop = null;
+				}
+				return list.map(x => ({
+					displayLabel: (prop ? x[prop] : x),
+					_id: x._id
+				}));
 			}
-			return list.map(x => ({
-				displayLabel: (prop ? x[prop] : x),
-				_id: x._id
-			}));
+			exports = convert;
 		}).getFunctionBody(), constants.UIDS.LIB.CONVERT_TO_SELECTABLE_LIST)
 		.libs;
 };
