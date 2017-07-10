@@ -111,8 +111,8 @@ function init(config) {
 			NAVIGATIONTYPE: new Constant('CLIENT', 'DYNAMO'),
 			IMAGETYPE: new Constant('REL', 'DATA'),
 			UIDS: {
-				LIB: new Constant(['CONVERT_FILTER', 'convertFilter'],['CONVERT_TO_SELECTABLE_LIST','convertToSelectableList']),
-				PROCESSOR: new Constant('LIST_ENTITY_TYPES','LIST_ENTITY_GENERIC', 'LIST_ASYNC_VALIDATORS', 'LIST_PROCESSES', 'LIST_PROCESSORS', 'LIST_INPUT_TYPES', 'LIST_ELEMENT_TYPES', 'FETCH_PROCESS', 'CREATE_PROCESS', 'CREATE_ENTITY', 'UPDATE_ENTITY', 'FETCH_ENTITY'),
+				LIB: new Constant(['CONVERT_FILTER', 'convertFilter'], ['CONVERT_TO_SELECTABLE_LIST', 'convertToSelectableList']),
+				PROCESSOR: new Constant('LIST_ENTITY_TYPES', 'LIST_ENTITY_GENERIC', 'LIST_ASYNC_VALIDATORS', 'LIST_PROCESSES', 'LIST_PROCESSORS', 'LIST_INPUT_TYPES', 'LIST_ELEMENT_TYPES', 'FETCH_PROCESS', 'CREATE_PROCESS', 'CREATE_ENTITY', 'UPDATE_ENTITY', 'FETCH_ENTITY'),
 				PROCESS: new Constant('CREATE_PROCESS', 'MANAGE_PROCESS', 'MANAGE_PROCESSOR', 'MANAGE_LIBS')
 			},
 			ENTITYTYPE: new Constant(["STRING", "String"], ["NUMBER", "Number"], ["DATE", "Date"], ["BOOLEAN", "Boolean"]),
@@ -643,6 +643,7 @@ function init(config) {
 				var fetchProcessorId = null;
 				var mergedIds = _.map(ids, '_id');
 				callback(null, {
+					_id: self._id,
 					title: self.title,
 					description: self.description,
 					uid: self.uid,
@@ -780,15 +781,14 @@ function init(config) {
 				}
 			}),
 			(libs, callback) => {
-				//console.log(libs);
+
 				if (!libs || libs.length !== dLibs.length) {
-					//console.log('here');
+
 					var uidsNotIn = _.differenceWith(dLibs, libs, function(uid, obj) {
 							return uid == obj.uid;
 						}),
 						tasks = [];
-					//console.log(uidsNotIn);
-					//console.log(defaultLibs[uidsNotIn[0]]);
+
 					for (var i = 0; i < uidsNotIn.length; i++)
 						tasks.push(self.saveLib.bind(self, defaultLibs[uidsNotIn[i]], {
 							retrieve: true
@@ -796,7 +796,7 @@ function init(config) {
 
 					async.parallel(tasks, function(er, ps) {
 						if (er) return callback(er);
-						//console.log(ps);
+
 						callback();
 					});
 					return;
@@ -1125,8 +1125,7 @@ function init(config) {
 				/* jshint ignore:end */
 			} catch (e) {
 				// statements
-				//console.log(e);
-				console.log('caught by processor');
+				console.log('error caught by processor , description: \n' + e.message);
 				callback(e);
 			}
 
@@ -1496,9 +1495,9 @@ function init(config) {
 				});
 			}
 
-			if (!info._id)
+			if (!info._id) {
 				self.createEntity(entName, info, transformResult);
-			else
+			} else
 				self.updateEntity(entName, info, transformResult);
 		};
 	};
@@ -1604,7 +1603,6 @@ function init(config) {
 		var query = this.models[name].find(filter);
 		if ((options && options.full) && this.refs[name] && this.refs[name].length !== 0) {
 			var populateString = populate(self.refs[name], []);
-			//console.log(populateString);
 			populateString.forEach(function(string) {
 				if ((string.match(/\./ig) || []).length >= 1) {
 					var cur = '',
@@ -1634,17 +1632,14 @@ function init(config) {
 						};
 					string.split('.').forEach(iterator);
 					_.reduce(cur.split('|'), reducer, m);
-					//console.log(m);
 					query.populate(m);
 					return;
 				}
-				//console.log(string);
 				query.populate(string);
 			});
 		}
 		if (options) {
 			if (options.sort) {
-				console.log(options.sort);
 				query = query.sort(options.sort);
 			}
 			if (options.limit) {

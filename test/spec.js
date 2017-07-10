@@ -554,6 +554,7 @@ describe('Entity spec', function() {
 					var id = instance[0]._id;
 					repo.updateEntity(fixture.modelName, instance[0], function(er) {
 						assert.isNull(er);
+
 						repo.queryEntity(fixture.modelName, {
 							firstName: 'Uche'
 						}, function(er, insts) {
@@ -590,7 +591,11 @@ describe('Entity spec', function() {
 											}, function(er, dongoClan) {
 												assert.isNull(er);
 												assert.equal(dongoClan[0].address, 'Surulere');
-												done();
+												repo.queryEntity(fixture.modelName, {}, function(er, items) {
+													assert.equal(items.length, 2);
+													done();
+												});
+
 											});
 										});
 
