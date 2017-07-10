@@ -23,22 +23,34 @@ module.exports = function(constants, systemEntities) {
 	}
 
 	var createProcessCode = (() => {
-		this.entityRepo.saveProcess(this.args, callback);
+		this.entityRepo.saveProcess(this.args.process, callback);
 	}).getFunctionBody();
 
 	var fetchProcessCode = (() => {
-		this.entityRepo.getProcess({
+		this.entityRepo.get(this.systemEntities.process, {
 			$or: [{
 				_id: this.args._id
 			}, {
 				uid: this.args._id
 			}]
-		}, callback);
+		}, {
+			full: true,
+			noTransformaton: true
+		}, function(er, proc) {
+			if (er) return callback(er);
+
+			callback(null, proc.length ? {
+				process: proc[0]
+			} : null);
+		});
 	}).getFunctionBody();
 
 	var listEntityTemplate = (() => {
-		var options, query = {},
-			args = this.args;
+		var options,
+			query = {},
+			self = this,
+			args = this.args,
+			entity = $entity;
 		if (this.args && this.args.count) {
 
 			options = {
@@ -49,12 +61,13 @@ module.exports = function(constants, systemEntities) {
 			};
 			if (this.args._id)
 				if (this.args.prev) {
-					query.$lt = {
-						_id: this.args._id
+					query._id = {
+						$lt: this.args._id
 					};
+					options.sort._id = -1;
 				} else {
-					query.$gt = {
-						_id: this.args._id
+					query._id = {
+						$gt: this.args._id
 					};
 				}
 
@@ -62,9 +75,7 @@ module.exports = function(constants, systemEntities) {
 				_.assign(query, this.libs.convertFilter(this.args.query));
 
 		}
-		console.log('querying...');
-		console.log(query);
-		this.entityRepo.get($entity, query, options, function(er, x) {
+		this.entityRepo.get(entity, query, options, function(er, x) {
 			if (er) return callback(er);
 			var result = !args.full ? x.map(function(z) {
 				return {
@@ -74,13 +85,17 @@ module.exports = function(constants, systemEntities) {
 			}) : x;
 			if (!args.count)
 				callback(null, result);
-			else
-				this.entityRepo.count($entity, query, function(er, count) {
+			else {
+				if (query._id)
+					delete query._id;
+				self.entityRepo.count(entity, query, function(er, count) {
 					callback(er, {
 						items: result,
 						total: count
 					});
 				});
+			}
+
 
 
 		});
@@ -99,6 +114,13 @@ module.exports = function(constants, systemEntities) {
 	var updateEntityCode = (() => {
 		this.entityRepo.update(this.args.entityName, this.args.entity, callback);
 	}).getFunctionBody();
+	
+	var listEntityTypeCode = (() => {
+		this.entityRepo.listEntityTypes(function(er, types) {
+			if (er) return callback(er);
+			callback(null, this.libs.convertToSelectableList(types));
+		}.bind(this));
+	}).getFunctionBody();
 
 	return createProcessor.call({}, 'Lists Entities per query', listEntityTemplate.replace('$entity', 'args.entityName').replace('$label', '[args.entityLabel]'), constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC)
 		.createProcessor('Lists processors', listEntityTemplate.replace('$entity', `'${systemEntities.processor}'`).replace('$label', '.title'), constants.UIDS.PROCESSOR.LIST_PROCESSORS)
@@ -110,6 +132,7 @@ module.exports = function(constants, systemEntities) {
 		.createProcessor('Create Process', createProcessCode, constants.UIDS.PROCESSOR.CREATE_PROCESS)
 		.createProcessor('Create an Entity', createEntityCode, constants.UIDS.PROCESSOR.CREATE_ENTITY)
 		.createProcessor('Update an Entity', updateEntityCode, constants.UIDS.PROCESSOR.UPDATE_ENTITY)
+		.createProcessor('List entity Types', listEntityTypeCode, constants.UIDS.PROCESSOR.LIST_ENTITY_TYPES)
 		.createProcessor('Fetch a single Entity', fetchEntityTemplate.replace('$entity', 'this.args.entityName'), constants.UIDS.PROCESSOR.FETCH_ENTITY)
 		.processors;
 

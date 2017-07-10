@@ -28,6 +28,14 @@ module.exports = function(constants, systemEntities) {
 		};
 	};
 
+	function createId() {
+		return createHidden('_id');
+	}
+
+	function createHidden(x) {
+		return createElement(x, '', '', constants.ELEMENTTYPE.HIDDEN);
+	}
+
 
 	/**
 	 * Returns process definition for creating processes
@@ -78,6 +86,8 @@ module.exports = function(constants, systemEntities) {
 							main: {
 								name: 'process',
 								elements: [
+									createId(),
+									createHidden('uid'),
 									createElement('title', 'Title of Process', 'This is what will be visible to users', constants.ELEMENTTYPE.INPUT, {
 										type: constants.INPUTTYPE.TEXT
 									}),
@@ -101,6 +111,16 @@ module.exports = function(constants, systemEntities) {
 							elements: {
 								step: {
 									elements: [
+										createId(),
+										createElement('mode', 'Type of Step', '', constants.ELEMENTTYPE.SELECTSET, {
+											items: [{
+												id: constants.STEPMODE.PROCESS,
+												displayLabel: 'Default'
+											}, {
+												id: constants.STEPMODE.VIEW,
+												displayLabel: 'View'
+											}]
+										}),
 										createElement('description', '',
 											'A step is a single form in a process. Processes can have any number of steps.',
 											constants.ELEMENTTYPE.LABEL),
@@ -134,6 +154,8 @@ module.exports = function(constants, systemEntities) {
 								},
 								processor: {
 									elements: [
+										createId(),
+										createHidden('uid'),
 										createElement('title', 'Title',
 											'Title',
 											constants.ELEMENTTYPE.INPUT),
@@ -173,6 +195,8 @@ module.exports = function(constants, systemEntities) {
 								},
 								asyncValidator: {
 									elements: tag([
+										createId(),
+										createHidden('uid'),
 										createElement('title', 'Title',
 											'Title',
 											constants.ELEMENTTYPE.INPUT),
@@ -188,6 +212,10 @@ module.exports = function(constants, systemEntities) {
 											constants.ELEMENTTYPE.SELECTSET, {
 												path: 'args',
 												items: [{
+													id: constants.ELEMENTTYPE.HIDDEN,
+													displayLabel: 'Hidden Field (i.e id)',
+													elements: []
+												}, {
 													id: constants.ELEMENTTYPE.NAV,
 													displayLabel: 'Navigation',
 													elements: [
@@ -484,9 +512,12 @@ module.exports = function(constants, systemEntities) {
 	}
 
 	function manageProcessorsDefinition(opts) {
-		var template = [createElement('title', 'Enter Title', 'title of the processor', constants.ELEMENTTYPE.INPUT, {
-			type: constants.INPUTTYPE.TEXT
-		}), createElement('code', 'Enter Code', '', constants.ELEMENTTYPE.SCRIPT)];
+		var template = [
+			createId(),
+			createElement('title', 'Enter Title', 'title of the processor', constants.ELEMENTTYPE.INPUT, {
+				type: constants.INPUTTYPE.TEXT
+			}), createElement('code', 'Enter Code', '', constants.ELEMENTTYPE.SCRIPT)
+		];
 
 		return {
 			title: 'Manage Processors',
@@ -521,9 +552,12 @@ module.exports = function(constants, systemEntities) {
 	}
 
 	function manageLibsDefinition(opts) {
-		var template = [createElement('uid', 'Enter Title (no space)', 'title of the lib', constants.ELEMENTTYPE.INPUT, {
-			type: constants.INPUTTYPE.TEXT
-		}), createElement('code', 'Enter Code', '', constants.ELEMENTTYPE.SCRIPT)];
+		var template = [
+			createId(),
+			createElement('uid', 'Enter Title (no space)', 'title of the lib', constants.ELEMENTTYPE.INPUT, {
+				type: constants.INPUTTYPE.TEXT
+			}), createElement('code', 'Enter Code', '', constants.ELEMENTTYPE.SCRIPT)
+		];
 
 		return {
 			title: 'Manage Libraries',

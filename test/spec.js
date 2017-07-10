@@ -917,6 +917,16 @@ describe('Integration', function() {
 				done();
 			});
 		});
+		it('process can be saved and retrieved', function(done) {
+			var fixture = this;
+			fixture.engine.saveProcess(JSON.parse(fs.readFileSync('./test/test.json')), {
+				retrieve: true
+			}, function(er, proc) {
+				assert.isNull(er);
+				assert.isObject(proc);
+				done();
+			});
+		});
 		it('processor can create an entity', function(done) {
 			var fixture = this;
 			fixture.stepInstance.processors[0].code = 'console.log(\'\tCreating new user...\'); this.entityRepo.create(\'User\',{firstName:\'Chidi\'},function(er,r){if(!er)console.log(\'\tuser created\'); callback(er);});';

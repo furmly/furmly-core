@@ -35,6 +35,7 @@ module.exports = {
 			}
 
 			async.waterfall(tasks, function(er, result) {
+
 				if (er) return fn(er);
 				if (context.postprocessors && context.postprocessors.length) {
 					var postTasks = [];

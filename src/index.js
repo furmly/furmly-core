@@ -7,10 +7,12 @@ var assert = require('assert'),
 	util = require('util'),
 	_ = require('lodash'),
 	vm = require('vm'),
+	path = require('path'),
 	fs = require('fs'),
 	generator = require('mongoose-gen'),
 	glob = require('glob'),
 	path = require('path'),
+	sandboxCode = fs.readFileSync(__dirname + path.sep + 'processor-sandbox.js'),
 	mongoose = require('mongoose');
 const {
 	NodeVM
@@ -101,7 +103,7 @@ function init(config) {
 			PROCESSORTYPE: new Constant('SERVER', 'CLIENT'),
 			GRIDMODE: new Constant('DEFAULT', 'CRUD'),
 			GRIDCOMMANDTYPE: new Constant('PROCESSOR', 'NAV'),
-			STEPMODE: new Constant('VIEW'),
+			STEPMODE: new Constant('VIEW', 'PROCESS'),
 			STEPTYPE: new Constant('OFFLINE', 'CLIENT'),
 			ELEMENT_SELECT_SOURCETYPE: new Constant('PROCESSOR', 'FORM'),
 			VALIDATORTYPE: new Constant('REQUIRED', 'MAXLENGTH', 'MINLENGTH', 'REGEX'),
@@ -109,12 +111,12 @@ function init(config) {
 			NAVIGATIONTYPE: new Constant('CLIENT', 'DYNAMO'),
 			IMAGETYPE: new Constant('REL', 'DATA'),
 			UIDS: {
-				LIB: new Constant(['CONVERT_FILTER', 'convertFilter']),
-				PROCESSOR: new Constant('LIST_ENTITY_GENERIC', 'LIST_ASYNC_VALIDATORS', 'LIST_PROCESSES', 'LIST_PROCESSORS', 'LIST_INPUT_TYPES', 'LIST_ELEMENT_TYPES', 'FETCH_PROCESS', 'CREATE_PROCESS', 'CREATE_ENTITY', 'UPDATE_ENTITY', 'FETCH_ENTITY'),
+				LIB: new Constant(['CONVERT_FILTER', 'convertFilter'],['CONVERT_TO_SELECTABLE_LIST','convertToSelectableList']),
+				PROCESSOR: new Constant('LIST_ENTITY_TYPES','LIST_ENTITY_GENERIC', 'LIST_ASYNC_VALIDATORS', 'LIST_PROCESSES', 'LIST_PROCESSORS', 'LIST_INPUT_TYPES', 'LIST_ELEMENT_TYPES', 'FETCH_PROCESS', 'CREATE_PROCESS', 'CREATE_ENTITY', 'UPDATE_ENTITY', 'FETCH_ENTITY'),
 				PROCESS: new Constant('CREATE_PROCESS', 'MANAGE_PROCESS', 'MANAGE_PROCESSOR', 'MANAGE_LIBS')
 			},
 			ENTITYTYPE: new Constant(["STRING", "String"], ["NUMBER", "Number"], ["DATE", "Date"], ["BOOLEAN", "Boolean"]),
-			ELEMENTTYPE: new Constant("INPUT", "SCRIPT", "DESIGNER", "GRID", "NAV", "FILEUPLOAD", "SELECTSET", "LABEL", "TITLE", "LARGEINPUT", "COMMAND", "SECTION", "TABS", "SELECT", "LIST", "IMAGE")
+			ELEMENTTYPE: new Constant("INPUT", "SCRIPT", "DESIGNER", "HIDDEN", "GRID", "NAV", "FILEUPLOAD", "SELECTSET", "LABEL", "TITLE", "LARGEINPUT", "COMMAND", "SECTION", "TABS", "SELECT", "LIST", "IMAGE")
 		};
 	}
 
@@ -152,7 +154,7 @@ function init(config) {
 	 */
 	function DynamoStep(opts) {
 		var self = this;
-		if (!opts.processors || !opts.processors.length && opts.mode !== constants.STEPMODE.VIEW)
+		if ((!opts.processors || !opts.processors.length) && opts.mode !== constants.STEPMODE.VIEW)
 			throw new Error('opts.processors must have atleast one processor');
 
 
@@ -250,7 +252,6 @@ function init(config) {
 
 
 			function prepareContext(opts) {
-
 				var _context = {};
 				_context.args = opts.args;
 				_context.postprocessors = _.cloneDeep(opts.postprocessors);
@@ -259,6 +260,7 @@ function init(config) {
 				_context.processorsTimeout = config.processors.ttl;
 				return _context;
 			}
+
 			this.save = function(fn) {
 				this.form.save(function(er, form) {
 					if (er) return fn(er);
@@ -291,7 +293,7 @@ function init(config) {
 						async: async,
 					}
 				});
-				var handle = vm.run(fs.readFileSync('./src/processor-sandbox.js'));
+				var handle = vm.run(sandboxCode);
 				handle.getResult(function(er, result) {
 					if (er) return fn(er);
 
@@ -353,6 +355,7 @@ function init(config) {
 				var postprocessorIds = _.map(ids.postprocessors, '_id'); //_.filter(self.postprocessors, typeOf('string')).concat(_.map(ids.postprocessors, '_id'));
 				//
 				self.state.save(function(er, state) {
+					if (er) return callback(er);
 					self._save(_.assign({
 						_id: self._id,
 						processors: processorIds,
@@ -474,7 +477,7 @@ function init(config) {
 					async: async,
 				}
 			});
-			var handle = vm.run(fs.readFileSync('./src/processor-sandbox.js'));
+			let handle = vm.run(sandboxCode);
 			handle.getResult(fn);
 		};
 	}
@@ -846,7 +849,9 @@ function init(config) {
 		});
 	};
 
-
+	DynamoEngine.prototype.isValidID = function(id) {
+		return mongoose.Types.ObjectId.isValid(id);
+	};
 	DynamoEngine.prototype.setUserManager = function(manager) {
 
 		this.entitiesRepository.setUserManager(manager);
@@ -1122,7 +1127,7 @@ function init(config) {
 				// statements
 				//console.log(e);
 				console.log('caught by processor');
-				//callback(e);
+				callback(e);
 			}
 
 		};
@@ -1261,6 +1266,7 @@ function init(config) {
 			create: self.createEntity.bind(self),
 			createConfig: self.createConfig.bind(self),
 			updateConfig: self.updateConfig.bind(self),
+			listEntityTypes: self.getConfigNames.bind(self),
 			userManager: function() {
 				return self.userManager;
 			}
@@ -1355,20 +1361,20 @@ function init(config) {
 							});
 						});
 					}
-					item.processors.forEach(function(proc) {
+					(item.processors || []).forEach(function(proc) {
 						processorTasks.push(self.transformers[systemEntities.processor].bind(self, proc));
 					});
-					tasks.push(function(callback) {
-						async.parallel(processorTasks, function(er, processors) {
-							if (er) return callback(er);
-							item.processors = processors;
-							callback();
+					if (processorTasks.length)
+						tasks.push(function(callback) {
+							async.parallel(processorTasks, function(er, processors) {
+								if (er) return callback(er);
+								item.processors = processors;
+								callback();
+							});
 						});
-					});
 
 					async.parallel(tasks, function(er) {
 						if (er) return fn(er);
-
 
 						return fn(null, new DynamoStep(item));
 					});
@@ -1465,9 +1471,9 @@ function init(config) {
 			fs.writeFile.bind(this, self.getPath(systemEntities.processor), '{"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
 			fs.writeFile.bind(this, self.getPath(systemEntities.lib), '{"uid":{"type":"String","unique":true,"required":true},"code":{"type":"String","required":true}}'),
 			fs.writeFile.bind(this, self.getPath(systemEntities.asyncValidator), '{"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
-			fs.writeFile.bind(this, self.getPath(systemEntities.element), '{"name":{"type":"String","required":true},"label":{"type":"String","required":true},"description":{"type":"String"},"elementType":{"type":"String","enum":[' + (_.map(Object.keys(constants.ELEMENTTYPE), function(x) {
+			fs.writeFile.bind(this, self.getPath(systemEntities.element), '{"name":{"type":"String","required":true},"label":{"type":"String"},"description":{"type":"String"},"elementType":{"type":"String","enum":[' + (_.map(Object.keys(constants.ELEMENTTYPE), function(x) {
 				return '"' + x + '"';
-			}).join(',')) + ']},"asyncValidators":[{"type":"ObjectId","ref":"' + systemEntities.asyncValidator + '"}],"validators":[{"validatorType":{"type":"String","enum":[' + (_.map(Object.keys(constants.VALIDATORTYPE), function(x) {
+			}).join(',')) + '],"required":true},"asyncValidators":[{"type":"ObjectId","ref":"' + systemEntities.asyncValidator + '"}],"validators":[{"validatorType":{"type":"String","enum":[' + (_.map(Object.keys(constants.VALIDATORTYPE), function(x) {
 				return '"' + x + '"';
 			}).join(',')) + '],"required":true},"args":{"type":"Mixed"}}],"args":{"type":"Mixed"}}')
 		], function(er) {
@@ -1524,14 +1530,19 @@ function init(config) {
 			fn(er, data);
 		});
 	};
-
+	EntityRepo.prototype.getConfigNames = function(fn) {
+		fn(null, Object.keys(this.models).filter(function(x) {
+			return this._systemEntities.indexOf(x) == -1;
+		}.bind(this)));
+	};
 	EntityRepo.prototype.getAllConfiguration = function(fn) {
 		var self = this;
 		getDirectories(this.entityFolder, function(er, ents) {
 			var tasks = [];
 			ents.forEach(function(file) {
-				if (file.indexOf(self.del) === -1)
-					task.push(self.getConfig.bind(self, name));
+				if (file.indexOf(self.del) === -1) {
+					tasks.push(self.getConfig.bind(self, path.basename(file, path.extname(file))));
+				}
 			});
 			async.parallel(tasks, fn);
 		});
@@ -1572,9 +1583,9 @@ function init(config) {
 		}
 
 		function transformResult(er, result) {
-			//
+
 			if (er) return fn(er);
-			if (self.transformers[name]) {
+			if (self.transformers[name] && (!options || !options.noTransformaton)) {
 				async.parallel(_.map(result, function(x) {
 					return self.transformers[name].bind(self.transformers, x);
 				}), function(er, transformed) {
@@ -1587,12 +1598,13 @@ function init(config) {
 				return;
 			}
 
-			fn(null, result);
+			fn(null, options && options.one ? (result.length ? result[0] : null) : result);
 		}
 
 		var query = this.models[name].find(filter);
 		if ((options && options.full) && this.refs[name] && this.refs[name].length !== 0) {
 			var populateString = populate(self.refs[name], []);
+			//console.log(populateString);
 			populateString.forEach(function(string) {
 				if ((string.match(/\./ig) || []).length >= 1) {
 					var cur = '',
@@ -1622,15 +1634,17 @@ function init(config) {
 						};
 					string.split('.').forEach(iterator);
 					_.reduce(cur.split('|'), reducer, m);
+					//console.log(m);
 					query.populate(m);
 					return;
 				}
-
+				//console.log(string);
 				query.populate(string);
 			});
 		}
 		if (options) {
 			if (options.sort) {
+				console.log(options.sort);
 				query = query.sort(options.sort);
 			}
 			if (options.limit) {

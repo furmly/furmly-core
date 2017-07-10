@@ -1,54 +1,31 @@
 {
-	"title": "Create Lecturer",
-	"description": "This process creates a Lecturer",
+	"title": "fake process",
+	"description": "What is wrong with this thing.",
 	"steps": [{
 		"stepType": "CLIENT",
-		"processors": [{
-			"title": "Create Lecturer",
-			"code": "console.log('created lecturer');\nconsole.log(this.args);\nconsole.log('---------------x');"
-		}],
 		"form": {
 			"elements": [{
+				"elementType": "HIDDEN",
+				"name": "_id"
+			}, {
 				"elementType": "INPUT",
 				"args": {
 					"type": "text"
 				},
 				"name": "firstName",
-				"label": "First Name",
-				"description": "First Name"
+				"label": "Enter First name"
 			}, {
 				"elementType": "INPUT",
 				"args": {
 					"type": "text"
 				},
-				"name": "lastName",
-				"label": "Lastname",
-				"description": "Lastname"
-			}, {
-				"elementType": "INPUT",
-				"args": {
-					"type": "number"
-				},
-				"name": "age",
-				"label": "Age",
-				"description": "Lecturer's age"
-			}, {
-				"elementType": "LIST",
-				"name": "Friends",
-				"label": "Lecturers Friends",
-				"description": "Lecturers Friends",
-				"args": {
-					"itemTemplate": [{
-						"elementType": "INPUT",
-						"args": {
-							"type": "text"
-						},
-						"name": "firstName",
-						"label": "First Name",
-						"description": "First Name"
-					}]
-				}
+				"name": "lastname",
+				"label": "Enter Lastname"
 			}]
-		}
+		},
+		"processors": [{
+			"title": "fakep",
+			"code": "console.log('fake')"
+		}]
 	}]
 }
