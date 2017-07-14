@@ -1,3 +1,4 @@
+/*jshint esversion:6 */
 var sinon = require('sinon'),
 	fs = require('fs'),
 	Db = require('mongodb').Db,
@@ -156,7 +157,7 @@ describe('Step spec', function() {
 			delete fixture.opts.stepType;
 			fixture.opts._id = 'fake';
 			new app.Step(fixture.opts);
-		}, Error, 'opts.type is null or undefined or not a valid type');
+		}, Error, 'Step type is null or undefined or not a valid type');
 		done();
 	});
 
@@ -165,7 +166,7 @@ describe('Step spec', function() {
 		assert.throws(function() {
 			fixture.opts.processors.length = 0;
 			new app.Step(fixture.opts);
-		}, Error, 'opts.processors must have atleast one processor');
+		}, Error, 'Steps must have atleast one processor');
 
 		done();
 	});
@@ -174,7 +175,7 @@ describe('Step spec', function() {
 		assert.throws(function() {
 			fixture.opts.stepType = 'faketype';
 			new app.Step(fixture.opts);
-		}, Error, 'opts.type is null or undefined or not a valid type');
+		}, Error, 'Step type is null or undefined or not a valid type');
 		done();
 	});
 
@@ -930,6 +931,109 @@ describe('Integration', function() {
 				assert.isNull(er);
 				assert.isObject(proc);
 				done();
+			});
+		});
+
+		it('can auto generate process for managing an entity while generating schema', function(done) {
+
+			var fixture = this,
+				id = 'fake_id',
+				userManger = {
+					defaulRole: 'admin',
+					saveClaim: sinon.spy(function() {
+						var args = Array.prototype.slice.call(arguments);
+						assert.equal(args[0].type, userManger.constants.CLAIMS.PROCESS);
+						args[0]._id = id;
+						args[args.length - 1](null, args[0]);
+					}),
+					addClaimToRole: sinon.spy(function() {
+						var args = Array.prototype.slice.call(arguments);
+						assert.equal(args[2]._id, id);
+						args[args.length - 1](null);
+					}),
+					saveMenu: sinon.spy(function() {
+						var args = Array.prototype.slice.call(arguments);
+						assert.equal(args[0].claims[0], id);
+						args[args.length - 1](null);
+					}),
+					webClient: {
+						clientId: 'ThefakeOne'
+					},
+					constants: {
+						CLAIMS: {
+							PROCESS: 'http://test.com'
+						}
+					}
+				},
+				testFixture = {
+					name: {
+						type: "String"
+					},
+					age: {
+						type: "Number"
+					},
+					phoneNumbers: [{
+						tel: {
+							type: "Number"
+						}
+					}],
+					something: {
+						name: {
+							type: "String"
+						},
+						numberThing: {
+							type: "Number"
+						},
+						listThing: [{
+							name: {
+								type: "String"
+							}
+						}]
+					},
+					booleanThing: {
+						type: "Boolean"
+					},
+					link: {
+						type: "ObjectId",
+						ref: "Something"
+					}
+				};
+			fixture.engine.setUserManager(userManger);
+			fixture.engine.init(function(er) {
+				assert.isUndefined(er);
+				fixture.engine.saveProcessor({
+					title: 'testProc',
+					uid: 'testProc',
+					code: `this.libs.createCRUDProcess.call(this,
+						this.args.name,
+						this.args.displayProperty,
+						this.args.group,
+						this.args.category,${JSON.stringify(testFixture)}, callback);`
+				}, {
+					retrieve: true
+				}, function(er, proc) {
+					assert.isNull(er);
+					fixture.engine.runProcessor({
+						name: 'Customer',
+						displayProperty: 'name',
+						group: 'Customer Management',
+						category: 'MAINMENU'
+					}, proc, function(er, result) {
+						assert.isNull(er);
+						assert.equal(userManger.saveClaim.callCount, 1);
+						assert.equal(userManger.addClaimToRole.callCount, 1);
+						assert.equal(userManger.saveMenu.callCount, 1);
+
+						fixture.engine.queryProcess({}, function(er, processes) {
+							processes[processes.length - 1].describe(function(er, res) {
+								console.log(JSON.stringify(res, null, ' '));
+								done();
+							});
+
+						});
+
+					});
+				});
 			});
 		});
 		it('processor can create an entity', function(done) {

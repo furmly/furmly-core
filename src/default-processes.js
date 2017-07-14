@@ -1,7 +1,8 @@
 /*jshint esversion: 6 */
 
 module.exports = function(constants, systemEntities) {
-	const _ = require('lodash');
+	const _ = require('lodash'),
+		misc = require('./misc');
 	/**
 	 * Function used for creating element objects
 	 * @param  {String} name        Scope name of element
@@ -13,23 +14,17 @@ module.exports = function(constants, systemEntities) {
 	 * @param  {Object} args        Specific Args of element required by the element type
 	 * @return {Object}             Object representing an element
 	 */
-	var createElement = function(name, label, description, type, args, validators, asyncVals) {
-		if (typeof name !== 'string' || typeof label !== 'string' || typeof description !== 'string' || typeof type !== 'string' || (args && typeof args !== 'object'))
-			throw new Error('illegal argument(s) passed to createElement');
-
-		return {
-			elementType: type,
-			label: label,
-			name: name,
-			args: args,
-			asyncValidators: asyncVals || [],
-			description: description,
-			validators: validators || []
-		};
-	};
+	var createElement = misc.createElement;
 
 	function createId() {
 		return createHidden('_id');
+	}
+
+	function tag(obj, t) {
+		return {
+			dynamo_ref: t,
+			template: obj
+		};
 	}
 
 	function createHidden(x) {
@@ -45,12 +40,7 @@ module.exports = function(constants, systemEntities) {
 	 */
 
 	function getCreateProcessDefinition(opts) {
-		function tag(obj, t) {
-			return {
-				dynamo_ref: t,
-				template: obj
-			};
-		}
+
 		var elementTag = '$elementTemplate$',
 			validatorTag = '$validatorTemplate$',
 			asyncValidatorTag = '$asyncValidatorTemplate$',
@@ -87,7 +77,9 @@ module.exports = function(constants, systemEntities) {
 								name: 'process',
 								elements: [
 									createId(),
-									createHidden('uid'),
+									createElement('uid', 'Unique Key (used for customization)', '', constants.ELEMENTTYPE.INPUT, {
+										type: constants.INPUTTYPE.TEXT
+									}),
 									createElement('title', 'Title of Process', 'This is what will be visible to users', constants.ELEMENTTYPE.INPUT, {
 										type: constants.INPUTTYPE.TEXT
 									}),
@@ -287,6 +279,10 @@ module.exports = function(constants, systemEntities) {
 																		type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
 																		value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS],
 																		optional: true
+																	}),
+																	createElement('fetchSingleItemProcessor', 'Processor that will fetch object before editing', '', constants.ELEMENTTYPE.SELECT, {
+																		type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																		value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
 																	})
 																]
 															}]
@@ -511,6 +507,118 @@ module.exports = function(constants, systemEntities) {
 		};
 	}
 
+	function manageEntitiesDefinition(opts) {
+
+		var templateName = 'entitiesItemTemplate',
+			gui = createElement('choice', 'Properties (different ways of creating the same thing)', '', constants.ELEMENTTYPE.SELECTSET, {
+				items: [{
+					id: 'Gui',
+					displayLabel: 'Designer',
+					elements: [
+						createElement('template', 'Entity Template', '', constants.ELEMENTTYPE.LIST, {
+							options: 'TAG',
+							behavior: {
+								dynamo_ref: templateName
+							},
+							itemTemplate: [
+								createElement('propertyName', 'Property Name', '', constants.ELEMENTTYPE.INPUT),
+								createElement('propertyType', 'Property Type', '', constants.ELEMENTTYPE.SELECTSET, {
+									items: [{
+										id: constants.ENTITYTYPE.STRING,
+										displayLabel: 'String'
+									}, {
+										id: constants.ENTITYTYPE.NUMBER,
+										displayLabel: 'Number'
+									}, {
+										id: constants.ENTITYTYPE.BOOLEAN,
+										displayLabel: 'Boolean'
+									}, {
+										id: constants.ENTITYTYPE.DATE,
+										displayLabel: 'Date'
+									}, {
+										id: constants.ENTITYTYPE.OBJECT,
+										displayLabel: 'Object',
+										elements: [
+											createElement('properties', 'Properties', '', constants.ELEMENTTYPE.LIST, {
+												itemTemplate: {
+													template_ref: templateName
+												}
+											})
+										]
+									}, {
+										id: constants.ENTITYTYPE.ARRAY,
+										displayLabel: 'Array',
+										elements: [
+											createElement('properties', 'Of', '', constants.ELEMENTTYPE.LIST, {
+												itemTemplate: {
+													template_ref: templateName
+												}
+											})
+										]
+									}, {
+										id: constants.ENTITYTYPE.REFERENCE,
+										displayLabel: 'Reference an existing Schema',
+										elements: [
+											createElement('ref', 'Reference', '', constants.ELEMENTTYPE.SELECT, {
+												type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+												value: opts[constants.UIDS.PROCESSOR.LIST_ENTITY_SCHEMAS]
+											})
+										]
+									}]
+								})
+							]
+						})
+					]
+				}, {
+					id: 'Code',
+					displayLabel: 'Advanced (Direct Creation)',
+					elements: [createElement('template', 'Entity Template', '', constants.ELEMENTTYPE.SCRIPT)]
+				}]
+			});
+		return {
+			title: 'Manage Schemas',
+			description: 'System administators can create and exist entity schemas',
+			uid: constants.UIDS.PROCESS.MANAGE_ENTITY_SCHEMA,
+			steps: [{
+				stepType: constants.STEPTYPE.CLIENT,
+				mode: constants.STEPMODE.VIEW,
+				processors: [],
+				form: {
+					elements: [
+						createElement('grid', 'Manage Schemas', '', constants.ELEMENTTYPE.GRID, {
+							mode: constants.GRIDMODE.CRUD,
+							source: opts[constants.UIDS.PROCESSOR.LIST_ENTITY_SCHEMAS],
+							filter: [
+								createElement('name', 'By Name', '', constants.ELEMENTTYPE.INPUT)
+							],
+							commands: [],
+							extra: {
+								createTemplate: [
+									createElement('name', 'Entity Name', '', constants.ELEMENTTYPE.INPUT),
+									createElement('createCRUD', 'Create Crud Process for Admins', '', constants.ELEMENTTYPE.INPUT, {
+										type: constants.INPUTTYPE.CHECKBOX
+									}),
+									createElement('displayProperty', 'Display Property', '', constants.ELEMENTTYPE.INPUT),
+									createElement('group', 'Menu Group', '', constants.ELEMENTTYPE.INPUT),
+									createElement('category', 'Menu Category', '', constants.ELEMENTTYPE.INPUT),
+									gui,
+
+								],
+								createProcessor: opts[constants.UIDS.PROCESSOR.CREATE_SCHEMA],
+								editTemplate: [
+									createHidden('name'),
+									gui
+								],
+								fetchSingleItemProcessor: opts[constants.UIDS.PROCESSOR.FETCH_SCHEMA],
+								editProcessor: opts[constants.UIDS.PROCESSOR.UPDATE_SCHEMA]
+							}
+						})
+					]
+				}
+			}]
+		};
+	}
+
 	function manageProcessorsDefinition(opts) {
 		var template = [
 			createId(),
@@ -595,7 +703,8 @@ module.exports = function(constants, systemEntities) {
 		[constants.UIDS.PROCESS.CREATE_PROCESS]: getCreateProcessDefinition,
 		[constants.UIDS.PROCESS.MANAGE_PROCESS]: manageProcessesDefinition,
 		[constants.UIDS.PROCESS.MANAGE_PROCESSOR]: manageProcessorsDefinition,
-		[constants.UIDS.PROCESS.MANAGE_LIBS]: manageLibsDefinition
+		[constants.UIDS.PROCESS.MANAGE_LIBS]: manageLibsDefinition,
+		[constants.UIDS.PROCESS.MANAGE_ENTITY_SCHEMA]: manageEntitiesDefinition
 	};
 
 };

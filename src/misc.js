@@ -1,19 +1,23 @@
 	Function.prototype.getFunctionBody = function() {
 		var entire = this.toString();
 		return entire.substring(entire.indexOf("{") + 1, entire.lastIndexOf("}"));
-			//.replace(/\r/g, '').replace(/\n/g, '').replace(/\t/g, '');
 	};
 
-	exports.getCurrentScriptPath = function() {
-		// Relative path from current working directory to the location of this script
-		var pathToScript = path.relative(process.cwd(), __filename);
+	var createElement = function(name, label, description, type, args, validators, asyncVals) {
+		if (typeof name !== 'string' || typeof label !== 'string' || typeof description !== 'string' || typeof type !== 'string' || (args && typeof args !== 'object'))
+			throw new Error('illegal argument(s) passed to createElement');
 
-		// Check if current working dir is the same as the script
-		if (process.cwd() === __dirname) {
-			// E.g. "./foobar.js"
-			return '.' + path.sep + pathToScript;
-		} else {
-			// E.g. "foo/bar/baz.js"
-			return pathToScript;
-		}
+		return {
+			elementType: type,
+			label: label,
+			name: name,
+			args: args,
+			asyncValidators: asyncVals || [],
+			description: description,
+			validators: validators || []
+		};
+	};
+
+	module.exports = {
+		createElement: createElement
 	};

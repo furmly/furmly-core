@@ -1,11 +1,17 @@
 /*jshint loopfunc: true */
-this.SANDBOX_CONTEXT = true;
-var module_context = this;
+//'use strict';
+
+
+var module_context = {
+	SANDBOX_CONTEXT: true
+};
 module_context.skip = {};
 if (typeof entityRepo !== 'undefined')
 	module_context.entityRepo = entityRepo;
-if (typeof constants !== 'undefined')
+if (typeof constants !== 'undefined') {
 	module_context.constants = constants;
+	global.constants = constants;
+}
 if (typeof systemEntities !== 'undefined')
 	module_context.systemEntities = systemEntities;
 

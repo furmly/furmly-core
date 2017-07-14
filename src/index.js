@@ -14,6 +14,8 @@ var assert = require('assert'),
 	path = require('path'),
 	sandboxCode = fs.readFileSync(__dirname + path.sep + 'processor-sandbox.js'),
 	mongoose = require('mongoose');
+
+mongoose.Promise = global.Promise;
 const {
 	NodeVM
 } = require('vm2');
@@ -111,11 +113,11 @@ function init(config) {
 			NAVIGATIONTYPE: new Constant('CLIENT', 'DYNAMO'),
 			IMAGETYPE: new Constant('REL', 'DATA'),
 			UIDS: {
-				LIB: new Constant(['CONVERT_FILTER', 'convertFilter'], ['CONVERT_TO_SELECTABLE_LIST', 'convertToSelectableList']),
-				PROCESSOR: new Constant('LIST_ENTITY_TYPES', 'LIST_ENTITY_GENERIC', 'LIST_ASYNC_VALIDATORS', 'LIST_PROCESSES', 'LIST_PROCESSORS', 'LIST_INPUT_TYPES', 'LIST_ELEMENT_TYPES', 'FETCH_PROCESS', 'CREATE_PROCESS', 'CREATE_ENTITY', 'UPDATE_ENTITY', 'FETCH_ENTITY'),
-				PROCESS: new Constant('CREATE_PROCESS', 'MANAGE_PROCESS', 'MANAGE_PROCESSOR', 'MANAGE_LIBS')
+				LIB: new Constant(['CONVERT_FILTER', 'convertFilter'], ['CREATE_ID', 'createId'], ['CONVERT_SCHEMA_TO_ELEMENTS', 'ElementsConverter'], ['CREATE_CRUD_PROCESS', 'createCRUDProcess'], ['CREATE_ELEMENT', 'createElement'], ['CONVERT_TO_SELECTABLE_LIST', 'convertToSelectableList']),
+				PROCESSOR: new Constant('FETCH_SCHEMA', 'CREATE_SCHEMA', 'UPDATE_SCHEMA', 'LIST_ENTITY_SCHEMAS', 'LIST_ENTITY_TYPES', 'LIST_ENTITY_GENERIC', 'LIST_ASYNC_VALIDATORS', 'LIST_PROCESSES', 'LIST_PROCESSORS', 'LIST_INPUT_TYPES', 'LIST_ELEMENT_TYPES', 'FETCH_PROCESS', 'CREATE_PROCESS', 'CREATE_ENTITY', 'UPDATE_ENTITY', 'FETCH_ENTITY'),
+				PROCESS: new Constant('MANAGE_ENTITY_SCHEMA', 'CREATE_PROCESS', 'MANAGE_PROCESS', 'MANAGE_PROCESSOR', 'MANAGE_LIBS')
 			},
-			ENTITYTYPE: new Constant(["STRING", "String"], ["NUMBER", "Number"], ["DATE", "Date"], ["BOOLEAN", "Boolean"]),
+			ENTITYTYPE: new Constant(["STRING", "String"], ["NUMBER", "Number"], ["DATE", "Date"], ["BOOLEAN", "Boolean"], ["OBJECT", "Object"], ["REFERENCE", "ObjectId"],["ARRAY", "Array"]),
 			ELEMENTTYPE: new Constant("INPUT", "SCRIPT", "DESIGNER", "HIDDEN", "GRID", "NAV", "FILEUPLOAD", "SELECTSET", "LABEL", "TITLE", "LARGEINPUT", "COMMAND", "SECTION", "TABS", "SELECT", "LIST", "IMAGE")
 		};
 	}
@@ -155,11 +157,11 @@ function init(config) {
 	function DynamoStep(opts) {
 		var self = this;
 		if ((!opts.processors || !opts.processors.length) && opts.mode !== constants.STEPMODE.VIEW)
-			throw new Error('opts.processors must have atleast one processor');
+			throw new Error('Steps must have atleast one processor');
 
 
 		if (!opts.stepType || !constants.STEPTYPE.in(opts.stepType))
-			throw new Error('opts.type is null or undefined or not a valid type');
+			throw new Error('Step type is null or undefined or not a valid type');
 
 		if (!opts.save)
 			throw new Error('Step needs save service for persistence');
@@ -561,6 +563,7 @@ function init(config) {
 	DynamoProcess.prototype.run = function(context, fn) {
 		var self = this;
 		this.validate();
+		//console.log(context);
 
 		function processStep(args) {
 
@@ -577,7 +580,7 @@ function init(config) {
 				}, args || {});
 
 				if (self.steps.length > self.currentStepIndex) {
-					//
+
 					result.status = constants.PROCESSSTATUS.RUNNING;
 					self.store.update(args.instanceId || context.instanceId, self.currentStepIndex, function(er) {
 						fn(er, result);
@@ -597,11 +600,12 @@ function init(config) {
 			});
 		}
 		if (this.steps.length > 1) {
+			//console.log('current instance:' + context.instanceId);
 			this.store.get((context.instanceId || ''), function(er, currentStep) {
 				if (er) return fn(er);
-
+				//console.log(arguments);
 				if (currentStep) {
-
+					//console.log(currentStep);
 					self.currentStepIndex = currentStep.value;
 					processStep.call(self, {
 						instanceId: context.instanceId
@@ -1232,12 +1236,12 @@ function init(config) {
 			return {
 				get: function(id, fn) {
 					collection.findOne({
-						_id: id
+						_id: id ? ObjectID(id) : id
 					}, fn);
 				},
 				update: function(id, info, fn) {
 					collection.update({
-						_id: id
+						_id: id ? ObjectID(id) : id
 					}, {
 						value: info,
 						createdOn: new Date()
@@ -1245,7 +1249,7 @@ function init(config) {
 				},
 				remove: function(id, fn) {
 					collection.deleteOne({
-						_id: id
+						_id: id ? ObjectID(id) : id
 					}, fn);
 				},
 				keep: function(info, fn) {
@@ -1263,9 +1267,10 @@ function init(config) {
 			count: self.countEntity.bind(self),
 			update: self.updateEntity.bind(self),
 			create: self.createEntity.bind(self),
-			createConfig: self.createConfig.bind(self),
-			updateConfig: self.updateConfig.bind(self),
-			listEntityTypes: self.getConfigNames.bind(self),
+			createSchema: self.createConfig.bind(self),
+			updateSchema: self.updateConfig.bind(self),
+			getSchema: self.getConfig.bind(self),
+			getSchemas: self.getConfigNames.bind(self),
 			userManager: function() {
 				return self.userManager;
 			}
@@ -1518,6 +1523,7 @@ function init(config) {
 	};
 	//returns a schema document.
 	EntityRepo.prototype.getConfig = function(name, fn) {
+		if (!name) return fn(new Error('name must be defined'));
 		fs.readFile(this.getPath(name), {
 			encoding: 'utf8'
 		}, function(er, data) {
@@ -1548,9 +1554,12 @@ function init(config) {
 	};
 
 	EntityRepo.prototype.updateConfig = function(name, config, fn) {
+
+		if (!name) return fn(new Error('name must be defined'));
 		if (this._systemEntities.indexOf(this.name) !== -1)
 			throw new Error('Cannot Create Entity with that name.');
 		var self = this;
+
 		fs.truncate(this.getPath(name), function() {
 			self.createConfig(name, config, fn);
 		});

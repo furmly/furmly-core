@@ -1,6 +1,6 @@
 /*jshint esversion: 6 */
 module.exports = function(constants) {
-	require('./misc');
+	var misc = require('./misc');
 
 
 	function createLib(code, uid) {
@@ -41,16 +41,207 @@ module.exports = function(constants) {
 		}).getFunctionBody(), constants.UIDS.LIB.CONVERT_FILTER)
 		.createLib((() => {
 			function convert(prop, list) {
-				if (Array.prototype.slice.call(arguments) == 1) {
+
+				if (Array.prototype.slice.call(arguments).length == 1) {
 					list = prop;
 					prop = null;
 				}
 				return list.map(x => ({
 					displayLabel: (prop ? x[prop] : x),
-					_id: x._id
+					_id: x._id || x
 				}));
 			}
 			exports = convert;
 		}).getFunctionBody(), constants.UIDS.LIB.CONVERT_TO_SELECTABLE_LIST)
+		.createLib((() => {
+
+			function create(entityName, entityLabel, menuGroup, menuCategory, schema, fn) {
+				let constants = this.constants,
+					self = this,
+					title = `Manage ${entityName}`,
+					template = [
+						this.libs.createId()
+					];
+
+				async.waterfall([
+					(callback) => {
+						this.entityRepo.get(this.systemEntities.processor, {
+							uid: {
+								$in: [constants.UIDS.PROCESSOR.CREATE_ENTITY, constants.UIDS.PROCESSOR.UPDATE_ENTITY, constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC]
+							}
+						}, callback);
+					},
+					(processors, callback) => {
+						if (processors.length !== 3)
+							return callback(new Error('Cannot locate all the required processors'));
+
+						callback(null, processors.reduce((x, y) => {
+							return x[y.uid] = y, x;
+						}, {}));
+					}
+				], (er, result) => {
+					if (er) return callback(er);
+
+
+					template = template.concat(new self.libs.ElementsConverter(self.libs, result, constants).convert(schema));
+					var processInstance = {
+						title: title,
+						description: `System administators can create and edit existing ${entityName}`,
+						uid: `${entityName}_CRUD`,
+						steps: [{
+							stepType: constants.STEPTYPE.CLIENT,
+							mode: constants.STEPMODE.VIEW,
+							processors: [],
+							form: {
+								elements: [
+									self.libs.createElement('grid', 'Manage Processors', 'This view lets administators manage processors', constants.ELEMENTTYPE.GRID, {
+										mode: constants.GRIDMODE.CRUD,
+										source: result[constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC]._id,
+										gridArgs: `{"entityName":"${entityName}","entityLabel":"${entityLabel}"}`,
+										filter: [
+											self.libs.createElement(`${entityLabel}`, `By ${entityLabel[0].toUpperCase()+entityLabel.substring(1)}`, '', constants.ELEMENTTYPE.INPUT)
+										],
+										commands: [],
+										extra: {
+											createTemplate: template,
+											createProcessor: result[constants.UIDS.PROCESSOR.CREATE_ENTITY]._id,
+											editTemplate: template,
+											editProcessor: result[constants.UIDS.PROCESSOR.UPDATE_ENTITY]._id
+										}
+									})
+								]
+							}
+						}]
+
+					};
+
+					self.entityRepo.saveProcess(processInstance, function(er, proc) {
+						if (er) return callback(er);
+						let userManager = self.entityRepo.userManager();
+						if (!userManager)
+							return callback(new Error('Entity Repo does not provide a means of creating menus'));
+						async.waterfall([
+							userManager.saveClaim.bind(userManager, {
+								type: userManager.constants.CLAIMS.PROCESS,
+								value: proc._id
+							}),
+							function(result) {
+								var args = Array.prototype.slice.call(arguments);
+								var callback = args[args.length - 1];
+								userManager.addClaimToRole(userManager.defaultRole, null, result, function(er, role) {
+									if (er) return callback(er);
+									callback(null, result);
+								});
+							},
+							function(result, callback) {
+
+								userManager.saveMenu({
+									displayLabel: title,
+									group: menuGroup,
+									icon: 'process',
+									claims: [result._id],
+									type: 'DYNAMO',
+									value: proc._id,
+									category: menuCategory || 'MAINMENU',
+									client: userManager.webClient.clientId,
+								}, callback);
+							}
+						], function(er) {
+							if (er) return callback(er);
+
+							return fn(null, 'successfully created crud process');
+						});
+					});
+
+				});
+
+			}
+
+			exports = create;
+
+		}).getFunctionBody(), constants.UIDS.LIB.CREATE_CRUD_PROCESS)
+		.createLib(`exports= ${misc.createElement.toString()}`, constants.UIDS.LIB.CREATE_ELEMENT)
+		.createLib((() => {
+			exports = function() {
+				return this.createElement('_id', '', '', constants.ELEMENTTYPE.HIDDEN);
+			};
+		}).getFunctionBody(), constants.UIDS.LIB.CREATE_ID)
+		.createLib((() => {
+			function ElementsConverter(libs, processors, constants) {
+				this.libs = libs;
+				this.processors = processors;
+				this.constants = constants;
+			}
+			ElementsConverter.prototype.convert = function(x) {
+				var elements = [],
+					self = this;
+				Object.keys(x).forEach(y => {
+					var result;
+					if (Array.prototype.isPrototypeOf(x[y])) {
+						result = self.map[`${constants.ENTITYTYPE.ARRAY}`].call(self, x[y], y);
+					}
+					if (typeof x[y] == 'string' && self.map[x[y]]) {
+						result = self.map[x[y]].call(self, x[y], y);
+					}
+
+					if (!result && typeof x[y] == 'object') {
+						if (self.map[x[y].type]) {
+							result = self.map[x[y].type].call(self, x[y], y);
+						} else
+						//it doesnt have a type therefore treat it like an object.
+
+							result = self.map[`${constants.ENTITYTYPE.OBJECT}`].call(self, x[y], y);
+					}
+					if (!result)
+						throw new Error('unknown type , could not parse');
+					elements.push(result);
+				});
+				return elements;
+			};
+			ElementsConverter.prototype.map = {
+				[constants.ENTITYTYPE.STRING]: function(data, name) {
+					return this.libs.createElement(name, this.firstWord(name), '', this.constants.ELEMENTTYPE.INPUT, {
+						type: constants.INPUTTYPE.TEXT
+					});
+				},
+				[constants.ENTITYTYPE.NUMBER]: function(data, name) {
+					return this.libs.createElement(name, this.firstWord(name), '', this.constants.ELEMENTTYPE.INPUT, {
+						type: constants.INPUTTYPE.NUMBER
+					});
+				},
+				[constants.ENTITYTYPE.BOOLEAN]: function(data, name) {
+					return this.libs.createElement(name, this.firstWord(name), '', this.constants.ELEMENTTYPE.INPUT, {
+						type: this.constants.INPUTTYPE.CHECKBOX
+					});
+				},
+				[constants.ENTITYTYPE.DATE]: function(data, name) {
+					return this.libs.createElement(name, this.firstWord(name), '', this.constants.ELEMENTTYPE.INPUT, {
+						type: constants.INPUTTYPE.DATE
+					});
+				},
+				[constants.ENTITYTYPE.OBJECT]: function(data, name) {
+					return this.libs.createElement(name, this.firstWord(name), '', this.constants.ELEMENTTYPE.SECTION, {
+						elements: this.convert(data)
+					});
+				},
+				[constants.ENTITYTYPE.ARRAY]: function(data, name) {
+					return this.libs.createElement(name, this.firstWord(name), '', this.constants.ELEMENTTYPE.LIST, {
+						itemTemplate: this.convert(data[0])
+					});
+				},
+				[constants.ENTITYTYPE.REFERENCE]: function(data, name) {
+					return this.libs.createElement(name, this.firstWord(name), '', this.constants.ELEMENTTYPE.SELECT, {
+						type: this.constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+						value: this.processors[this.constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC]._id,
+						customArgs: `{"entityName":"${data.ref}"}`,
+					});
+				}
+			};
+			ElementsConverter.prototype.firstWord = function(string) {
+				return string[0].toUpperCase() + string.substring(1);
+			};
+			exports = ElementsConverter;
+
+		}).getFunctionBody(), constants.UIDS.LIB.CONVERT_SCHEMA_TO_ELEMENTS)
 		.libs;
 };
