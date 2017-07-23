@@ -46,11 +46,4 @@
 
 
 
-Secure Sandbox Idea.
-- Create a sandbox child process.
-- Send Description of context to child process.
-a) Create method hooks for context object in parent.
-b) Create equivalent methods in context object in sandbox child process.
-c) Shutdown sandbox when all processors have finished executing.
-
 

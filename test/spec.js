@@ -1026,7 +1026,7 @@ describe('Integration', function() {
 
 						fixture.engine.queryProcess({}, function(er, processes) {
 							processes[processes.length - 1].describe(function(er, res) {
-								console.log(JSON.stringify(res, null, ' '));
+								assert.equal(res.steps[0].form.elements[0].args.extra.editTemplate.length, 7);
 								done();
 							});
 

@@ -151,8 +151,8 @@ function init(config) {
 
 
 	/**
-	 * this represents a dynamo step. Steps could be either require userinput or not.
-	 * @param {Any} opts Object representation of a step or string of _id
+	 * this represents a dynamo step. Steps could  require user input or not.
+	 * @param {Any} opts Object representation of a step or string with _id
 	 */
 	function DynamoStep(opts) {
 		var self = this;
@@ -200,6 +200,7 @@ function init(config) {
 				}
 			}
 		});
+		
 		/**
 		 * Offline State
 		 * @param {Step} parent State Owner
