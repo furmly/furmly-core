@@ -1,4 +1,4 @@
-/*jshint esversion: 6 */
+
 var assert = require('assert'),
 	EventEmitter = require('events'),
 	async = require('async'),

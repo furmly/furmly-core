@@ -217,14 +217,16 @@ module.exports = function(constants, systemEntities) {
 														createElement('type', 'Type',
 															'',
 															constants.ELEMENTTYPE.SELECTSET, {
-																path: 'value',
+																path: 'config',
 																items: [{
 																	id: constants.NAVIGATIONTYPE.DYNAMO,
 																	displayLabel: 'Link to a Dynamo process/view',
 																	elements: [
 																		createElement('value', 'Select a Dynamo Process', '', constants.ELEMENTTYPE.SELECT, {
 																			type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																			value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSES]
+																			config: {
+																				value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSES]
+																			}
 																		})
 																	]
 																}, {
@@ -269,7 +271,9 @@ module.exports = function(constants, systemEntities) {
 																	}),
 																	createElement('createProcessor', 'Processor that will create object', '', constants.ELEMENTTYPE.SELECT, {
 																		type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																		value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																		config: {
+																			value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																		}
 																	}),
 																	createElement('editTemplate', 'Edit Template', '', constants.ELEMENTTYPE.LIST, {
 																		itemTemplate: elementItemTemplate,
@@ -277,12 +281,16 @@ module.exports = function(constants, systemEntities) {
 																	}),
 																	createElement('editProcessor', 'Processor that will edit object', '', constants.ELEMENTTYPE.SELECT, {
 																		type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																		value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS],
+																		config: {
+																			value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS],
+																		},
 																		optional: true
 																	}),
 																	createElement('fetchSingleItemProcessor', 'Processor that will fetch object before editing', '', constants.ELEMENTTYPE.SELECT, {
 																		type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																		value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																		config: {
+																			value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																		}
 																	})
 																]
 															}]
@@ -290,22 +298,27 @@ module.exports = function(constants, systemEntities) {
 														createElement('commands', 'Commands', 'List of commands to attach to grid items.', constants.ELEMENTTYPE.LIST, {
 															itemTemplate: [
 																createElement('commandType', 'Command Type', '', constants.ELEMENTTYPE.SELECTSET, {
+																	path: 'command',
 																	items: [{
 																		id: constants.GRIDCOMMANDTYPE.PROCESSOR,
 																		displayLabel: 'Processor',
 																		elements: [
-																			createElement('command', 'Select a Processor', '', constants.ELEMENTTYPE.SELECT, {
+																			createElement('value', 'Select a Processor', '', constants.ELEMENTTYPE.SELECT, {
 																				type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																				value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																				config: {
+																					value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																				}
 																			})
 																		]
 																	}, {
 																		id: constants.GRIDCOMMANDTYPE.NAV,
 																		displayLabel: 'Navigation Link',
 																		elements: [
-																			createElement('command', 'Select a Process to navigate to', '', constants.ELEMENTTYPE.SELECT, {
+																			createElement('value', 'Select a Process to navigate to', '', constants.ELEMENTTYPE.SELECT, {
 																				type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																				value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSES]
+																				config: {
+																					value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSES]
+																				}
 																			})
 																		]
 																	}]
@@ -319,7 +332,9 @@ module.exports = function(constants, systemEntities) {
 														}),
 														createElement('source', 'Source', 'This returns the items to display. The processor must be paginatable', constants.ELEMENTTYPE.SELECT, {
 															type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-															value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+															config: {
+																value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+															}
 														}),
 														createElement('gridArgs', 'Arguments (passed to all processors)', '', constants.ELEMENTTYPE.SCRIPT, {
 															type: 'JSON'
@@ -330,6 +345,7 @@ module.exports = function(constants, systemEntities) {
 													displayLabel: 'Image',
 													elements: [
 														createElement('type', 'Type of Image', '', constants.ELEMENTTYPE.SELECTSET, {
+															path: 'config',
 															items: [{
 																id: constants.IMAGETYPE.REL,
 																displayLabel: 'Relative (Client will provide image)',
@@ -353,7 +369,9 @@ module.exports = function(constants, systemEntities) {
 															'The user interface uses this value to determine what type of input',
 															constants.ELEMENTTYPE.SELECT, {
 																type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																value: opts[constants.UIDS.PROCESSOR.LIST_INPUT_TYPES]
+																config: {
+																	value: opts[constants.UIDS.PROCESSOR.LIST_INPUT_TYPES]
+																}
 															})
 													]
 												}, {
@@ -363,6 +381,7 @@ module.exports = function(constants, systemEntities) {
 														createElement('type', 'Type of Select',
 															'The user interface uses this value to determine the available types',
 															constants.ELEMENTTYPE.SELECTSET, {
+																path: 'config',
 																items: [{
 																	id: constants.ELEMENT_SELECT_SOURCETYPE.FORM,
 																	displayLabel: 'Another Element in the form.',
@@ -380,9 +399,11 @@ module.exports = function(constants, systemEntities) {
 																	elements: [
 																		createElement('value', 'Value', '', constants.ELEMENTTYPE.SELECT, {
 																			type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																			value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																			config: {
+																				value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																			}
 																		}),
-																		createElement('args', 'Custom Arguments', '', constants.ELEMENTTYPE.SCRIPT)
+																		createElement('customArgs', 'Custom Arguments', '', constants.ELEMENTTYPE.SCRIPT)
 																	]
 																}],
 
@@ -498,7 +519,9 @@ module.exports = function(constants, systemEntities) {
 							commands: [{
 								commandType: constants.GRIDCOMMANDTYPE.NAV,
 								commandText: 'edit',
-								command: constants.UIDS.PROCESS.CREATE_PROCESS
+								command: {
+									value: constants.UIDS.PROCESS.CREATE_PROCESS
+								}
 							}]
 						})
 					]
@@ -511,11 +534,12 @@ module.exports = function(constants, systemEntities) {
 
 		var templateName = 'entitiesItemTemplate',
 			gui = createElement('choice', 'Properties (different ways of creating the same thing)', '', constants.ELEMENTTYPE.SELECTSET, {
+				path: 'template',
 				items: [{
 					id: 'Gui',
 					displayLabel: 'Designer',
 					elements: [
-						createElement('template', 'Entity Template', '', constants.ELEMENTTYPE.LIST, {
+						createElement('value', 'Entity Template', '', constants.ELEMENTTYPE.LIST, {
 							options: 'TAG',
 							behavior: {
 								dynamo_ref: templateName
@@ -561,7 +585,9 @@ module.exports = function(constants, systemEntities) {
 										elements: [
 											createElement('ref', 'Reference', '', constants.ELEMENTTYPE.SELECT, {
 												type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-												value: opts[constants.UIDS.PROCESSOR.LIST_ENTITY_SCHEMAS]
+												config: {
+													value: opts[constants.UIDS.PROCESSOR.LIST_ENTITY_SCHEMAS]
+												}
 											})
 										]
 									}]
@@ -572,7 +598,7 @@ module.exports = function(constants, systemEntities) {
 				}, {
 					id: 'Code',
 					displayLabel: 'Advanced (Direct Creation)',
-					elements: [createElement('template', 'Entity Template', '', constants.ELEMENTTYPE.SCRIPT)]
+					elements: [createElement('value', 'Entity Template', '', constants.ELEMENTTYPE.SCRIPT)]
 				}]
 			});
 		return {

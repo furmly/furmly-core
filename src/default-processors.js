@@ -123,7 +123,9 @@ module.exports = function(constants, systemEntities) {
 				var result = {
 					choice: 'Code',
 					name: self.args._id,
-					template: JSON.stringify(code, null, ' ')
+					template: {
+						value: JSON.stringify(code, null, ' ')
+					}
 				};
 				callback(null, result);
 			});
@@ -188,7 +190,7 @@ module.exports = function(constants, systemEntities) {
 				}
 			}
 
-			var data = resolve(this.args.entity.choice, this.args.entity.template),
+			var data = resolve(this.args.entity.choice, this.args.entity.template.value),
 				self = this;
 			this.entityRepo.createSchema(this.args.entity.name, data, function(er) {
 				if (er) return callback(er);
@@ -207,7 +209,7 @@ module.exports = function(constants, systemEntities) {
 
 		}).getFunctionBody(),
 		updateSchemaCode = (() => {
-			this.entityRepo.updateSchema(this.args.entity.name, JSON.parse(this.args.entity.template), callback);
+			this.entityRepo.updateSchema(this.args.entity.name, JSON.parse(this.args.entity.template.value), callback);
 
 		}).getFunctionBody();
 
