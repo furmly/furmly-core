@@ -933,7 +933,21 @@ describe('Integration', function() {
 				done();
 			});
 		});
-
+		it('cannot run a view step', function(done) {
+			var fixture = this;
+			fixture.stepInstance.processors.length = 0;
+			fixture.stepInstance.mode = app.constants.STEPMODE.VIEW;
+			fixture.processInstance.steps.push(fixture.stepInstance);
+			fixture.engine.saveProcess(fixture.processInstance, {
+				retrieve: true
+			}, function(er, proc) {
+				assert.isNull(er);
+				proc.run({}, function(er) {
+					assert.isNotNull(er);
+					done();
+				})
+			})
+		});
 		it('can auto generate process for managing an entity while generating schema', function(done) {
 
 			var fixture = this,

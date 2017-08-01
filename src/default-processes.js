@@ -27,6 +27,10 @@ module.exports = function(constants, systemEntities) {
 		};
 	}
 
+	function clone(obj) {
+		return JSON.parse(JSON.stringify(obj));
+	}
+
 	function createHidden(x) {
 		return createElement(x, '', '', constants.ELEMENTTYPE.HIDDEN);
 	}
@@ -457,6 +461,9 @@ module.exports = function(constants, systemEntities) {
 																			constants.ELEMENTTYPE.LABEL),
 																		createElement('template_ref', 'Referenced Tag', '', constants.ELEMENTTYPE.INPUT, {
 																			type: constants.INPUTTYPE.TEXT
+																		}),
+																		createElement('extension', 'Extensions (additional UI components)', '', constants.ELEMENTTYPE.LIST, {
+																			itemTemplate: elementItemTemplate
 																		})
 																	]
 																}]
@@ -533,6 +540,59 @@ module.exports = function(constants, systemEntities) {
 	function manageEntitiesDefinition(opts) {
 
 		var templateName = 'entitiesItemTemplate',
+			arrayTemplateName = 'arrayItemTemplate';
+		baseItemTemplate = [
+				createElement('propertyName', 'Property Name', '', constants.ELEMENTTYPE.INPUT),
+				createElement('propertyType', 'Property Type', '', constants.ELEMENTTYPE.SELECTSET, {
+					path: 'props',
+					items: [{
+						id: constants.ENTITYTYPE.STRING,
+						displayLabel: 'String'
+					}, {
+						id: constants.ENTITYTYPE.NUMBER,
+						displayLabel: 'Number'
+					}, {
+						id: constants.ENTITYTYPE.BOOLEAN,
+						displayLabel: 'Boolean'
+					}, {
+						id: constants.ENTITYTYPE.DATE,
+						displayLabel: 'Date'
+					}, {
+						id: constants.ENTITYTYPE.OBJECT,
+						displayLabel: 'Object',
+						elements: [
+							createElement('properties', 'Properties', '', constants.ELEMENTTYPE.LIST, {
+								itemTemplate: {
+									template_ref: templateName
+								}
+							})
+						]
+					}, {
+						id: constants.ENTITYTYPE.ARRAY,
+						displayLabel: 'Array',
+						elements: [
+							createElement('properties', 'Of', '', constants.ELEMENTTYPE.LIST, {
+								options: 'TAG',
+								behavior: {
+									dynamo_ref: arrayTemplateName
+								},
+								itemTemplate: null
+							})
+						]
+					}, {
+						id: constants.ENTITYTYPE.REFERENCE,
+						displayLabel: 'Reference an existing Schema',
+						elements: [
+							createElement('ref', 'Reference', '', constants.ELEMENTTYPE.SELECT, {
+								type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+								config: {
+									value: opts[constants.UIDS.PROCESSOR.LIST_ENTITY_SCHEMAS]
+								}
+							})
+						]
+					}]
+				})
+			],
 			gui = createElement('choice', 'Properties (different ways of creating the same thing)', '', constants.ELEMENTTYPE.SELECTSET, {
 				path: 'template',
 				items: [{
@@ -544,55 +604,7 @@ module.exports = function(constants, systemEntities) {
 							behavior: {
 								dynamo_ref: templateName
 							},
-							itemTemplate: [
-								createElement('propertyName', 'Property Name', '', constants.ELEMENTTYPE.INPUT),
-								createElement('propertyType', 'Property Type', '', constants.ELEMENTTYPE.SELECTSET, {
-									items: [{
-										id: constants.ENTITYTYPE.STRING,
-										displayLabel: 'String'
-									}, {
-										id: constants.ENTITYTYPE.NUMBER,
-										displayLabel: 'Number'
-									}, {
-										id: constants.ENTITYTYPE.BOOLEAN,
-										displayLabel: 'Boolean'
-									}, {
-										id: constants.ENTITYTYPE.DATE,
-										displayLabel: 'Date'
-									}, {
-										id: constants.ENTITYTYPE.OBJECT,
-										displayLabel: 'Object',
-										elements: [
-											createElement('properties', 'Properties', '', constants.ELEMENTTYPE.LIST, {
-												itemTemplate: {
-													template_ref: templateName
-												}
-											})
-										]
-									}, {
-										id: constants.ENTITYTYPE.ARRAY,
-										displayLabel: 'Array',
-										elements: [
-											createElement('properties', 'Of', '', constants.ELEMENTTYPE.LIST, {
-												itemTemplate: {
-													template_ref: templateName
-												}
-											})
-										]
-									}, {
-										id: constants.ENTITYTYPE.REFERENCE,
-										displayLabel: 'Reference an existing Schema',
-										elements: [
-											createElement('ref', 'Reference', '', constants.ELEMENTTYPE.SELECT, {
-												type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-												config: {
-													value: opts[constants.UIDS.PROCESSOR.LIST_ENTITY_SCHEMAS]
-												}
-											})
-										]
-									}]
-								})
-							]
+							itemTemplate: baseItemTemplate
 						})
 					]
 				}, {
@@ -601,6 +613,18 @@ module.exports = function(constants, systemEntities) {
 					elements: [createElement('value', 'Entity Template', '', constants.ELEMENTTYPE.SCRIPT)]
 				}]
 			});
+		arrayItemTemplate = clone(baseItemTemplate);
+		var propertyName = arrayItemTemplate.splice(0, 1)[0],
+			items = arrayItemTemplate[0].args.items;
+		items.forEach(function(x, index) {
+			if (x.id !== constants.ENTITYTYPE.REFERENCE) x.elements ? x.elements.splice(0, 0, propertyName) : [propertyName];
+			if (x.id == constants.ENTITYTYPE.ARRAY) x.elements[1].args.itemTemplate = {
+				template_ref: arrayTemplateName
+			};
+		});
+
+		baseItemTemplate[1].args.items.filter(x => x.id == constants.ENTITYTYPE.ARRAY)[0].elements[0].args.itemTemplate = arrayItemTemplate;
+
 		return {
 			title: 'Manage Schemas',
 			description: 'System administators can create and exist entity schemas',

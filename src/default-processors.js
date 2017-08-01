@@ -155,30 +155,45 @@ module.exports = function(constants, systemEntities) {
 		}).getFunctionBody(),
 		createSchemaCode = (() => {
 			function resolve(type, data) {
+				function parsePropertyWithName(template, x) {
+					if (x.propertyType == constants.ENTITYTYPE.OBJECT) {
+						template[x.propertyName || x.props.propertyName] = parse(x.props.properties);
+						return;
+					}
+					if (x.propertyType == constants.ENTITYTYPE.ARRAY) {
+						template[x.propertyName || x.props.propertyName] = [parse(x.props.properties)];
+						return;
+					}
+
+					if (x.propertyType == constants.ENTITYTYPE.REFERENCE) {
+						template[x.propertyName || x.props.propertyName] = {
+							type: 'ObjectId',
+							ref: x.props.ref
+						};
+						return;
+					}
+
+					template[x.propertyName] = {
+						type: x.propertyType
+					};
+				}
+
+				function parsePropertyWithoutName(template, x) {
+					if (x.propertyType !== constants.ENTITYTYPE.REFERENCE)
+						throw new Error('all entity types must have a propertyName except REFERENCE');
+
+					template.type = 'ObjectId';
+					template.ref = x.props.ref;
+				}
 
 				function parse(data) {
 					var template = {};
 					data.forEach((x) => {
-						if (x.propertyType == constants.ENTITYTYPE.OBJECT) {
-							template[x.propertyName] = parse(x.properties);
-							return;
+						if (x.propertyName || (x.props && x.props.propertyName)) {
+							parsePropertyWithName(template, x);
+						} else {
+							parsePropertyWithoutName(template, x);
 						}
-						if (x.propertyType == constants.ENTITYTYPE.ARRAY) {
-							template[x.propertyName] = [parse(x.properties)];
-							return;
-						}
-
-						if (x.propertyType == constants.ENTITYTYPE.REFERENCE) {
-							template[x.propertyName] = {
-								type: 'ObjectId',
-								ref: x.ref
-							};
-							return;
-						}
-
-						template[x.propertyName] = {
-							type: x.propertyType
-						};
 					});
 					return template;
 				}
@@ -192,6 +207,7 @@ module.exports = function(constants, systemEntities) {
 
 			var data = resolve(this.args.entity.choice, this.args.entity.template.value),
 				self = this;
+			console.log(data);
 			this.entityRepo.createSchema(this.args.entity.name, data, function(er) {
 				if (er) return callback(er);
 
@@ -210,7 +226,6 @@ module.exports = function(constants, systemEntities) {
 		}).getFunctionBody(),
 		updateSchemaCode = (() => {
 			this.entityRepo.updateSchema(this.args.entity.name, JSON.parse(this.args.entity.template.value), callback);
-
 		}).getFunctionBody();
 
 

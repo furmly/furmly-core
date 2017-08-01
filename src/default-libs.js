@@ -94,7 +94,7 @@ module.exports = function(constants) {
 							processors: [],
 							form: {
 								elements: [
-									self.libs.createElement('grid', 'Manage Processors', 'This view lets administators manage processors', constants.ELEMENTTYPE.GRID, {
+									self.libs.createElement('grid', `Manage ${entityName}`, `This view lets administators manage ${entityName}`, constants.ELEMENTTYPE.GRID, {
 										mode: constants.GRIDMODE.CRUD,
 										source: result[constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC]._id,
 										gridArgs: `{"entityName":"${entityName}","entityLabel":"${entityLabel}"}`,
@@ -123,6 +123,7 @@ module.exports = function(constants) {
 						async.waterfall([
 							userManager.saveClaim.bind(userManager, {
 								type: userManager.constants.CLAIMS.PROCESS,
+								description: proc.title,
 								value: proc._id
 							}),
 							function(result) {
@@ -174,14 +175,24 @@ module.exports = function(constants) {
 			}
 			ElementsConverter.prototype.convert = function(x) {
 				var elements = [],
+					keys = Object.keys(x),
 					self = this;
-				Object.keys(x).forEach(y => {
-					var result;
+
+				for (var i = 0; i < keys.length; i++) {
+					var result, y = keys[i];
 					if (Array.prototype.isPrototypeOf(x[y])) {
 						result = self.map[`${constants.ENTITYTYPE.ARRAY}`].call(self, x[y], y);
 					}
 					if (typeof x[y] == 'string' && self.map[x[y]]) {
-						result = self.map[x[y]].call(self, x[y], y);
+						//this should only happen if entity is a reference in an array.
+						//console.log('probably found an ObjectId in an Array');
+						//console.log(x[y]);
+						if (x[y] !== constants.ENTITYTYPE.REFERENCE) throw new Error('Must be a Reference')
+
+						result = self.map[x[y]].call(self, x, y);
+						//console.log(result);
+						elements.push(result);
+						break;
 					}
 
 					if (!result && typeof x[y] == 'object') {
@@ -194,8 +205,11 @@ module.exports = function(constants) {
 					}
 					if (!result)
 						throw new Error('unknown type , could not parse');
+
+
+					//console.log(result);
 					elements.push(result);
-				});
+				}
 				return elements;
 			};
 			ElementsConverter.prototype.map = {
@@ -230,7 +244,7 @@ module.exports = function(constants) {
 					});
 				},
 				[constants.ENTITYTYPE.REFERENCE]: function(data, name) {
-					return this.libs.createElement(name, this.firstWord(name), '', this.constants.ELEMENTTYPE.SELECT, {
+					return this.libs.createElement("_id", 'id', '', this.constants.ELEMENTTYPE.SELECT, {
 						type: this.constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
 						value: this.processors[this.constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC]._id,
 						customArgs: `{"entityName":"${data.ref}"}`,

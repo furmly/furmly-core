@@ -1,4 +1,3 @@
-
 var assert = require('assert'),
 	EventEmitter = require('events'),
 	async = require('async'),
@@ -117,7 +116,7 @@ function init(config) {
 				PROCESSOR: new Constant('FETCH_SCHEMA', 'CREATE_SCHEMA', 'UPDATE_SCHEMA', 'LIST_ENTITY_SCHEMAS', 'LIST_ENTITY_TYPES', 'LIST_ENTITY_GENERIC', 'LIST_ASYNC_VALIDATORS', 'LIST_PROCESSES', 'LIST_PROCESSORS', 'LIST_INPUT_TYPES', 'LIST_ELEMENT_TYPES', 'FETCH_PROCESS', 'CREATE_PROCESS', 'CREATE_ENTITY', 'UPDATE_ENTITY', 'FETCH_ENTITY'),
 				PROCESS: new Constant('MANAGE_ENTITY_SCHEMA', 'CREATE_PROCESS', 'MANAGE_PROCESS', 'MANAGE_PROCESSOR', 'MANAGE_LIBS')
 			},
-			ENTITYTYPE: new Constant(["STRING", "String"], ["NUMBER", "Number"], ["DATE", "Date"], ["BOOLEAN", "Boolean"], ["OBJECT", "Object"], ["REFERENCE", "ObjectId"],["ARRAY", "Array"]),
+			ENTITYTYPE: new Constant(["STRING", "String"], ["NUMBER", "Number"], ["DATE", "Date"], ["BOOLEAN", "Boolean"], ["OBJECT", "Object"], ["REFERENCE", "ObjectId"], ["ARRAY", "Array"]),
 			ELEMENTTYPE: new Constant("INPUT", "SCRIPT", "DESIGNER", "HIDDEN", "GRID", "NAV", "FILEUPLOAD", "SELECTSET", "LABEL", "TITLE", "LARGEINPUT", "COMMAND", "SECTION", "TABS", "SELECT", "LIST", "IMAGE")
 		};
 	}
@@ -200,7 +199,7 @@ function init(config) {
 				}
 			}
 		});
-		
+
 		/**
 		 * Offline State
 		 * @param {Step} parent State Owner
@@ -276,7 +275,8 @@ function init(config) {
 			//this calls all the processors of the step.
 			this.run = function(context, fn) {
 				var self = this;
-				//
+				if (parent.mode == constants.STEPMODE.VIEW)
+					return fn(new Error('Cannot process a view step'));
 
 				var serverProcessors = parent.processors, // _.filter(parent.processors, ['processorType', constants.PROCESSORTYPE.SERVER]),
 					_context = prepareContext({
@@ -550,9 +550,9 @@ function init(config) {
 	 * Enforce class invariant
 	 * 
 	 */
-	DynamoProcess.prototype.validate = function() {
+	DynamoProcess.prototype.validate = function(fn) {
 		if (!this._id)
-			throw new Error('Process must have an id');
+			fn(new Error('Process must have an id'));
 	};
 
 	/**
@@ -563,7 +563,8 @@ function init(config) {
 	 */
 	DynamoProcess.prototype.run = function(context, fn) {
 		var self = this;
-		this.validate();
+		this.validate(fn);
+
 		//console.log(context);
 
 		function processStep(args) {
@@ -681,7 +682,7 @@ function init(config) {
 			context = null;
 		}
 
-		this.validate();
+		this.validate(fn);
 		var self = this,
 			proc = _.pickBy(self, notAFunction),
 			_allSteps = [];
