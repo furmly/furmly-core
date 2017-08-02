@@ -110,7 +110,7 @@ function init(config) {
 			VALIDATORTYPE: new Constant('REQUIRED', 'MAXLENGTH', 'MINLENGTH', 'REGEX'),
 			INPUTTYPE: new Constant(['TEXT', 'text'], ['NUMBER', 'number'], ['DATE', 'date'], ['CHECKBOX', 'checkbox']),
 			NAVIGATIONTYPE: new Constant('CLIENT', 'DYNAMO'),
-			IMAGETYPE: new Constant('REL', 'DATA'),
+			IMAGETYPE: new Constant('REL', 'DATA', 'URL'),
 			UIDS: {
 				LIB: new Constant(['CONVERT_FILTER', 'convertFilter'], ['CREATE_ID', 'createId'], ['CONVERT_SCHEMA_TO_ELEMENTS', 'ElementsConverter'], ['CREATE_CRUD_PROCESS', 'createCRUDProcess'], ['CREATE_ELEMENT', 'createElement'], ['CONVERT_TO_SELECTABLE_LIST', 'convertToSelectableList']),
 				PROCESSOR: new Constant('FETCH_SCHEMA', 'CREATE_SCHEMA', 'UPDATE_SCHEMA', 'LIST_ENTITY_SCHEMAS', 'LIST_ENTITY_TYPES', 'LIST_ENTITY_GENERIC', 'LIST_ASYNC_VALIDATORS', 'LIST_PROCESSES', 'LIST_PROCESSORS', 'LIST_INPUT_TYPES', 'LIST_ELEMENT_TYPES', 'FETCH_PROCESS', 'CREATE_PROCESS', 'CREATE_ENTITY', 'UPDATE_ENTITY', 'FETCH_ENTITY'),
@@ -1000,6 +1000,7 @@ function init(config) {
 		this.args = opts.args;
 		this.asyncValidators = opts.asyncValidators || [];
 		this.validators = opts.validators || [];
+		this.uid = opts.uid;
 	}
 	/**
 	 * Creates a description of an element  a client can consume
@@ -1014,6 +1015,7 @@ function init(config) {
 			args: this.args,
 			description: this.description,
 			validators: this.validators,
+			uid: this.uid,
 			asyncValidators: _.map(this.asyncValidators, '_id')
 		});
 	};
@@ -1036,6 +1038,7 @@ function init(config) {
 				args: self.args,
 				description: self.description,
 				validators: self.validators,
+				uid: self.uid,
 				asyncValidators: _.map(asyncValidators, '_id')
 			}, fn);
 		});
@@ -1477,7 +1480,7 @@ function init(config) {
 			fs.writeFile.bind(this, self.getPath(systemEntities.processor), '{"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
 			fs.writeFile.bind(this, self.getPath(systemEntities.lib), '{"uid":{"type":"String","unique":true,"required":true},"code":{"type":"String","required":true}}'),
 			fs.writeFile.bind(this, self.getPath(systemEntities.asyncValidator), '{"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
-			fs.writeFile.bind(this, self.getPath(systemEntities.element), '{"name":{"type":"String","required":true},"label":{"type":"String"},"description":{"type":"String"},"elementType":{"type":"String","enum":[' + (_.map(Object.keys(constants.ELEMENTTYPE), function(x) {
+			fs.writeFile.bind(this, self.getPath(systemEntities.element), '{"uid":{"type":"String"},"name":{"type":"String","required":true},"label":{"type":"String"},"description":{"type":"String"},"elementType":{"type":"String","enum":[' + (_.map(Object.keys(constants.ELEMENTTYPE), function(x) {
 				return '"' + x + '"';
 			}).join(',')) + '],"required":true},"asyncValidators":[{"type":"ObjectId","ref":"' + systemEntities.asyncValidator + '"}],"validators":[{"validatorType":{"type":"String","enum":[' + (_.map(Object.keys(constants.VALIDATORTYPE), function(x) {
 				return '"' + x + '"';

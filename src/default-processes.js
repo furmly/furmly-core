@@ -351,9 +351,17 @@ module.exports = function(constants, systemEntities) {
 														createElement('type', 'Type of Image', '', constants.ELEMENTTYPE.SELECTSET, {
 															path: 'config',
 															items: [{
+																id: constants.IMAGETYPE.URL,
+																displayLabel: 'Link',
+																elements: [createElement('data', 'Url', '', constants.ELEMENTTYPE.INPUT, {
+																	type: constants.INPUTTYPE.TEXT
+																})]
+															}, {
 																id: constants.IMAGETYPE.REL,
 																displayLabel: 'Relative (Client will provide image)',
-																elements: []
+																elements: [createElement('data', 'Identifier', '', constants.ELEMENTTYPE.INPUT, {
+																	type: constants.INPUTTYPE.TEXT
+																})]
 															}, {
 																id: constants.IMAGETYPE.DATA,
 																displayLabel: 'Image data as a base64 URL',
@@ -484,6 +492,7 @@ module.exports = function(constants, systemEntities) {
 										createElement('label', 'Label',
 											'This is the item used to display placeholder text for elements',
 											constants.ELEMENTTYPE.INPUT),
+										createElement('uid', 'Unique Identifier (possibly used to customize the appearance on clientside', '', constants.ELEMENTTYPE.INPUT),
 										createElement('description', 'Description',
 											'Explanation of elements purpose',
 											constants.ELEMENTTYPE.INPUT)
