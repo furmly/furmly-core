@@ -56,7 +56,7 @@ module.exports = function(constants, systemEntities) {
 				options = {
 					limit: this.args.count,
 					sort: this.args.sort || {
-						_id: 1
+						_id: -1
 					}
 				};
 				if (this.args._id)
@@ -64,7 +64,7 @@ module.exports = function(constants, systemEntities) {
 						query._id = {
 							$lt: this.args._id
 						};
-						options.sort._id = -1;
+						options.sort._id = 1;
 					} else {
 						query._id = {
 							$gt: this.args._id
@@ -173,7 +173,7 @@ module.exports = function(constants, systemEntities) {
 						return;
 					}
 
-					template[x.propertyName] = {
+					template[x.propertyName || x.props.propertyName] = {
 						type: x.propertyType
 					};
 				}
@@ -190,6 +190,7 @@ module.exports = function(constants, systemEntities) {
 					var template = {};
 					data.forEach((x) => {
 						if (x.propertyName || (x.props && x.props.propertyName)) {
+
 							parsePropertyWithName(template, x);
 						} else {
 							parsePropertyWithoutName(template, x);
@@ -207,7 +208,7 @@ module.exports = function(constants, systemEntities) {
 
 			var data = resolve(this.args.entity.choice, this.args.entity.template.value),
 				self = this;
-			console.log(data);
+			console.log('entity to create--------:\n' + JSON.stringify(data) + 'n\-----------:');
 			this.entityRepo.createSchema(this.args.entity.name, data, function(er) {
 				if (er) return callback(er);
 
@@ -217,7 +218,14 @@ module.exports = function(constants, systemEntities) {
 						self.args.entity.name,
 						self.args.entity.displayProperty,
 						self.args.entity.group,
-						self.args.entity.category, data, callback);
+						self.args.entity.category, data,
+						function(er, result) {
+							if (er)
+							//delete what you just created this.entityRepo.deleteSchema()
+								return console.log('an error occurred while creating schema ..rolling back'), callback(er);
+
+							callback(null, result);
+						});
 					return;
 				}
 				callback(null, "Successfully created config");

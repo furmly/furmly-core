@@ -952,11 +952,11 @@ describe('Integration', function() {
 
 			var fixture = this,
 				id = 'fake_id',
-				userManger = {
+				userManager = {
 					defaulRole: 'admin',
 					saveClaim: sinon.spy(function() {
 						var args = Array.prototype.slice.call(arguments);
-						assert.equal(args[0].type, userManger.constants.CLAIMS.PROCESS);
+						assert.equal(args[0].type, userManager.constants.CLAIMS.PROCESS);
 						args[0]._id = id;
 						args[args.length - 1](null, args[0]);
 					}),
@@ -1012,7 +1012,9 @@ describe('Integration', function() {
 						ref: "Something"
 					}
 				};
-			fixture.engine.setUserManager(userManger);
+			fixture.engine.setInfrastructure({
+				userManager
+			});
 			fixture.engine.init(function(er) {
 				assert.isUndefined(er);
 				fixture.engine.saveProcessor({
@@ -1034,9 +1036,9 @@ describe('Integration', function() {
 						category: 'MAINMENU'
 					}, proc, function(er, result) {
 						assert.isNull(er);
-						assert.equal(userManger.saveClaim.callCount, 1);
-						assert.equal(userManger.addClaimToRole.callCount, 1);
-						assert.equal(userManger.saveMenu.callCount, 1);
+						assert.equal(userManager.saveClaim.callCount, 1);
+						assert.equal(userManager.addClaimToRole.callCount, 1);
+						assert.equal(userManager.saveMenu.callCount, 1);
 
 						fixture.engine.queryProcess({}, function(er, processes) {
 							processes[processes.length - 1].describe(function(er, res) {

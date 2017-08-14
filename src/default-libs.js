@@ -5,7 +5,7 @@ module.exports = function(constants) {
 
 	function createLib(code, uid) {
 		if (!uid) {
-			console.log(arguments);
+
 			throw new Error('Every default lib must have a uid');
 		}
 		if (!this.libs) {
@@ -80,14 +80,14 @@ module.exports = function(constants) {
 						}, {}));
 					}
 				], (er, result) => {
-					if (er) return callback(er);
+					if (er) return fn(er);
 
 
 					template = template.concat(new self.libs.ElementsConverter(self.libs, result, constants).convert(schema));
 					var processInstance = {
 						title: title,
 						description: `System administators can create and edit existing ${entityName}`,
-						uid: `${entityName}_CRUD`,
+						uid: `${entityName}_CRUD_` + (Math.random() * 10),
 						steps: [{
 							stepType: constants.STEPTYPE.CLIENT,
 							mode: constants.STEPMODE.VIEW,
@@ -116,14 +116,15 @@ module.exports = function(constants) {
 					};
 
 					self.entityRepo.saveProcess(processInstance, function(er, proc) {
-						if (er) return callback(er);
-						let userManager = self.entityRepo.userManager();
+						if (er) return fn(er);
+
+						let userManager = self.entityRepo.infrastructure().userManager;
 						if (!userManager)
-							return callback(new Error('Entity Repo does not provide a means of creating menus'));
+							return fn(new Error('Entity Repo does not provide a means of creating menus'));
 						async.waterfall([
 							userManager.saveClaim.bind(userManager, {
 								type: userManager.constants.CLAIMS.PROCESS,
-								description: proc.title,
+								description: title,
 								value: proc._id
 							}),
 							function(result) {
@@ -148,7 +149,7 @@ module.exports = function(constants) {
 								}, callback);
 							}
 						], function(er) {
-							if (er) return callback(er);
+							if (er) return fn(er);
 
 							return fn(null, 'successfully created crud process');
 						});
@@ -246,8 +247,10 @@ module.exports = function(constants) {
 				[constants.ENTITYTYPE.REFERENCE]: function(data, name) {
 					return this.libs.createElement("_id", 'id', '', this.constants.ELEMENTTYPE.SELECT, {
 						type: this.constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-						value: this.processors[this.constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC]._id,
-						customArgs: `{"entityName":"${data.ref}"}`,
+						config: {
+							value: this.processors[this.constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC]._id
+						},
+						customArgs: `{"entityName":"${data.ref}",entityLabel:"displayLabel"}`,
 					});
 				}
 			};

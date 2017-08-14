@@ -1,5 +1,3 @@
-/*jshint esversion: 6 */
-
 module.exports = function(constants, systemEntities) {
 	const _ = require('lodash'),
 		misc = require('./misc');
@@ -208,6 +206,10 @@ module.exports = function(constants, systemEntities) {
 											constants.ELEMENTTYPE.SELECTSET, {
 												path: 'args',
 												items: [{
+													id: constants.ELEMENTTYPE.LABEL,
+													displayLabel: 'Label',
+													elements: []
+												}, {
 													id: constants.ELEMENTTYPE.HIDDEN,
 													displayLabel: 'Hidden Field (i.e id)',
 													elements: []
@@ -250,6 +252,9 @@ module.exports = function(constants, systemEntities) {
 													elements: [
 														createElement('fileType', 'Allowed file extensions', '', constants.ELEMENTTYPE.INPUT, {
 															type: constants.INPUTTYPE.TEXT
+														}),
+														createElement('showPreview', 'Show Preview', '', constants.ELEMENTTYPE.INPUT, {
+															type: constants.INPUTTYPE.CHECKBOX
 														})
 													]
 												}, {
@@ -342,7 +347,8 @@ module.exports = function(constants, systemEntities) {
 														}),
 														createElement('gridArgs', 'Arguments (passed to all processors)', '', constants.ELEMENTTYPE.SCRIPT, {
 															type: 'JSON'
-														})
+														}),
+														createElement('templateConfig', 'Template (JSON representing template/template config e.g {"name":"basic","config":{name:"Name"}})', '', constants.ELEMENTTYPE.SCRIPT)
 													]
 												}, {
 													id: constants.ELEMENTTYPE.IMAGE,
@@ -532,6 +538,7 @@ module.exports = function(constants, systemEntities) {
 							source: opts[constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC],
 							gridArgs: `{"entityName":"${systemEntities.process}","entityLabel":"title"}`,
 							filter: [createElement('title', 'Title', '', constants.ELEMENTTYPE.INPUT)],
+							templateConfig: '{"name":"basic","config":{"title":"Title","description":"Description"}}',
 							commands: [{
 								commandType: constants.GRIDCOMMANDTYPE.NAV,
 								commandText: 'edit',
@@ -626,7 +633,7 @@ module.exports = function(constants, systemEntities) {
 		var propertyName = arrayItemTemplate.splice(0, 1)[0],
 			items = arrayItemTemplate[0].args.items;
 		items.forEach(function(x, index) {
-			if (x.id !== constants.ENTITYTYPE.REFERENCE) x.elements ? x.elements.splice(0, 0, propertyName) : [propertyName];
+			if (x.id !== constants.ENTITYTYPE.REFERENCE) x.elements ? x.elements.splice(0, 0, propertyName) : (x.elements = [propertyName]);
 			if (x.id == constants.ENTITYTYPE.ARRAY) x.elements[1].args.itemTemplate = {
 				template_ref: arrayTemplateName
 			};
@@ -650,6 +657,7 @@ module.exports = function(constants, systemEntities) {
 							filter: [
 								createElement('name', 'By Name', '', constants.ELEMENTTYPE.INPUT)
 							],
+							templateConfig: '{"name":"basic","config":{"displayLabel":"Name"}}',
 							commands: [],
 							extra: {
 								createTemplate: [
@@ -704,6 +712,7 @@ module.exports = function(constants, systemEntities) {
 								createElement('title', 'Title', '', constants.ELEMENTTYPE.INPUT)
 							],
 							commands: [],
+							templateConfig: '{"name":"basic","config":{"title":"Title","description":"Description","_id":"ID"}}',
 							extra: {
 								createTemplate: template,
 								createProcessor: opts[constants.UIDS.PROCESSOR.CREATE_ENTITY],
@@ -739,6 +748,7 @@ module.exports = function(constants, systemEntities) {
 						createElement('grid', 'Manage Libs', 'This view lets administators manage libs', constants.ELEMENTTYPE.GRID, {
 							mode: constants.GRIDMODE.CRUD,
 							source: opts[constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC],
+							templateConfig: '{"name":"basic","config":{"_id":"ID","uid":"UID"}}',
 							gridArgs: `{"entityName":"${systemEntities.lib}","entityLabel":"uid"}`,
 							filter: [
 								createElement('title', 'Title', '', constants.ELEMENTTYPE.INPUT)

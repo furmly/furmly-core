@@ -1,7 +1,7 @@
 var assert = require('assert'),
 	EventEmitter = require('events'),
 	async = require('async'),
-	//SandBox = require('sandboxed-module'),
+	debug = require('debug')('dynamo'),
 	ObjectID = require("mongodb").ObjectID,
 	util = require('util'),
 	_ = require('lodash'),
@@ -34,7 +34,9 @@ function init(config) {
 	var getDirectories = function(src, callback) {
 		glob(src + '/**/*', callback);
 	};
-
+	var toObjectString = function(obj) {
+		return JSON.stringify(obj, null, ' ');
+	};
 	/**
 	 * Returns a function that checks if a property is defined
 	 * @param  {String} propertyName
@@ -117,7 +119,7 @@ function init(config) {
 				PROCESS: new Constant('MANAGE_ENTITY_SCHEMA', 'CREATE_PROCESS', 'MANAGE_PROCESS', 'MANAGE_PROCESSOR', 'MANAGE_LIBS')
 			},
 			ENTITYTYPE: new Constant(["STRING", "String"], ["NUMBER", "Number"], ["DATE", "Date"], ["BOOLEAN", "Boolean"], ["OBJECT", "Object"], ["REFERENCE", "ObjectId"], ["ARRAY", "Array"]),
-			ELEMENTTYPE: new Constant("INPUT", "SCRIPT", "DESIGNER", "HIDDEN", "GRID", "NAV", "FILEUPLOAD", "SELECTSET", "LABEL", "TITLE", "LARGEINPUT", "COMMAND", "SECTION", "TABS", "SELECT", "LIST", "IMAGE")
+			ELEMENTTYPE: new Constant("INPUT", "SCRIPT", "DESIGNER", "HIDDEN", "GRID", "NAV", "FILEUPLOAD","DOWNLOAD", "SELECTSET", "LABEL", "LARGEINPUT", "COMMAND", "SECTION", "TABS", "SELECT", "LIST", "IMAGE")
 		};
 	}
 
@@ -274,6 +276,7 @@ function init(config) {
 
 			//this calls all the processors of the step.
 			this.run = function(context, fn) {
+				debug(`running client step  ${toObjectString(this)} , with context ${toObjectString(context)}`);
 				var self = this;
 				if (parent.mode == constants.STEPMODE.VIEW)
 					return fn(new Error('Cannot process a view step'));
@@ -294,6 +297,7 @@ function init(config) {
 						constants: constants,
 						entityRepo: this.entityRepo,
 						async: async,
+						debug: debug
 					}
 				});
 				var handle = vm.run(sandboxCode);
@@ -478,6 +482,7 @@ function init(config) {
 					constants: constants,
 					entityRepo: entityRepo,
 					async: async,
+					debug: debug
 				}
 			});
 			let handle = vm.run(sandboxCode);
@@ -565,7 +570,7 @@ function init(config) {
 		var self = this;
 		this.validate(fn);
 
-		//console.log(context);
+
 
 		function processStep(args) {
 
@@ -696,10 +701,11 @@ function init(config) {
 				//fetch data if context and fetch processor are defined.
 
 				if (self.fetchProcessor && context) {
-					new DynamoSandbox(self.fetchProcessor, self.entityRepo).run(context, function(er, result) {
+					context.$description = proc;
+					new DynamoSandbox(self.fetchProcessor, self.entityRepo).run(context, function(er, result, modifiedProcess) {
 						if (er) return fn(new Error('An error occurred while running fetch processor'));
 
-						return fn(null, proc, result);
+						return fn(null, modifiedProcess || proc, result);
 					});
 					return;
 				}
@@ -858,10 +864,12 @@ function init(config) {
 	DynamoEngine.prototype.isValidID = function(id) {
 		return mongoose.Types.ObjectId.isValid(id);
 	};
-	DynamoEngine.prototype.setUserManager = function(manager) {
+	DynamoEngine.prototype.setInfrastructure = function(manager) {
 
-		this.entitiesRepository.setUserManager(manager);
+		this.entitiesRepository.setInfrastructure(manager);
 	};
+
+
 
 	DynamoEngine.prototype.runProcessor = function(context, processor, fn) {
 		var sandbox = new DynamoSandbox(processor, this.entitiesRepository.processorEntityRepo);
@@ -1276,8 +1284,8 @@ function init(config) {
 			updateSchema: self.updateConfig.bind(self),
 			getSchema: self.getConfig.bind(self),
 			getSchemas: self.getConfigNames.bind(self),
-			userManager: function() {
-				return self.userManager;
+			infrastructure: function() {
+				return self.infrastructure;
 			}
 		};
 
@@ -1468,8 +1476,8 @@ function init(config) {
 
 	}
 
-	EntityRepo.prototype.setUserManager = function(manager) {
-		this.userManager = manager;
+	EntityRepo.prototype.setInfrastructure = function(manager) {
+		this.infrastructure = manager;
 	};
 	EntityRepo.prototype.init = function(callback) {
 		var self = this;
