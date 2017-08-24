@@ -22,7 +22,9 @@ const {
 function init(config) {
 	var constants = createConstants();
 	mongoose.Promise = global.Promise;
-
+	generator.setDefault("requiresIdentity", function(value) {
+		return true;
+	});
 	mongoose.connect(config.data.dynamo_url);
 
 	/**
@@ -110,16 +112,16 @@ function init(config) {
 			STEPTYPE: new Constant('OFFLINE', 'CLIENT'),
 			ELEMENT_SELECT_SOURCETYPE: new Constant('PROCESSOR', 'FORM'),
 			VALIDATORTYPE: new Constant('REQUIRED', 'MAXLENGTH', 'MINLENGTH', 'REGEX'),
-			INPUTTYPE: new Constant(['TEXT', 'text'], ['NUMBER', 'number'], ['DATE', 'date'], ['CHECKBOX', 'checkbox']),
+			INPUTTYPE: new Constant(['TEXT', 'text'], ['NUMBER', 'number'], ['DATE', 'date'], ['CHECKBOX', 'checkbox'], ['PASSWORD', 'password']),
 			NAVIGATIONTYPE: new Constant('CLIENT', 'DYNAMO'),
 			IMAGETYPE: new Constant('REL', 'DATA', 'URL'),
 			UIDS: {
-				LIB: new Constant(['CONVERT_FILTER', 'convertFilter'], ['CREATE_ID', 'createId'], ['CONVERT_SCHEMA_TO_ELEMENTS', 'ElementsConverter'], ['CREATE_CRUD_PROCESS', 'createCRUDProcess'], ['CREATE_ELEMENT', 'createElement'], ['CONVERT_TO_SELECTABLE_LIST', 'convertToSelectableList']),
+				LIB: new Constant(['CONVERT_FILTER', 'convertFilter'], ['CREATE_ID', 'createId'], ['CHECK_USER_PASSWORD_AND_PRIVILEDGE', 'isAuthorized'], ['CONVERT_SCHEMA_TO_ELEMENTS', 'ElementsConverter'], ['CREATE_CRUD_PROCESS', 'createCRUDProcess'], ['CREATE_ELEMENT', 'createElement'], ['CONVERT_TO_SELECTABLE_LIST', 'convertToSelectableList']),
 				PROCESSOR: new Constant('FETCH_SCHEMA', 'CREATE_SCHEMA', 'UPDATE_SCHEMA', 'LIST_ENTITY_SCHEMAS', 'LIST_ENTITY_TYPES', 'LIST_ENTITY_GENERIC', 'LIST_ASYNC_VALIDATORS', 'LIST_PROCESSES', 'LIST_PROCESSORS', 'LIST_INPUT_TYPES', 'LIST_ELEMENT_TYPES', 'FETCH_PROCESS', 'CREATE_PROCESS', 'CREATE_ENTITY', 'UPDATE_ENTITY', 'FETCH_ENTITY'),
 				PROCESS: new Constant('MANAGE_ENTITY_SCHEMA', 'CREATE_PROCESS', 'MANAGE_PROCESS', 'MANAGE_PROCESSOR', 'MANAGE_LIBS')
 			},
 			ENTITYTYPE: new Constant(["STRING", "String"], ["NUMBER", "Number"], ["DATE", "Date"], ["BOOLEAN", "Boolean"], ["OBJECT", "Object"], ["REFERENCE", "ObjectId"], ["ARRAY", "Array"]),
-			ELEMENTTYPE: new Constant("INPUT", "SCRIPT", "DESIGNER", "HIDDEN", "GRID", "NAV", "FILEUPLOAD","DOWNLOAD", "SELECTSET", "LABEL", "LARGEINPUT", "COMMAND", "SECTION", "TABS", "SELECT", "LIST", "IMAGE")
+			ELEMENTTYPE: new Constant("INPUT", "SCRIPT", "DESIGNER", "HIDDEN", "GRID", "NAV", "FILEUPLOAD", "DOWNLOAD", "SELECTSET", "LABEL", "LARGEINPUT", "COMMAND", "SECTION", "TABS", "SELECT", "LIST", "IMAGE")
 		};
 	}
 
@@ -281,11 +283,11 @@ function init(config) {
 				if (parent.mode == constants.STEPMODE.VIEW)
 					return fn(new Error('Cannot process a view step'));
 
-				var serverProcessors = parent.processors, // _.filter(parent.processors, ['processorType', constants.PROCESSORTYPE.SERVER]),
+				var serverProcessors = parent.processors, 
 					_context = prepareContext({
 						processors: serverProcessors,
 						args: context,
-						postprocessors: parent.postprocessors //(parent.postprocessors && _.find(parent.postprocessors, q) ? _.filter(parent.postprocessors, q) : null)
+						postprocessors: parent.postprocessors 
 					});
 
 				var vm = new NodeVM({
@@ -519,6 +521,7 @@ function init(config) {
 		this.description = opts.description;
 		this.title = opts.title;
 		this.version = opts.version;
+		this.requiresIdentity = opts.requiresIdentity;
 		this.fetchProcessor = opts.fetchProcessor;
 		this._save = opts.save;
 		if (opts.uid)
@@ -1120,6 +1123,7 @@ function init(config) {
 		this.title = opts.title;
 		this._save = opts.save;
 		this.uid = opts.uid;
+		this.requiresIdentity = opts.requiresIdentity;
 
 		/**
 		 *  User customisable code ran in sandbox.
@@ -1483,12 +1487,12 @@ function init(config) {
 		var self = this;
 
 		async.parallel([
-			fs.writeFile.bind(this, self.getPath(systemEntities.process), '{"fetchProcessor":{"type":"ObjectId","ref":"' + systemEntities.processor + '"},"uid":{"type":"String","unique":true,"sparse":true},"title":{"type":"String","required":true},"description":{"type":"String","required":true},"steps":[{"type":"ObjectId","ref":"' + systemEntities.step + '"}]}'),
+			fs.writeFile.bind(this, self.getPath(systemEntities.process), '{"requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"fetchProcessor":{"type":"ObjectId","ref":"' + systemEntities.processor + '"},"uid":{"type":"String","unique":true,"sparse":true},"title":{"type":"String","required":true},"description":{"type":"String","required":true},"steps":[{"type":"ObjectId","ref":"' + systemEntities.step + '"}]}'),
 			fs.writeFile.bind(this, self.getPath(systemEntities.step), '{"mode":{"type":"String"},"processors":[{"type":"ObjectId","ref":"' + systemEntities.processor + '"}],"postprocessors":[{"type":"ObjectId","ref":"' + systemEntities.processor + '"}],"stepType":{"type":"String","required":true},"form":{"elements":[{"type":"ObjectId","ref":"' + systemEntities.element + '"}]}}'),
-			fs.writeFile.bind(this, self.getPath(systemEntities.processor), '{"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
+			fs.writeFile.bind(this, self.getPath(systemEntities.processor), '{"requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
 			fs.writeFile.bind(this, self.getPath(systemEntities.lib), '{"uid":{"type":"String","unique":true,"required":true},"code":{"type":"String","required":true}}'),
-			fs.writeFile.bind(this, self.getPath(systemEntities.asyncValidator), '{"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
-			fs.writeFile.bind(this, self.getPath(systemEntities.element), '{"uid":{"type":"String"},"name":{"type":"String","required":true},"label":{"type":"String"},"description":{"type":"String"},"elementType":{"type":"String","enum":[' + (_.map(Object.keys(constants.ELEMENTTYPE), function(x) {
+			fs.writeFile.bind(this, self.getPath(systemEntities.asyncValidator), '{"requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'),
+			fs.writeFile.bind(this, self.getPath(systemEntities.element), '{"order":{"type":"Number"}, "uid":{"type":"String"},"name":{"type":"String","required":true},"label":{"type":"String"},"description":{"type":"String"},"elementType":{"type":"String","enum":[' + (_.map(Object.keys(constants.ELEMENTTYPE), function(x) {
 				return '"' + x + '"';
 			}).join(',')) + '],"required":true},"asyncValidators":[{"type":"ObjectId","ref":"' + systemEntities.asyncValidator + '"}],"validators":[{"validatorType":{"type":"String","enum":[' + (_.map(Object.keys(constants.VALIDATORTYPE), function(x) {
 				return '"' + x + '"';

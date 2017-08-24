@@ -260,5 +260,25 @@ module.exports = function(constants) {
 			exports = ElementsConverter;
 
 		}).getFunctionBody(), constants.UIDS.LIB.CONVERT_SCHEMA_TO_ELEMENTS)
+		.createLib((() => {
+			//should be called with request scope.
+			exports = function(fn) {
+				if (!this.args.$authorized) return fn(new Error('Unauthorized'));
+				let userManager = this.entityRepo.infrastructure().userManager,
+					user = this.args.$user;
+				if (!userManager)
+					return fn(new Error('Entity Repo does not provide a means of checking user password'));
+
+				if (!user)
+					return fn(new Error('Invalid Credentials'));
+
+
+				userManager.checkPassword(user.domain, user.client.clientId, user.username, this.args.password, (er, valid) => {
+					if (er) return fn(er);
+					if (!valid) return fn(new Error('Invalid Credentials'));
+					fn();
+				});
+			};
+		}).getFunctionBody(), constants.UIDS.LIB.CHECK_USER_PASSWORD_AND_PRIVILEDGE)
 		.libs;
 };

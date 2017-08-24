@@ -71,451 +71,468 @@ module.exports = function(constants, systemEntities) {
 				processors: [opts[constants.UIDS.PROCESSOR.CREATE_PROCESS]],
 				form: {
 					elements: [{
-						elementType: constants.ELEMENTTYPE.DESIGNER,
-						label: 'Manage a Process',
-						name: 'process',
-						args: {
-							main: {
-								name: 'process',
-								elements: [
-									createId(),
-									createElement('uid', 'Unique Key (used for customization)', '', constants.ELEMENTTYPE.INPUT, {
-										type: constants.INPUTTYPE.TEXT
-									}),
-									createElement('title', 'Title of Process', 'This is what will be visible to users', constants.ELEMENTTYPE.INPUT, {
-										type: constants.INPUTTYPE.TEXT
-									}),
-									createElement('description', 'Description of Process', 'This description what will be visible to users.', constants.ELEMENTTYPE.INPUT, {
-										type: constants.INPUTTYPE.LARGEINPUT
-									})
-								],
-								relationships: {
-									has: {
-										processor: 'fetchProcessor'
-									},
-									hasMany: {
-										step: {
-											path: 'steps',
-											hasSelect: false
-										}
-									}
-								}
-
-							},
-							elements: {
-								step: {
+							elementType: constants.ELEMENTTYPE.DESIGNER,
+							label: 'Manage a Process',
+							name: 'process',
+							args: {
+								main: {
+									name: 'process',
 									elements: [
 										createId(),
-										createElement('mode', 'Type of Step', '', constants.ELEMENTTYPE.SELECTSET, {
-											items: [{
-												id: constants.STEPMODE.PROCESS,
-												displayLabel: 'Default'
-											}, {
-												id: constants.STEPMODE.VIEW,
-												displayLabel: 'View'
-											}]
+										createElement('uid', 'Unique Key (used for customization)', '', constants.ELEMENTTYPE.INPUT, {
+											type: constants.INPUTTYPE.TEXT
 										}),
-										createElement('description', '',
-											'A step is a single form in a process. Processes can have any number of steps.',
-											constants.ELEMENTTYPE.LABEL),
-										createElement('stepType', 'Type of Step', 'Type of Step.',
-											constants.ELEMENTTYPE.INPUT, {
-												disabled: true,
-												default: constants.STEPTYPE.CLIENT
-											})
+										createElement('title', 'Title of Process', 'This is what will be visible to users', constants.ELEMENTTYPE.INPUT, {
+											type: constants.INPUTTYPE.TEXT
+										}),
+										createElement('description', 'Description of Process', 'This description what will be visible to users.', constants.ELEMENTTYPE.INPUT, {
+											type: constants.INPUTTYPE.LARGEINPUT
+										})
 									],
 									relationships: {
 										has: {
-											form: 'form'
+											processor: 'fetchProcessor'
 										},
 										hasMany: {
-											processor: 'processors'
+											step: {
+												path: 'steps',
+												hasSelect: false
+											}
 										}
 									}
+
 								},
-								form: {
-									hasPreview: true,
-									elements: [
-										createElement('description', '',
-											'A form contains elements that are displayed to the user when a step is requested',
-											constants.ELEMENTTYPE.LABEL)
-									],
-									relationships: {
-										hasMany: {
-											element: 'elements'
-										}
-									}
-								},
-								processor: {
-									elements: [
-										createId(),
-										createHidden('uid'),
-										createElement('title', 'Title',
-											'Title',
-											constants.ELEMENTTYPE.INPUT),
-										createElement('code', 'This code runs when a client makes a request to the processor endpoint.',
-											'Title',
-											constants.ELEMENTTYPE.SCRIPT)
-									]
-								},
-								validator: {
-									elements: tag([
-										createElement('validatorType', 'Type of Validator', '',
-											constants.ELEMENTTYPE.SELECTSET, {
-												path: 'args',
+								elements: {
+									step: {
+										elements: [
+											createId(),
+											createElement('mode', 'Type of Step', '', constants.ELEMENTTYPE.SELECTSET, {
 												items: [{
-													id: constants.VALIDATORTYPE.REQUIRED,
-													displayLabel: 'Required',
-													elements: []
+													id: constants.STEPMODE.PROCESS,
+													displayLabel: 'Default'
 												}, {
-													id: constants.VALIDATORTYPE.MAXLENGTH,
-													displayLabel: 'Maximum Number of Characters',
-													elements: [
-														createElement('max', 'Max', '', constants.ELEMENTTYPE.INPUT, {
-															type: constants.INPUTTYPE.NUMBER
-														})
-													]
-												}, {
-													id: constants.VALIDATORTYPE.MINLENGTH,
-													displayLabel: 'Minimum Number of Characters',
-													elements: [
-														createElement('min', 'Minimum', '', constants.ELEMENTTYPE.INPUT, {
-															type: constants.INPUTTYPE.NUMBER
-														})
-													]
+													id: constants.STEPMODE.VIEW,
+													displayLabel: 'View'
 												}]
+											}),
+											createElement('description', '',
+												'A step is a single form in a process. Processes can have any number of steps.',
+												constants.ELEMENTTYPE.LABEL),
+											createElement('stepType', 'Type of Step', 'Type of Step.',
+												constants.ELEMENTTYPE.INPUT, {
+													disabled: true,
+													default: constants.STEPTYPE.CLIENT
+												})
+										],
+										relationships: {
+											has: {
+												form: 'form'
+											},
+											hasMany: {
+												processor: 'processors'
+											}
+										}
+									},
+									form: {
+										hasPreview: true,
+										elements: [
+											createElement('description', '',
+												'A form contains elements that are displayed to the user when a step is requested',
+												constants.ELEMENTTYPE.LABEL)
+										],
+										relationships: {
+											hasMany: {
+												element: 'elements'
+											}
+										}
+									},
+									processor: {
+										elements: [
+											createId(),
+											createHidden('uid'),
+											createElement('title', 'Title',
+												'Title',
+												constants.ELEMENTTYPE.INPUT),
+											createElement('code', 'This code runs when a client makes a request to the processor endpoint.',
+												'Title',
+												constants.ELEMENTTYPE.SCRIPT),
+											createElement('requiresIdentity', 'Requires Identity', '', constants.ELEMENTTYPE.INPUT, {
+												type: constants.INPUTTYPE.CHECKBOX,
+												default: true
 											})
-									], validatorTag)
-								},
-								asyncValidator: {
-									elements: tag([
-										createId(),
-										createHidden('uid'),
-										createElement('title', 'Title',
-											'Title',
-											constants.ELEMENTTYPE.INPUT),
-										createElement('code', 'This code runs when a client makes a request to the processor endpoint.',
-											'Title',
-											constants.ELEMENTTYPE.SCRIPT)
-									], asyncValidatorTag)
-								},
-								element: {
-									elements: tag([
-										createElement('elementType', 'Element type',
-											'The type of element',
-											constants.ELEMENTTYPE.SELECTSET, {
-												path: 'args',
-												items: [{
-													id: constants.ELEMENTTYPE.LABEL,
-													displayLabel: 'Label',
-													elements: []
-												}, {
-													id: constants.ELEMENTTYPE.HIDDEN,
-													displayLabel: 'Hidden Field (i.e id)',
-													elements: []
-												}, {
-													id: constants.ELEMENTTYPE.NAV,
-													displayLabel: 'Navigation',
-													elements: [
-														createElement('text', 'Text (visible to client.)',
-															'Text',
-															constants.ELEMENTTYPE.INPUT),
-														createElement('type', 'Type',
-															'',
-															constants.ELEMENTTYPE.SELECTSET, {
-																path: 'config',
-																items: [{
-																	id: constants.NAVIGATIONTYPE.DYNAMO,
-																	displayLabel: 'Link to a Dynamo process/view',
-																	elements: [
-																		createElement('value', 'Select a Dynamo Process', '', constants.ELEMENTTYPE.SELECT, {
-																			type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																			config: {
-																				value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSES]
-																			}
-																		})
-																	]
-																}, {
-																	id: constants.NAVIGATIONTYPE.CLIENT,
-																	displayLabel: 'Link to a Client Side Process',
-																	elements: [
-																		createElement('value', 'Client Process UID', '', constants.ELEMENTTYPE.INPUT, {
-																			type: constants.INPUTTYPE.TEXT
-																		})
-																	]
-																}]
+										]
+									},
+									validator: {
+										elements: tag([
+											createElement('validatorType', 'Type of Validator', '',
+												constants.ELEMENTTYPE.SELECTSET, {
+													path: 'args',
+													items: [{
+														id: constants.VALIDATORTYPE.REQUIRED,
+														displayLabel: 'Required',
+														elements: []
+													}, {
+														id: constants.VALIDATORTYPE.MAXLENGTH,
+														displayLabel: 'Maximum Number of Characters',
+														elements: [
+															createElement('max', 'Max', '', constants.ELEMENTTYPE.INPUT, {
+																type: constants.INPUTTYPE.NUMBER
 															})
-													]
-												}, {
-													id: constants.ELEMENTTYPE.FILEUPLOAD,
-													displayLabel: 'File Upload',
-													elements: [
-														createElement('fileType', 'Allowed file extensions', '', constants.ELEMENTTYPE.INPUT, {
-															type: constants.INPUTTYPE.TEXT
-														}),
-														createElement('showPreview', 'Show Preview', '', constants.ELEMENTTYPE.INPUT, {
-															type: constants.INPUTTYPE.CHECKBOX
-														})
-													]
-												}, {
-													id: constants.ELEMENTTYPE.GRID,
-													displayLabel: 'Grid',
-													elements: [
-														createElement('filter', 'Items used to filter the grid', '', constants.ELEMENTTYPE.LIST, {
-															itemTemplate: elementItemTemplate,
-															optional: true
-														}),
-														createElement('mode', 'Grid mode (CRUD expects Create/Edit/Update Templates)', '', constants.ELEMENTTYPE.SELECTSET, {
-															path: 'extra',
-															items: [{
-																id: constants.GRIDMODE.DEFAULT,
-																displayLabel: 'Default',
-																elements: []
-															}, {
-																id: constants.GRIDMODE.CRUD,
-																displayLabel: 'CRUD (Create/Edit/Update Templates required)',
-																elements: [
-																	createElement('createTemplate', 'Create Template', '', constants.ELEMENTTYPE.LIST, {
-																		itemTemplate: elementItemTemplate
-																	}),
-																	createElement('createProcessor', 'Processor that will create object', '', constants.ELEMENTTYPE.SELECT, {
-																		type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																		config: {
-																			value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
-																		}
-																	}),
-																	createElement('editTemplate', 'Edit Template', '', constants.ELEMENTTYPE.LIST, {
-																		itemTemplate: elementItemTemplate,
-																		optional: true
-																	}),
-																	createElement('editProcessor', 'Processor that will edit object', '', constants.ELEMENTTYPE.SELECT, {
-																		type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																		config: {
-																			value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS],
-																		},
-																		optional: true
-																	}),
-																	createElement('fetchSingleItemProcessor', 'Processor that will fetch object before editing', '', constants.ELEMENTTYPE.SELECT, {
-																		type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																		config: {
-																			value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
-																		}
-																	})
-																]
-															}]
-														}),
-														createElement('commands', 'Commands', 'List of commands to attach to grid items.', constants.ELEMENTTYPE.LIST, {
-															itemTemplate: [
-																createElement('commandType', 'Command Type', '', constants.ELEMENTTYPE.SELECTSET, {
-																	path: 'command',
+														]
+													}, {
+														id: constants.VALIDATORTYPE.MINLENGTH,
+														displayLabel: 'Minimum Number of Characters',
+														elements: [
+															createElement('min', 'Minimum', '', constants.ELEMENTTYPE.INPUT, {
+																type: constants.INPUTTYPE.NUMBER
+															})
+														]
+													}]
+												})
+										], validatorTag)
+									},
+									asyncValidator: {
+										elements: tag([
+											createId(),
+											createHidden('uid'),
+											createElement('title', 'Title',
+												'Title',
+												constants.ELEMENTTYPE.INPUT),
+											createElement('code', 'This code runs when a client makes a request to the processor endpoint.',
+												'Title',
+												constants.ELEMENTTYPE.SCRIPT),
+											createElement('requiresIdentity', 'Requires Identity', '', constants.ELEMENTTYPE.INPUT, {
+												type: constants.INPUTTYPE.CHECKBOX,
+												default: true
+											})
+										], asyncValidatorTag)
+									},
+									element: {
+										elements: tag([
+											createElement('elementType', 'Element type',
+												'The type of element',
+												constants.ELEMENTTYPE.SELECTSET, {
+													path: 'args',
+													items: [{
+														id: constants.ELEMENTTYPE.LABEL,
+														displayLabel: 'Label',
+														elements: []
+													}, {
+														id: constants.ELEMENTTYPE.HIDDEN,
+														displayLabel: 'Hidden Field (i.e id)',
+														elements: []
+													}, {
+														id: constants.ELEMENTTYPE.NAV,
+														displayLabel: 'Navigation',
+														elements: [
+															createElement('text', 'Text (visible to client.)',
+																'Text',
+																constants.ELEMENTTYPE.INPUT),
+															createElement('type', 'Type',
+																'',
+																constants.ELEMENTTYPE.SELECTSET, {
+																	path: 'config',
 																	items: [{
-																		id: constants.GRIDCOMMANDTYPE.PROCESSOR,
-																		displayLabel: 'Processor',
+																		id: constants.NAVIGATIONTYPE.DYNAMO,
+																		displayLabel: 'Link to a Dynamo process/view',
 																		elements: [
-																			createElement('value', 'Select a Processor', '', constants.ELEMENTTYPE.SELECT, {
-																				type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																				config: {
-																					value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
-																				}
-																			})
-																		]
-																	}, {
-																		id: constants.GRIDCOMMANDTYPE.NAV,
-																		displayLabel: 'Navigation Link',
-																		elements: [
-																			createElement('value', 'Select a Process to navigate to', '', constants.ELEMENTTYPE.SELECT, {
+																			createElement('value', 'Select a Dynamo Process', '', constants.ELEMENTTYPE.SELECT, {
 																				type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
 																				config: {
 																					value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSES]
 																				}
 																			})
 																		]
+																	}, {
+																		id: constants.NAVIGATIONTYPE.CLIENT,
+																		displayLabel: 'Link to a Client Side Process',
+																		elements: [
+																			createElement('value', 'Client Process UID', '', constants.ELEMENTTYPE.INPUT, {
+																				type: constants.INPUTTYPE.TEXT
+																			})
+																		]
 																	}]
-																}),
-
-																createElement('commandText', 'Command Text', '', constants.ELEMENTTYPE.INPUT, {
-																	type: constants.INPUTTYPE.TEXT
 																})
-															],
-															optional: true
-														}),
-														createElement('source', 'Source', 'This returns the items to display. The processor must be paginatable', constants.ELEMENTTYPE.SELECT, {
-															type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-															config: {
-																value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
-															}
-														}),
-														createElement('gridArgs', 'Arguments (passed to all processors)', '', constants.ELEMENTTYPE.SCRIPT, {
-															type: 'JSON'
-														}),
-														createElement('templateConfig', 'Template (JSON representing template/template config e.g {"name":"basic","config":{name:"Name"}})', '', constants.ELEMENTTYPE.SCRIPT)
-													]
-												}, {
-													id: constants.ELEMENTTYPE.IMAGE,
-													displayLabel: 'Image',
-													elements: [
-														createElement('type', 'Type of Image', '', constants.ELEMENTTYPE.SELECTSET, {
-															path: 'config',
-															items: [{
-																id: constants.IMAGETYPE.URL,
-																displayLabel: 'Link',
-																elements: [createElement('data', 'Url', '', constants.ELEMENTTYPE.INPUT, {
-																	type: constants.INPUTTYPE.TEXT
-																})]
-															}, {
-																id: constants.IMAGETYPE.REL,
-																displayLabel: 'Relative (Client will provide image)',
-																elements: [createElement('data', 'Identifier', '', constants.ELEMENTTYPE.INPUT, {
-																	type: constants.INPUTTYPE.TEXT
-																})]
-															}, {
-																id: constants.IMAGETYPE.DATA,
-																displayLabel: 'Image data as a base64 URL',
-																elements: [
-																	createElement('data', 'Base64 Image String', '', constants.ELEMENTTYPE.INPUT, {
-																		type: constants.INPUTTYPE.TEXT
-																	})
-																]
-															}]
-														})
-													]
-												}, {
-													id: constants.ELEMENTTYPE.INPUT,
-													displayLabel: 'Input',
-													elements: [
-														createElement('type', 'Type of Input',
-															'The user interface uses this value to determine what type of input',
-															constants.ELEMENTTYPE.SELECT, {
-																type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																config: {
-																	value: opts[constants.UIDS.PROCESSOR.LIST_INPUT_TYPES]
-																}
+														]
+													}, {
+														id: constants.ELEMENTTYPE.FILEUPLOAD,
+														displayLabel: 'File Upload',
+														elements: [
+															createElement('fileType', 'Allowed file extensions', '', constants.ELEMENTTYPE.INPUT, {
+																type: constants.INPUTTYPE.TEXT
+															}),
+															createElement('showPreview', 'Show Preview', '', constants.ELEMENTTYPE.INPUT, {
+																type: constants.INPUTTYPE.CHECKBOX
 															})
-													]
-												}, {
-													id: constants.ELEMENTTYPE.SELECT,
-													displayLabel: 'Select',
-													elements: [
-														createElement('type', 'Type of Select',
-															'The user interface uses this value to determine the available types',
-															constants.ELEMENTTYPE.SELECTSET, {
-																path: 'config',
+														]
+													}, {
+														id: constants.ELEMENTTYPE.GRID,
+														displayLabel: 'Grid',
+														elements: [
+															createElement('filter', 'Items used to filter the grid', '', constants.ELEMENTTYPE.LIST, {
+																itemTemplate: elementItemTemplate,
+																optional: true
+															}),
+															createElement('mode', 'Grid mode (CRUD expects Create/Edit/Update Templates)', '', constants.ELEMENTTYPE.SELECTSET, {
+																path: 'extra',
 																items: [{
-																	id: constants.ELEMENT_SELECT_SOURCETYPE.FORM,
-																	displayLabel: 'Another Element in the form.',
-																	elements: [
-																		createElement('value', 'Name of Element',
-																			'This the name of the element that represents the source',
-																			constants.ELEMENTTYPE.INPUT),
-																		createElement('path', 'Property to bind to.',
-																			'Property of the element that contains list to bind to.',
-																			constants.ELEMENTTYPE.INPUT)
-																	]
+																	id: constants.GRIDMODE.DEFAULT,
+																	displayLabel: 'Default',
+																	elements: []
 																}, {
-																	id: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																	displayLabel: 'Processor',
+																	id: constants.GRIDMODE.CRUD,
+																	displayLabel: 'CRUD (Create/Edit/Update Templates required)',
 																	elements: [
-																		createElement('value', 'Value', '', constants.ELEMENTTYPE.SELECT, {
+																		createElement('createTemplate', 'Create Template', '', constants.ELEMENTTYPE.LIST, {
+																			itemTemplate: elementItemTemplate
+																		}),
+																		createElement('createProcessor', 'Processor that will create object', '', constants.ELEMENTTYPE.SELECT, {
 																			type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
 																			config: {
 																				value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
 																			}
 																		}),
-																		createElement('customArgs', 'Custom Arguments', '', constants.ELEMENTTYPE.SCRIPT)
+																		createElement('editTemplate', 'Edit Template', '', constants.ELEMENTTYPE.LIST, {
+																			itemTemplate: elementItemTemplate,
+																			optional: true
+																		}),
+																		createElement('editProcessor', 'Processor that will edit object', '', constants.ELEMENTTYPE.SELECT, {
+																			type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																			config: {
+																				value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS],
+																			},
+																			optional: true
+																		}),
+																		createElement('fetchSingleItemProcessor', 'Processor that will fetch object before editing', '', constants.ELEMENTTYPE.SELECT, {
+																			type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																			config: {
+																				value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																			}
+																		})
 																	]
-																}],
-
-															})
-													]
-												}, {
-													id: constants.ELEMENTTYPE.SELECTSET,
-													displayLabel: 'Option Groups',
-													elements: [
-														createElement('path', 'Optional path', 'Processors will use this path to refer to items contained here',
-															constants.ELEMENTTYPE.INPUT, {
-																type: constants.INPUTTYPE.TEXT
+																}]
 															}),
-														createElement('items', 'Options', 'Options under groups.',
-															constants.ELEMENTTYPE.LIST, {
+															createElement('commands', 'Commands', 'List of commands to attach to grid items.', constants.ELEMENTTYPE.LIST, {
 																itemTemplate: [
-																	createElement('id', 'Result of Selection',
-																		'This is what is sent back to the processor as the value of this field',
-																		constants.ELEMENTTYPE.INPUT),
-																	createElement('displayLabel', 'Label displayed to user', '',
-																		constants.ELEMENTTYPE.INPUT),
-																	createElement('elements', 'Properties to add', '', constants.ELEMENTTYPE.LIST, {
-																		itemTemplate: elementItemTemplate
-																	})
+																	createElement('commandType', 'Command Type', '', constants.ELEMENTTYPE.SELECTSET, {
+																		path: 'command',
+																		items: [{
+																			id: constants.GRIDCOMMANDTYPE.PROCESSOR,
+																			displayLabel: 'Processor',
+																			elements: [
+																				createElement('value', 'Select a Processor', '', constants.ELEMENTTYPE.SELECT, {
+																					type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																					config: {
+																						value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																					}
+																				})
+																			]
+																		}, {
+																			id: constants.GRIDCOMMANDTYPE.NAV,
+																			displayLabel: 'Navigation Link',
+																			elements: [
+																				createElement('value', 'Select a Process to navigate to', '', constants.ELEMENTTYPE.SELECT, {
+																					type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																					config: {
+																						value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSES]
+																					}
+																				})
+																			]
+																		}]
+																	}),
 
-																]
-															})
-													]
-												}, {
-													id: constants.ELEMENTTYPE.LIST,
-													displayLabel: 'List',
-													elements: [
-														createElement('itemTemplate', 'Template', 'Template used to create and edit items in this list',
-															constants.ELEMENTTYPE.LIST, {
-																itemTemplate: elementItemTemplate
+																	createElement('commandText', 'Command Text', '', constants.ELEMENTTYPE.INPUT, {
+																		type: constants.INPUTTYPE.TEXT
+																	}),
+																	createElement('commandIcon', 'Command Icon', '', constants.ELEMENTTYPE.INPUT)
+																],
+																optional: true
 															}),
-														createElement('options', 'Options', 'Specific options that affects the lists behavior',
-															constants.ELEMENTTYPE.SELECTSET, {
-																path: 'behavior',
+															createElement('source', 'Source', 'This returns the items to display. The processor must be paginatable', constants.ELEMENTTYPE.SELECT, {
+																type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																config: {
+																	value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																}
+															}),
+															createElement('gridArgs', 'Arguments (passed to all processors)', '', constants.ELEMENTTYPE.SCRIPT, {
+																type: 'JSON'
+															}),
+															createElement('templateConfig', 'Template (JSON representing template/template config e.g {"name":"basic","config":{name:"Name"}})', '', constants.ELEMENTTYPE.SCRIPT)
+														]
+													}, {
+														id: constants.ELEMENTTYPE.IMAGE,
+														displayLabel: 'Image',
+														elements: [
+															createElement('type', 'Type of Image', '', constants.ELEMENTTYPE.SELECTSET, {
+																path: 'config',
 																items: [{
-																	id: 'TAG',
-																	displayLabel: 'Tag Template',
-																	elements: [createElement('dynamo_ref', 'Tag', '', constants.ELEMENTTYPE.INPUT, {
+																	id: constants.IMAGETYPE.URL,
+																	displayLabel: 'Link',
+																	elements: [createElement('data', 'Url', '', constants.ELEMENTTYPE.INPUT, {
 																		type: constants.INPUTTYPE.TEXT
 																	})]
 																}, {
-																	id: 'REF',
-																	displayLabel: 'Reference a Tag',
+																	id: constants.IMAGETYPE.REL,
+																	displayLabel: 'Relative (Client will provide image)',
+																	elements: [createElement('data', 'Identifier', '', constants.ELEMENTTYPE.INPUT, {
+																		type: constants.INPUTTYPE.TEXT
+																	})]
+																}, {
+																	id: constants.IMAGETYPE.DATA,
+																	displayLabel: 'Image data as a base64 URL',
 																	elements: [
-																		createElement('description', '', 'The item template with the referenced tag will override the configured template if found.',
-																			constants.ELEMENTTYPE.LABEL),
-																		createElement('template_ref', 'Referenced Tag', '', constants.ELEMENTTYPE.INPUT, {
+																		createElement('data', 'Base64 Image String', '', constants.ELEMENTTYPE.INPUT, {
 																			type: constants.INPUTTYPE.TEXT
-																		}),
-																		createElement('extension', 'Extensions (additional UI components)', '', constants.ELEMENTTYPE.LIST, {
-																			itemTemplate: elementItemTemplate
 																		})
 																	]
 																}]
 															})
-													]
-												}, {
-													id: constants.ELEMENTTYPE.SECTION,
-													displayLabel: 'Section',
-													elements: [createElement('elements', 'Elements in the section', 'Elements in the section',
-														constants.ELEMENTTYPE.LIST, {
-															itemTemplate: elementItemTemplate
-														})]
-												}]
+														]
+													}, {
+														id: constants.ELEMENTTYPE.INPUT,
+														displayLabel: 'Input',
+														elements: [
+															createElement('type', 'Type of Input',
+																'The user interface uses this value to determine what type of input',
+																constants.ELEMENTTYPE.SELECT, {
+																	type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																	config: {
+																		value: opts[constants.UIDS.PROCESSOR.LIST_INPUT_TYPES]
+																	}
+																})
+														]
+													}, {
+														id: constants.ELEMENTTYPE.SELECT,
+														displayLabel: 'Select',
+														elements: [
+															createElement('type', 'Type of Select',
+																'The user interface uses this value to determine the available types',
+																constants.ELEMENTTYPE.SELECTSET, {
+																	path: 'config',
+																	items: [{
+																		id: constants.ELEMENT_SELECT_SOURCETYPE.FORM,
+																		displayLabel: 'Another Element in the form.',
+																		elements: [
+																			createElement('value', 'Name of Element',
+																				'This the name of the element that represents the source',
+																				constants.ELEMENTTYPE.INPUT),
+																			createElement('path', 'Property to bind to.',
+																				'Property of the element that contains list to bind to.',
+																				constants.ELEMENTTYPE.INPUT)
+																		]
+																	}, {
+																		id: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																		displayLabel: 'Processor',
+																		elements: [
+																			createElement('value', 'Value', '', constants.ELEMENTTYPE.SELECT, {
+																				type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																				config: {
+																					value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																				}
+																			}),
+																			createElement('customArgs', 'Custom Arguments', '', constants.ELEMENTTYPE.SCRIPT)
+																		]
+																	}],
+
+																})
+														]
+													}, {
+														id: constants.ELEMENTTYPE.SELECTSET,
+														displayLabel: 'Option Groups',
+														elements: [
+															createElement('path', 'Optional path', 'Processors will use this path to refer to items contained here',
+																constants.ELEMENTTYPE.INPUT, {
+																	type: constants.INPUTTYPE.TEXT
+																}),
+															createElement('items', 'Options', 'Options under groups.',
+																constants.ELEMENTTYPE.LIST, {
+																	itemTemplate: [
+																		createElement('id', 'Result of Selection',
+																			'This is what is sent back to the processor as the value of this field',
+																			constants.ELEMENTTYPE.INPUT),
+																		createElement('displayLabel', 'Label displayed to user', '',
+																			constants.ELEMENTTYPE.INPUT),
+																		createElement('elements', 'Properties to add', '', constants.ELEMENTTYPE.LIST, {
+																			itemTemplate: elementItemTemplate
+																		})
+
+																	]
+																})
+														]
+													}, {
+														id: constants.ELEMENTTYPE.LIST,
+														displayLabel: 'List',
+														elements: [
+															createElement('itemTemplate', 'Template', 'Template used to create and edit items in this list',
+																constants.ELEMENTTYPE.LIST, {
+																	itemTemplate: elementItemTemplate
+																}),
+															createElement('options', 'Options', 'Specific options that affects the lists behavior',
+																constants.ELEMENTTYPE.SELECTSET, {
+																	path: 'behavior',
+																	items: [{
+																		id: 'TAG',
+																		displayLabel: 'Tag Template',
+																		elements: [createElement('dynamo_ref', 'Tag', '', constants.ELEMENTTYPE.INPUT, {
+																			type: constants.INPUTTYPE.TEXT
+																		})]
+																	}, {
+																		id: 'REF',
+																		displayLabel: 'Reference a Tag',
+																		elements: [
+																			createElement('description', '', 'The item template with the referenced tag will override the configured template if found.',
+																				constants.ELEMENTTYPE.LABEL),
+																			createElement('template_ref', 'Referenced Tag', '', constants.ELEMENTTYPE.INPUT, {
+																				type: constants.INPUTTYPE.TEXT
+																			}),
+																			createElement('extension', 'Extensions (additional UI components)', '', constants.ELEMENTTYPE.LIST, {
+																				itemTemplate: elementItemTemplate
+																			})
+																		]
+																	}]
+																})
+														]
+													}, {
+														id: constants.ELEMENTTYPE.SECTION,
+														displayLabel: 'Section',
+														elements: [createElement('elements', 'Elements in the section', 'Elements in the section',
+															constants.ELEMENTTYPE.LIST, {
+																itemTemplate: elementItemTemplate
+															})]
+													}]
+												}),
+											createElement('name', 'Name',
+												'This is the name processors use when sending requests',
+												constants.ELEMENTTYPE.INPUT),
+											createElement('label', 'Label',
+												'This is the item used to display placeholder text for elements',
+												constants.ELEMENTTYPE.INPUT),
+											createElement('order', 'Display (tells the container where to place this element)', '', constants.ELEMENTTYPE.INPUT, {
+												type: constants.INPUTTYPE.NUMBER
 											}),
-										createElement('name', 'Name',
-											'This is the name processors use when sending requests',
-											constants.ELEMENTTYPE.INPUT),
-										createElement('label', 'Label',
-											'This is the item used to display placeholder text for elements',
-											constants.ELEMENTTYPE.INPUT),
-										createElement('uid', 'Unique Identifier (possibly used to customize the appearance on clientside', '', constants.ELEMENTTYPE.INPUT),
-										createElement('description', 'Description',
-											'Explanation of elements purpose',
-											constants.ELEMENTTYPE.INPUT)
-									], elementTag),
-									relationships: {
-										hasMany: {
-											validator: 'validators',
-											asyncValidator: 'asyncValidators'
+											createElement('uid', 'Unique Identifier (possibly used to customize the appearance on clientside', '', constants.ELEMENTTYPE.INPUT),
+											createElement('description', 'Description',
+												'Explanation of elements purpose',
+												constants.ELEMENTTYPE.INPUT)
+										], elementTag),
+										relationships: {
+											hasMany: {
+												validator: 'validators',
+												asyncValidator: 'asyncValidators'
+											}
 										}
 									}
 								}
-							}
+							},
+							asyncValidators: [],
+							description: 'Used to design/edit processes',
+							validators: []
 						},
-						asyncValidators: [],
-						description: 'Used to design/edit processes',
-						validators: []
-					}]
+						createElement('label', 'Explanation', 'Please enter your password here before clicking save', constants.ELEMENTTYPE.LABEL),
+						createElement('password', 'Password (Current User)', '', constants.ELEMENTTYPE.INPUT, {
+							type: constants.INPUTTYPE.PASSWORD
+						})
+					]
 				}
 			}]
 
@@ -542,6 +559,7 @@ module.exports = function(constants, systemEntities) {
 							commands: [{
 								commandType: constants.GRIDCOMMANDTYPE.NAV,
 								commandText: 'edit',
+								commandIcon: 'mode_edit',
 								command: {
 									value: constants.UIDS.PROCESS.CREATE_PROCESS
 								}
@@ -663,18 +681,25 @@ module.exports = function(constants, systemEntities) {
 								createTemplate: [
 									createElement('name', 'Entity Name', '', constants.ELEMENTTYPE.INPUT),
 									createElement('createCRUD', 'Create Crud Process for Admins', '', constants.ELEMENTTYPE.INPUT, {
-										type: constants.INPUTTYPE.CHECKBOX
+										type: constants.INPUTTYPE.CHECKBOX,
+										default: true
 									}),
 									createElement('displayProperty', 'Display Property', '', constants.ELEMENTTYPE.INPUT),
 									createElement('group', 'Menu Group', '', constants.ELEMENTTYPE.INPUT),
 									createElement('category', 'Menu Category', '', constants.ELEMENTTYPE.INPUT),
 									gui,
+									createElement('password', 'Password (Current User)', '', constants.ELEMENTTYPE.INPUT, {
+										type: constants.INPUTTYPE.PASSWORD
+									})
 
 								],
 								createProcessor: opts[constants.UIDS.PROCESSOR.CREATE_SCHEMA],
 								editTemplate: [
 									createHidden('name'),
-									gui
+									gui,
+									createElement('password', 'Password (Current User)', '', constants.ELEMENTTYPE.INPUT, {
+										type: constants.INPUTTYPE.PASSWORD
+									})
 								],
 								fetchSingleItemProcessor: opts[constants.UIDS.PROCESSOR.FETCH_SCHEMA],
 								editProcessor: opts[constants.UIDS.PROCESSOR.UPDATE_SCHEMA]
@@ -691,7 +716,14 @@ module.exports = function(constants, systemEntities) {
 			createId(),
 			createElement('title', 'Enter Title', 'title of the processor', constants.ELEMENTTYPE.INPUT, {
 				type: constants.INPUTTYPE.TEXT
-			}), createElement('code', 'Enter Code', '', constants.ELEMENTTYPE.SCRIPT)
+			}),
+			createElement('code', 'Enter Code', '', constants.ELEMENTTYPE.SCRIPT),
+			createElement('requiresIdentity', 'Requires Identity', '', constants.ELEMENTTYPE.INPUT, {
+				type: constants.INPUTTYPE.CHECKBOX
+			}),
+			createElement('password', 'Password (Current User)', '', constants.ELEMENTTYPE.INPUT, {
+				type: constants.INPUTTYPE.PASSWORD
+			})
 		];
 
 		return {
@@ -732,7 +764,11 @@ module.exports = function(constants, systemEntities) {
 			createId(),
 			createElement('uid', 'Enter Title (no space)', 'title of the lib', constants.ELEMENTTYPE.INPUT, {
 				type: constants.INPUTTYPE.TEXT
-			}), createElement('code', 'Enter Code', '', constants.ELEMENTTYPE.SCRIPT)
+			}),
+			createElement('code', 'Enter Code', '', constants.ELEMENTTYPE.SCRIPT),
+			createElement('password', 'Password (Current User)', '', constants.ELEMENTTYPE.INPUT, {
+				type: constants.INPUTTYPE.PASSWORD
+			})
 		];
 
 		return {

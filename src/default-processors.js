@@ -1,12 +1,11 @@
-/*jshint esversion: 6 */
-
 module.exports = function(constants, systemEntities) {
-	var _ = require('lodash');
+	var _ = require('lodash'),
+		debug = require('debug')('default-processors');
 	require('./misc');
 
 	function createProcessor(title, code, uid) {
 		if (!uid) {
-			console.log(arguments);
+			debug(arguments);
 			throw new Error('Every default processor must have a uid');
 		}
 		if (!this.processors) {
@@ -23,7 +22,10 @@ module.exports = function(constants, systemEntities) {
 	}
 
 	let createProcessCode = (() => {
-			this.entityRepo.saveProcess(this.args.process, callback);
+			this.libs.isAuthorized.call(this, (er) => {
+				if (er) return callback(er);
+				this.entityRepo.saveProcess(this.args.process, callback);
+			});
 		}).getFunctionBody(),
 
 		fetchProcessCode = (() => {
@@ -62,12 +64,12 @@ module.exports = function(constants, systemEntities) {
 				if (this.args._id)
 					if (this.args.prev) {
 						query._id = {
-							$lt: this.args._id
+							$gt: this.args._id
 						};
 						options.sort._id = 1;
 					} else {
 						query._id = {
-							$gt: this.args._id
+							$lt: this.args._id
 						};
 					}
 
@@ -108,11 +110,19 @@ module.exports = function(constants, systemEntities) {
 		}).getFunctionBody(),
 
 		createEntityCode = (() => {
-			this.entityRepo.create(this.args.entityName, this.args.entity, callback);
+			this.libs.isAuthorized.call(this, (er) => {
+				if (er) return callback(er);
+				this.entityRepo.create(this.args.entityName, this.args.entity, callback);
+			});
+
 		}).getFunctionBody(),
 
 		updateEntityCode = (() => {
-			this.entityRepo.update(this.args.entityName, this.args.entity, callback);
+			this.libs.isAuthorized.call(this, (er) => {
+				if (er) return callback(er);
+				this.entityRepo.update(this.args.entityName, this.args.entity, callback);
+			});
+
 		}).getFunctionBody(),
 
 		fetchSchemaCode = (() => {
@@ -207,33 +217,42 @@ module.exports = function(constants, systemEntities) {
 			}
 
 			var data = resolve(this.args.entity.choice, this.args.entity.template.value),
+				debug = debug('create-schema'),
 				self = this;
-			console.log('entity to create--------:\n' + JSON.stringify(data) + 'n\-----------:');
-			this.entityRepo.createSchema(this.args.entity.name, data, function(er) {
+			debug('entity to create--------:\n' + JSON.stringify(data) + '\n-----------:');
+			this.libs.isAuthorized.call(this, (er) => {
 				if (er) return callback(er);
+				this.entityRepo.createSchema(this.args.entity.name, data, function(er) {
+					if (er) return callback(er);
 
-				if (self.args.entity.createCRUD && self.args.entity.displayProperty) {
-					//create a crud process for this entity.
-					self.libs.createCRUDProcess.call(self,
-						self.args.entity.name,
-						self.args.entity.displayProperty,
-						self.args.entity.group,
-						self.args.entity.category, data,
-						function(er, result) {
-							if (er)
-							//delete what you just created this.entityRepo.deleteSchema()
-								return console.log('an error occurred while creating schema ..rolling back'), callback(er);
+					if (self.args.entity.createCRUD && self.args.entity.displayProperty) {
+						//create a crud process for this entity.
+						self.libs.createCRUDProcess.call(self,
+							self.args.entity.name,
+							self.args.entity.displayProperty,
+							self.args.entity.group,
+							self.args.entity.category, data,
+							function(er, result) {
+								if (er)
+								//delete what you just created this.entityRepo.deleteSchema()
+									return debug('an error occurred while creating schema ..rolling back'), callback(er);
 
-							callback(null, result);
-						});
-					return;
-				}
-				callback(null, "Successfully created config");
+								callback(null, result);
+							});
+						return;
+					}
+					callback(null, "Successfully created config");
+				});
 			});
+
 
 		}).getFunctionBody(),
 		updateSchemaCode = (() => {
-			this.entityRepo.updateSchema(this.args.entity.name, JSON.parse(this.args.entity.template.value), callback);
+			this.libs.isAuthorized.call(this, (er) => {
+				if (er) return callback(er);
+				this.entityRepo.updateSchema(this.args.entity.name, JSON.parse(this.args.entity.template.value), callback);
+			});
+
 		}).getFunctionBody();
 
 
