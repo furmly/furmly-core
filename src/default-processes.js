@@ -552,7 +552,7 @@ module.exports = function(constants, systemEntities) {
 					elements: [
 						createElement('grid', 'Manage Processes', 'This view lets administators manage processes', constants.ELEMENTTYPE.GRID, {
 							mode: constants.GRIDMODE.DEFAULT,
-							source: opts[constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC],
+							source: opts[constants.UIDS.PROCESSOR.LIST_PROCESSES],
 							gridArgs: `{"entityName":"${systemEntities.process}","entityLabel":"title"}`,
 							filter: [createElement('title', 'Title', '', constants.ELEMENTTYPE.INPUT)],
 							templateConfig: '{"name":"basic","config":{"title":"Title","description":"Description"}}',
@@ -738,7 +738,7 @@ module.exports = function(constants, systemEntities) {
 					elements: [
 						createElement('grid', 'Manage Processors', 'This view lets administators manage processors', constants.ELEMENTTYPE.GRID, {
 							mode: constants.GRIDMODE.CRUD,
-							source: opts[constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC],
+							source: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS],
 							gridArgs: `{"entityName":"${systemEntities.processor}","entityLabel":"title"}`,
 							filter: [
 								createElement('title', 'Title', '', constants.ELEMENTTYPE.INPUT)
@@ -747,9 +747,9 @@ module.exports = function(constants, systemEntities) {
 							templateConfig: '{"name":"basic","config":{"title":"Title","description":"Description","_id":"ID"}}',
 							extra: {
 								createTemplate: template,
-								createProcessor: opts[constants.UIDS.PROCESSOR.CREATE_ENTITY],
+								createProcessor: opts[constants.UIDS.PROCESSOR.CREATE_PROCESSOR],
 								editTemplate: template,
-								editProcessor: opts[constants.UIDS.PROCESSOR.UPDATE_ENTITY]
+								editProcessor: opts[constants.UIDS.PROCESSOR.CREATE_PROCESSOR]
 							}
 						})
 					]
@@ -783,7 +783,7 @@ module.exports = function(constants, systemEntities) {
 					elements: [
 						createElement('grid', 'Manage Libs', 'This view lets administators manage libs', constants.ELEMENTTYPE.GRID, {
 							mode: constants.GRIDMODE.CRUD,
-							source: opts[constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC],
+							source: opts[constants.UIDS.PROCESSOR.LIST_LIBS],
 							templateConfig: '{"name":"basic","config":{"_id":"ID","uid":"UID"}}',
 							gridArgs: `{"entityName":"${systemEntities.lib}","entityLabel":"uid"}`,
 							filter: [
@@ -792,9 +792,9 @@ module.exports = function(constants, systemEntities) {
 							commands: [],
 							extra: {
 								createTemplate: template,
-								createProcessor: opts[constants.UIDS.PROCESSOR.CREATE_ENTITY],
+								createProcessor: opts[constants.UIDS.PROCESSOR.CREATE_LIB],
 								editTemplate: template,
-								editProcessor: opts[constants.UIDS.PROCESSOR.UPDATE_ENTITY]
+								editProcessor: opts[constants.UIDS.PROCESSOR.CREATE_LIB]
 							}
 						})
 					]
