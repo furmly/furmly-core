@@ -37,6 +37,7 @@ function clearCollection(name, fn) {
 }
 
 describe('Process spec', function() {
+	debugger;
 	beforeEach(function() {
 		var self = this;
 		this.processes = {};
@@ -1042,7 +1043,7 @@ describe('Integration', function() {
 
 						fixture.engine.queryProcess({}, function(er, processes) {
 							processes[processes.length - 1].describe(function(er, res) {
-								assert.equal(res.steps[0].form.elements[0].args.extra.editTemplate.length, 7);
+								assert.equal(res.steps[0].form.elements[0].args.extra.editTemplate.length, 8);
 								done();
 							});
 

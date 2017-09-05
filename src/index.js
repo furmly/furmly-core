@@ -12,7 +12,9 @@ var assert = require("assert"),
 	generator = require("mongoose-gen"),
 	glob = require("glob"),
 	path = require("path"),
-	sandboxCode = fs.readFileSync(__dirname + path.sep + "processor-sandbox.js"),
+	sandboxCode = fs.readFileSync(
+		__dirname + path.sep + "processor-sandbox.js"
+	),
 	mongoose = require("mongoose");
 
 mongoose.Promise = global.Promise;
@@ -109,8 +111,19 @@ function init(config) {
 			STEPMODE: new Constant("VIEW", "PROCESS"),
 			STEPTYPE: new Constant("OFFLINE", "CLIENT"),
 			ELEMENT_SELECT_SOURCETYPE: new Constant("PROCESSOR", "FORM"),
-			VALIDATORTYPE: new Constant("REQUIRED", "MAXLENGTH", "MINLENGTH", "REGEX"),
-			INPUTTYPE: new Constant(["TEXT", "text"], ["NUMBER", "number"], ["DATE", "date"], ["CHECKBOX", "checkbox"], ["PASSWORD", "password"]),
+			VALIDATORTYPE: new Constant(
+				"REQUIRED",
+				"MAXLENGTH",
+				"MINLENGTH",
+				"REGEX"
+			),
+			INPUTTYPE: new Constant(
+				["TEXT", "text"],
+				["NUMBER", "number"],
+				["DATE", "date"],
+				["CHECKBOX", "checkbox"],
+				["PASSWORD", "password"]
+			),
 			NAVIGATIONTYPE: new Constant("CLIENT", "DYNAMO"),
 			IMAGETYPE: new Constant("REL", "DATA", "URL"),
 			UIDS: {
@@ -142,9 +155,16 @@ function init(config) {
 					"CREATE_PROCESSOR",
 					"CREATE_ENTITY",
 					"UPDATE_ENTITY",
-					"FETCH_ENTITY"
+					"FETCH_ENTITY",
+					"MENU_FILTER"
 				),
-				PROCESS: new Constant("MANAGE_ENTITY_SCHEMA", "CREATE_PROCESS", "MANAGE_PROCESS", "MANAGE_PROCESSOR", "MANAGE_LIBS")
+				PROCESS: new Constant(
+					"MANAGE_ENTITY_SCHEMA",
+					"CREATE_PROCESS",
+					"MANAGE_PROCESS",
+					"MANAGE_PROCESSOR",
+					"MANAGE_LIBS"
+				)
 			},
 			ENTITYTYPE: new Constant(
 				["STRING", "String"],
@@ -195,12 +215,17 @@ function init(config) {
 			processor: "_0Processor",
 			process: "_0Process",
 			asyncValidator: "_0AsyncValidator",
-			// element: '_0Element',
 			lib: "_0Lib"
 		},
-		defaultProcessors = require("./default-processors")(constants, systemEntities),
+		defaultProcessors = require("./default-processors")(
+			constants,
+			systemEntities
+		),
 		defaultLibs = require("./default-libs")(constants),
-		defaultProcesses = require("./default-processes")(constants, systemEntities);
+		defaultProcesses = require("./default-processes")(
+			constants,
+			systemEntities
+		);
 
 	/**
 	 * this represents a dynamo step. Steps could  require user input or not.
@@ -208,11 +233,19 @@ function init(config) {
 	 */
 	function DynamoStep(opts) {
 		var self = this;
-		if ((!opts.processors || !opts.processors.length) && opts.mode !== constants.STEPMODE.VIEW) throw new Error("Steps must have atleast one processor");
+		if (
+			(!opts.processors || !opts.processors.length) &&
+			opts.mode !== constants.STEPMODE.VIEW
+		)
+			throw new Error("Steps must have atleast one processor");
 
-		if (!opts.stepType || !constants.STEPTYPE.in(opts.stepType)) throw new Error("Step type is null or undefined or not a valid type");
+		if (!opts.stepType || !constants.STEPTYPE.in(opts.stepType))
+			throw new Error(
+				"Step type is null or undefined or not a valid type"
+			);
 
-		if (!opts.save) throw new Error("Step needs save service for persistence");
+		if (!opts.save)
+			throw new Error("Step needs save service for persistence");
 
 		this._id = opts._id;
 		this.stepType = opts.stepType;
@@ -290,7 +323,10 @@ function init(config) {
 		function Client(parent, opts) {
 			if (!opts.form) throw new Error("Client Step must have a form");
 
-			if (!opts.entityRepo) throw new Error("opts.entityRepo is required for this type of processor");
+			if (!opts.entityRepo)
+				throw new Error(
+					"opts.entityRepo is required for this type of processor"
+				);
 
 			assert.equal(typeof opts.form.describe == "function", true);
 
@@ -318,9 +354,14 @@ function init(config) {
 
 			//this calls all the processors of the step.
 			this.run = function(context, fn) {
-				debug(`running client step  ${toObjectString(this)} , with context ${toObjectString(context)}`);
+				debug(
+					`running client step  ${toObjectString(
+						this
+					)} , with context ${toObjectString(context)}`
+				);
 				var self = this;
-				if (parent.mode == constants.STEPMODE.VIEW) return fn(new Error("Cannot process a view step"));
+				if (parent.mode == constants.STEPMODE.VIEW)
+					return fn(new Error("Cannot process a view step"));
 
 				var serverProcessors = parent.processors,
 					_context = prepareContext({
@@ -345,7 +386,8 @@ function init(config) {
 				handle.getResult(function(er, result) {
 					if (er) return fn(er);
 
-					return (parent.status = constants.STEPSTATUS.COMPLETED), fn(null, result);
+					return (parent.status =
+						constants.STEPSTATUS.COMPLETED), fn(null, result);
 				});
 			};
 
@@ -420,6 +462,7 @@ function init(config) {
 			fn
 		);
 	};
+
 	/**
 	 * Enforce Class invariant
 	 */
@@ -452,7 +495,8 @@ function init(config) {
 	function DynamoLib(opts) {
 		if (!opts) throw new Error("missing opts to Dynamo Lib");
 
-		if (!opts.uid || /\s+/.exec(opts.uid)) throw new Error("a valid key is required by dynamo lib");
+		if (!opts.uid || /\s+/.exec(opts.uid))
+			throw new Error("a valid key is required by dynamo lib");
 
 		if (!opts.code) throw new Error("code is required by dynamo lib");
 
@@ -468,7 +512,8 @@ function init(config) {
 	 */
 	DynamoLib.prototype.load = function(holder) {
 		var self = this;
-		if (holder[this.key]) throw new Error("key  " + this.key + " already exists");
+		if (holder[this.key])
+			throw new Error("key  " + this.key + " already exists");
 
 		return (function() {
 			let exports = {};
@@ -490,13 +535,23 @@ function init(config) {
 	 */
 	function DynamoSandbox(opts) {
 		var args;
-		if (!opts || (!(opts instanceof DynamoProcessor) && (!opts.processors || !opts.processors.length))) throw new Error("A sandbox needs atleast one processor to run");
+		if (
+			!opts ||
+			(!(opts instanceof DynamoProcessor) &&
+				(!opts.processors || !opts.processors.length))
+		)
+			throw new Error("A sandbox needs atleast one processor to run");
 
-		if (!opts.entityRepo && opts instanceof DynamoProcessor && (args = Array.prototype.slice.call(arguments)).length == 1)
+		if (
+			!opts.entityRepo &&
+			opts instanceof DynamoProcessor &&
+			(args = Array.prototype.slice.call(arguments)).length == 1
+		)
 			throw new Error("EntityRepo is required by all processors");
 
 		var processors = opts instanceof DynamoProcessor ? [opts] : opts,
-			entityRepo = opts instanceof DynamoProcessor ? args[1] : opts.entityRepo;
+			entityRepo =
+				opts instanceof DynamoProcessor ? args[1] : opts.entityRepo;
 
 		this.run = function(context, fn) {
 			let vm = new NodeVM({
@@ -529,15 +584,19 @@ function init(config) {
 		var self = this;
 		if (!opts) throw new Error("Process arg missing");
 
-		if (!opts.steps || !opts.steps.length) throw new Error("Process must contain atleast one step");
+		if (!opts.steps || !opts.steps.length)
+			throw new Error("Process must contain atleast one step");
 
 		if (!opts.title) throw new Error("Process must have a title");
 
-		if (!opts.store && opts.steps.length > 1) throw new Error("Process with more than one step requires a store");
+		if (!opts.store && opts.steps.length > 1)
+			throw new Error("Process with more than one step requires a store");
 
-		if (!opts.save) throw new Error("Process needs save service for persistence");
+		if (!opts.save)
+			throw new Error("Process needs save service for persistence");
 
-		if (opts.fetchProcessor && !opts.entityRepo) throw new Error("Fetch Processor needs the entityRepo to function");
+		if (opts.fetchProcessor && !opts.entityRepo)
+			throw new Error("Fetch Processor needs the entityRepo to function");
 
 		var currentStep = null;
 		this._id = opts._id;
@@ -612,9 +671,13 @@ function init(config) {
 
 				if (self.steps.length > self.currentStepIndex) {
 					result.status = constants.PROCESSSTATUS.RUNNING;
-					self.store.update(args.instanceId || context.instanceId, self.currentStepIndex, function(er) {
-						fn(er, result);
-					});
+					self.store.update(
+						args.instanceId || context.instanceId,
+						self.currentStepIndex,
+						function(er) {
+							fn(er, result);
+						}
+					);
 					return;
 				}
 
@@ -630,18 +693,19 @@ function init(config) {
 			});
 		}
 		if (this.steps.length > 1) {
-			//console.log('current instance:' + context.instanceId);
 			this.store.get(context.instanceId || "", function(er, currentStep) {
 				if (er) return fn(er);
-				//console.log(arguments);
+
 				if (currentStep) {
-					//console.log(currentStep);
 					self.currentStepIndex = currentStep.value;
 					processStep.call(self, {
 						instanceId: context.instanceId
 					});
 				} else {
-					self.store.keep(self.currentStepIndex || 0, function(er, data) {
+					self.store.keep(self.currentStepIndex || 0, function(
+						er,
+						data
+					) {
 						if (er) return fn(er);
 						return processStep({
 							instanceId: data.insertedId
@@ -684,7 +748,10 @@ function init(config) {
 					});
 				},
 				(model, callback) => {
-					if (self.fetchProcessor && _.isObject(self.fetchProcessor)) {
+					if (
+						self.fetchProcessor &&
+						_.isObject(self.fetchProcessor)
+					) {
 						self.fetchProcessor.save(function(er, obj) {
 							if (er) return fn(er);
 							model.fetchProcessor = obj._id;
@@ -726,8 +793,16 @@ function init(config) {
 
 				if (self.fetchProcessor && context) {
 					context.$description = proc;
-					new DynamoSandbox(self.fetchProcessor, self.entityRepo).run(context, function(er, result, modifiedProcess) {
-						if (er) return fn(new Error("An error occurred while running fetch processor"));
+					new DynamoSandbox(
+						self.fetchProcessor,
+						self.entityRepo
+					).run(context, function(er, result, modifiedProcess) {
+						if (er)
+							return fn(
+								new Error(
+									"An error occurred while running fetch processor"
+								)
+							);
 
 						return fn(null, modifiedProcess || proc, result);
 					});
@@ -749,19 +824,36 @@ function init(config) {
 		var self = this;
 		if (!opts) throw new Error("opts must be valid");
 
-		if (!opts.entitiesRepository) throw new Error("opts.entitiesRepository must be valid");
+		if (!opts.entitiesRepository)
+			throw new Error("opts.entitiesRepository must be valid");
 
 		this.entitiesRepository = opts.entitiesRepository;
 
 		//there should be a better way to do this but , it works for now so moving on...
-		this.entitiesRepository.processorEntityRepo.saveProcess = DynamoEngine.prototype.saveProcess.bind(this);
-		this.entitiesRepository.processorEntityRepo.getProcess = DynamoEngine.prototype.queryProcess.bind(this);
-		this.entitiesRepository.processorEntityRepo.getLib = DynamoEngine.prototype.queryLib.bind(this);
-		this.entitiesRepository.processorEntityRepo.saveLib = DynamoEngine.prototype.saveLib.bind(this);
-		this.entitiesRepository.processorEntityRepo.saveAsyncValidator = DynamoEngine.prototype.saveAsyncValidator.bind(this);
-		this.entitiesRepository.processorEntityRepo.getAsyncValidator = DynamoEngine.prototype.queryAsyncValidator.bind(this);
-		this.entitiesRepository.processorEntityRepo.saveProcessor = DynamoEngine.prototype.saveProcessor.bind(this);
-		this.entitiesRepository.processorEntityRepo.getProcessor = DynamoEngine.prototype.queryProcessor.bind(this);
+		this.entitiesRepository.processorEntityRepo.saveProcess = DynamoEngine.prototype.saveProcess.bind(
+			this
+		);
+		this.entitiesRepository.processorEntityRepo.getProcess = DynamoEngine.prototype.queryProcess.bind(
+			this
+		);
+		this.entitiesRepository.processorEntityRepo.getLib = DynamoEngine.prototype.queryLib.bind(
+			this
+		);
+		this.entitiesRepository.processorEntityRepo.saveLib = DynamoEngine.prototype.saveLib.bind(
+			this
+		);
+		this.entitiesRepository.processorEntityRepo.saveAsyncValidator = DynamoEngine.prototype.saveAsyncValidator.bind(
+			this
+		);
+		this.entitiesRepository.processorEntityRepo.getAsyncValidator = DynamoEngine.prototype.queryAsyncValidator.bind(
+			this
+		);
+		this.entitiesRepository.processorEntityRepo.saveProcessor = DynamoEngine.prototype.saveProcessor.bind(
+			this
+		);
+		this.entitiesRepository.processorEntityRepo.getProcessor = DynamoEngine.prototype.queryProcessor.bind(
+			this
+		);
 	}
 
 	util.inherits(DynamoEngine, EventEmitter);
@@ -788,22 +880,38 @@ function init(config) {
 					}
 				}),
 				(processors, callback) => {
-					if (!processors || processors.length !== dProcessors.length) {
-						var uidsNotIn = _.differenceWith(dProcessors, processors, function(uid, obj) {
-								return uid == obj.uid;
-							}),
+					if (
+						!processors ||
+						processors.length !== dProcessors.length
+					) {
+						var uidsNotIn = _.differenceWith(
+								dProcessors,
+								processors,
+								function(uid, obj) {
+									return uid == obj.uid;
+								}
+							),
 							tasks = [];
 						for (var i = 0; i < uidsNotIn.length; i++)
 							tasks.push(
-								self.saveProcessor.bind(self, defaultProcessors[uidsNotIn[i]], {
-									retrieve: true
-								})
+								self.saveProcessor.bind(
+									self,
+									defaultProcessors[uidsNotIn[i]],
+									{
+										retrieve: true
+									}
+								)
 							);
 
 						async.parallel(tasks, function(er, ps) {
 							if (er) return callback(er);
 
-							ps.forEach(x => self.emit("default-processor-created", _.cloneDeep(x)));
+							ps.forEach(x =>
+								self.emit(
+									"default-processor-created",
+									_.cloneDeep(x)
+								)
+							);
 							callback(null, ps);
 						});
 						return;
@@ -821,16 +929,23 @@ function init(config) {
 				}),
 				(libs, callback) => {
 					if (!libs || libs.length !== dLibs.length) {
-						var uidsNotIn = _.differenceWith(dLibs, libs, function(uid, obj) {
+						var uidsNotIn = _.differenceWith(dLibs, libs, function(
+								uid,
+								obj
+							) {
 								return uid == obj.uid;
 							}),
 							tasks = [];
 
 						for (var i = 0; i < uidsNotIn.length; i++)
 							tasks.push(
-								self.saveLib.bind(self, defaultLibs[uidsNotIn[i]], {
-									retrieve: true
-								})
+								self.saveLib.bind(
+									self,
+									defaultLibs[uidsNotIn[i]],
+									{
+										retrieve: true
+									}
+								)
 							);
 
 						async.parallel(tasks, function(er, ps) {
@@ -861,19 +976,32 @@ function init(config) {
 									function(er, proc) {
 										if (er) return fn(er);
 
-										self.emit("default-process-created", _.cloneDeep(proc));
+										self.emit(
+											"default-process-created",
+											_.cloneDeep(proc)
+										);
 										callback(null, proc);
 									}
 								);
 							},
-							doesntExist = _.differenceWith(dProcesses, exists, (uid, obj) => {
-								return uid == obj.uid;
-							}),
+							doesntExist = _.differenceWith(
+								dProcesses,
+								exists,
+								(uid, obj) => {
+									return uid == obj.uid;
+								}
+							),
 							args = _processors.reduce((x, a) => {
 								x[a.uid] = a._id;
 								return x;
 							}, {});
-						for (var i = 0; i < doesntExist.length; i++) tasks.push(cb.bind(self, defaultProcesses[doesntExist[i]](args)));
+						for (var i = 0; i < doesntExist.length; i++)
+							tasks.push(
+								cb.bind(
+									self,
+									defaultProcesses[doesntExist[i]](args)
+								)
+							);
 
 						async.parallel(tasks, callback);
 
@@ -898,7 +1026,10 @@ function init(config) {
 	};
 
 	DynamoEngine.prototype.runProcessor = function(context, processor, fn) {
-		var sandbox = new DynamoSandbox(processor, this.entitiesRepository.processorEntityRepo);
+		var sandbox = new DynamoSandbox(
+			processor,
+			this.entitiesRepository.processorEntityRepo
+		);
 		sandbox.run(context, fn);
 	};
 
@@ -909,7 +1040,11 @@ function init(config) {
 	 * @param  {Function} fn     callback
 	 * @return {Any}           nothing
 	 */
-	DynamoEngine.prototype.createEntityConfiguration = function(name, config, fn) {
+	DynamoEngine.prototype.createEntityConfiguration = function(
+		name,
+		config,
+		fn
+	) {
 		this.entitiesRepository.createConfig(name, config, fn);
 	};
 
@@ -920,7 +1055,11 @@ function init(config) {
 	 * @param  {Function} fn     callback
 	 * @return {Any}             nothing
 	 */
-	DynamoEngine.prototype.updateEntityConfiguration = function(name, config, fn) {
+	DynamoEngine.prototype.updateEntityConfiguration = function(
+		name,
+		config,
+		fn
+	) {
 		this.entitiesRepository.updateConfig(name, config, fn);
 	};
 
@@ -981,14 +1120,20 @@ function init(config) {
 				options = null;
 			}
 			if (this.entitiesRepository.transformers[entName]) {
-				var model = this.entitiesRepository.transformers[entName](data, function(er, model) {
+				var model = this.entitiesRepository.transformers[
+					entName
+				](data, function(er, model) {
 					if (er) return fn(er);
 					model.save(function(er, item) {
 						if (er) return fn(er);
 						if (options && options.retrieve) {
-							self.entitiesRepository.queryEntity(entName, item, function(e, x) {
-								fn(e, x[0]);
-							});
+							self.entitiesRepository.queryEntity(
+								entName,
+								item,
+								function(e, x) {
+									fn(e, x[0]);
+								}
+							);
 							return;
 						}
 						fn(er, item);
@@ -997,8 +1142,18 @@ function init(config) {
 				return;
 			}
 
-			if (!data._id) this.entitiesRepository.createEntity(systemEntities[key], data, fn);
-			else this.entitiesRepository.updateEntity(systemEntities[key], data, fn);
+			if (!data._id)
+				this.entitiesRepository.createEntity(
+					systemEntities[key],
+					data,
+					fn
+				);
+			else
+				this.entitiesRepository.updateEntity(
+					systemEntities[key],
+					data,
+					fn
+				);
 		};
 	});
 
@@ -1015,7 +1170,8 @@ function init(config) {
 
 		if (!opts.elementType) throw new Error("element type must be valid");
 
-		if (!opts.save) throw new Error("element must have persistence service");
+		if (!opts.save)
+			throw new Error("element must have persistence service");
 
 		this._id = opts._id;
 		this._save = opts.save;
@@ -1027,6 +1183,7 @@ function init(config) {
 		this.asyncValidators = opts.asyncValidators || [];
 		this.validators = opts.validators || [];
 		this.uid = opts.uid;
+		this.order = opts.order;
 	}
 	/**
 	 * Creates a description of an element  a client can consume
@@ -1042,6 +1199,7 @@ function init(config) {
 			description: this.description,
 			validators: this.validators,
 			uid: this.uid,
+			order: this.order,
 			asyncValidators: _.map(this.asyncValidators, "_id")
 		});
 	};
@@ -1068,6 +1226,7 @@ function init(config) {
 					description: self.description,
 					validators: self.validators,
 					uid: self.uid,
+					order: self.order,
 					asyncValidators: _.map(asyncValidators, "_id")
 				});
 			}
@@ -1079,7 +1238,8 @@ function init(config) {
 	 * @param {Any} opts Contructor arguments
 	 */
 	function DynamoForm(opts) {
-		if (!opts || !opts.elements || !opts.elements.length) throw new Error("Form does not contain any elements");
+		if (!opts || !opts.elements || !opts.elements.length)
+			throw new Error("Form does not contain any elements");
 
 		this.elements = opts.elements;
 	}
@@ -1130,7 +1290,8 @@ function init(config) {
 
 		if (!opts.title) throw new Error("Processor must have a title");
 
-		if (!opts.save) throw new Error("Processor needs save service for persistence");
+		if (!opts.save)
+			throw new Error("Processor needs save service for persistence");
 
 		var self = this;
 		this._id = opts._id;
@@ -1160,7 +1321,9 @@ function init(config) {
 				/* jshint ignore:end */
 			} catch (e) {
 				// statements
-				console.log("error caught by processor , description: \n" + e.message);
+				console.log(
+					"error caught by processor , description: \n" + e.message
+				);
 				callback(e);
 			}
 		};
@@ -1236,7 +1399,10 @@ function init(config) {
 	function EntityRepo(opts) {
 		function blockSystemEntities() {
 			let args = Array.prototype.slice.call(arguments);
-			if (this._systemEntities.indexOf(args[1]) !== -1) return args[args.length - 1](new Error("Access Violation"));
+			if (this._systemEntities.indexOf(args[1]) !== -1)
+				return args[args.length - 1](
+					new Error(`Access Violation '${args[1]}' ${args[0]}`)
+				);
 
 			args[0].apply(this, args.slice(1));
 		}
@@ -1257,7 +1423,9 @@ function init(config) {
 		this.store =
 			opts.store ||
 			(function() {
-				var collection = mongoose.connection.db.collection("_temp_store_");
+				var collection = mongoose.connection.db.collection(
+					"_temp_store_"
+				);
 
 				function createIndex(fn) {
 					collection.createIndex(
@@ -1279,13 +1447,18 @@ function init(config) {
 							fn
 						);
 					},
-					update: function(id, info, fn) {
+					update: function(id, info, extra, fn) {
+						if (Array.prototype.slice.call(arguments).length == 3) {
+							fn = extra;
+							extra = null;
+						}
 						collection.update(
 							{
 								_id: id ? ObjectID(id) : id
 							},
 							{
 								value: info,
+								extra: extra,
 								createdOn: new Date()
 							},
 							fn
@@ -1299,11 +1472,16 @@ function init(config) {
 							fn
 						);
 					},
-					keep: function(info, fn) {
+					keep: function(info, extra, fn) {
+						if (Array.prototype.slice.call(arguments).length == 2) {
+							fn = extra;
+							extra = null;
+						}
 						createIndex(function() {
 							collection.insertOne(
 								{
 									value: info,
+									extra: extra,
 									createdOn: new Date()
 								},
 								fn
@@ -1348,9 +1526,16 @@ function init(config) {
 				} else {
 					tasks.push(function(callback) {
 						if (!item.steps) {
-							return callback(new Error("Processor must include atleast on step"));
+							return callback(
+								new Error(
+									"Process must include atleast one step"
+								)
+							);
 						}
-						if (!item.save) item.save = self.getSaveService(systemEntities.process);
+						if (!item.save)
+							item.save = self.getSaveService(
+								systemEntities.process
+							);
 						if (item.steps.length > 1) {
 							item.store = self.store;
 						}
@@ -1359,22 +1544,39 @@ function init(config) {
 						}
 						var itasks = [];
 						item.steps.forEach(function(step) {
-							itasks.push(self.transformers[systemEntities.step].bind(self, step));
+							itasks.push(
+								self.transformers[systemEntities.step].bind(
+									self,
+									step
+								)
+							);
 						});
 						async.parallel(itasks, function(er, steps) {
 							if (er) return callback(er);
 
 							item.steps = steps;
-
+							let _process;
 							if (item.fetchProcessor) {
-								self.transformers[systemEntities.processor](item.fetchProcessor, function(er, fp) {
+								self.transformers[
+									systemEntities.processor
+								](item.fetchProcessor, function(er, fp) {
 									if (er) return callback(er);
 									item.fetchProcessor = fp;
-									callback(null, new DynamoProcess(item));
+									try {
+										_process = new DynamoProcess(item);
+									} catch (e) {
+										return callback(e);
+									}
+									callback(null, _process);
 								});
 								return;
 							}
-							callback(null, new DynamoProcess(item));
+							try {
+								_process = new DynamoProcess(item);
+							} catch (e) {
+								return callback(e);
+							}
+							callback(null, _process);
 						});
 					});
 				}
@@ -1401,13 +1603,17 @@ function init(config) {
 						fn
 					);
 				} else {
-					if (!item.save) item.save = self.getSaveService(systemEntities.step);
+					if (!item.save)
+						item.save = self.getSaveService(systemEntities.step);
 
 					if (item.stepType == constants.STEPTYPE.CLIENT) {
 						item.entityRepo = self.processorEntityRepo;
 						tasks.push(function(callback) {
-							self.transformers.form(item.form, function(er, form) {
-								if (er) callback(er);
+							self.transformers.form(item.form, function(
+								er,
+								form
+							) {
+								if (er) return callback(er);
 								item.form = form;
 								return callback();
 							});
@@ -1415,10 +1621,17 @@ function init(config) {
 					}
 					if (item.postprocessors) {
 						item.postprocessors.forEach(function(proc) {
-							postprocessorTasks.push(self.transformers[systemEntities.processor].bind(self, proc));
+							postprocessorTasks.push(
+								self.transformers[
+									systemEntities.processor
+								].bind(self, proc)
+							);
 						});
 						tasks.push(function(callback) {
-							async.parallel(postprocessorTasks, function(er, postprocessors) {
+							async.parallel(postprocessorTasks, function(
+								er,
+								postprocessors
+							) {
 								if (er) return callback(er);
 								item.postprocessors = postprocessors;
 								callback();
@@ -1426,11 +1639,19 @@ function init(config) {
 						});
 					}
 					(item.processors || []).forEach(function(proc) {
-						processorTasks.push(self.transformers[systemEntities.processor].bind(self, proc));
+						processorTasks.push(
+							self.transformers[systemEntities.processor].bind(
+								self,
+								proc
+							)
+						);
 					});
 					if (processorTasks.length)
 						tasks.push(function(callback) {
-							async.parallel(processorTasks, function(er, processors) {
+							async.parallel(processorTasks, function(
+								er,
+								processors
+							) {
 								if (er) return callback(er);
 								item.processors = processors;
 								callback();
@@ -1439,8 +1660,13 @@ function init(config) {
 
 					async.parallel(tasks, function(er) {
 						if (er) return fn(er);
-
-						return fn(null, new DynamoStep(item));
+						let _step;
+						try {
+							_step = new DynamoStep(item);
+						} catch (e) {
+							return fn(er);
+						}
+						return fn(null, _step);
 					});
 				}
 				return;
@@ -1448,10 +1674,20 @@ function init(config) {
 			return fn(null, item);
 		};
 		this.transformers[systemEntities.asyncValidator] = function(item, fn) {
-			basicTransformer(item, DynamoAsyncValidator, systemEntities.asyncValidator, fn);
+			basicTransformer(
+				item,
+				DynamoAsyncValidator,
+				systemEntities.asyncValidator,
+				fn
+			);
 		};
 		this.transformers[systemEntities.processor] = function(item, fn) {
-			basicTransformer(item, DynamoProcessor, systemEntities.processor, fn);
+			basicTransformer(
+				item,
+				DynamoProcessor,
+				systemEntities.processor,
+				fn
+			);
 		};
 		this.transformers[systemEntities.element] = function(item, fn) {
 			if (!(item instanceof DynamoElement)) {
@@ -1469,16 +1705,25 @@ function init(config) {
 					);
 				}
 
-				if (!item.save) item.save = self.getSaveService(systemEntities.element);
+				if (!item.save)
+					item.save = self.getSaveService(systemEntities.element);
 
 				async.parallel(
 					_.map(item.asyncValidators, function(x) {
-						return self.transformers[systemEntities.asyncValidator].bind(self, x);
+						return self.transformers[
+							systemEntities.asyncValidator
+						].bind(self, x);
 					}),
 					function(er, asyncValidators) {
 						if (er) return fn(er);
 						item.asyncValidators = asyncValidators;
-						return fn(null, new DynamoElement(item));
+						let _element;
+						try {
+							_element = new DynamoElement(item);
+						} catch (e) {
+							return fn(e);
+						}
+						return fn(null, _element);
 					}
 				);
 				return;
@@ -1487,14 +1732,27 @@ function init(config) {
 		};
 		this.transformers.form = function(item, fn) {
 			if (!(item instanceof DynamoForm)) {
+				if (!item)
+					return debug("step does not have a form"), fn(
+						new Error("Step requires a form")
+					);
 				async.parallel(
 					_.map(item.elements, function(element) {
-						return self.transformers[systemEntities.element].bind(self.transformers, element);
+						return self.transformers[systemEntities.element].bind(
+							self.transformers,
+							element
+						);
 					}),
 					function(er, elements) {
 						if (er) return fn(er);
 						item.elements = elements;
-						return fn(null, new DynamoForm(item));
+						let _form;
+						try {
+							_form = new DynamoForm(item);
+						} catch (e) {
+							return fn(e);
+						}
+						return fn(null, _form);
 					}
 				);
 				return;
@@ -1524,8 +1782,10 @@ function init(config) {
 
 				if (!item.save) item.save = self.getSaveService(entName);
 
-				return fn(null, new clazz(item));
+				let i = new clazz(item);
+				return fn(null, i);
 			}
+
 			return fn(null, item);
 		}
 	}
@@ -1575,7 +1835,11 @@ function init(config) {
 					self.getPath(systemEntities.processor),
 					'{"requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'
 				),
-				fs.writeFile.bind(this, self.getPath(systemEntities.lib), '{"uid":{"type":"String","unique":true,"required":true},"code":{"type":"String","required":true}}'),
+				fs.writeFile.bind(
+					this,
+					self.getPath(systemEntities.lib),
+					'{"uid":{"type":"String","unique":true,"required":true},"code":{"type":"String","required":true}}'
+				),
 				fs.writeFile.bind(
 					this,
 					self.getPath(systemEntities.asyncValidator),
@@ -1608,13 +1872,19 @@ function init(config) {
 	};
 	//used to create schema document.
 	EntityRepo.prototype.createConfig = function(name, config, fn) {
-		if (this._systemEntities.indexOf(this.name) !== -1) throw new Error("Cannot Create Entity with that name.");
+		if (this._systemEntities.indexOf(this.name) !== -1)
+			throw new Error("Cannot Create Entity with that name.");
 		var self = this;
 
-		fs.writeFile(this.getPath(name), JSON.stringify(config), "utf8", function(er) {
-			if (er) return fn(er);
-			self.createSchemas(fn);
-		});
+		fs.writeFile(
+			this.getPath(name),
+			JSON.stringify(config),
+			"utf8",
+			function(er) {
+				if (er) return fn(er);
+				self.createSchemas(fn);
+			}
+		);
 	};
 
 	EntityRepo.prototype.getPath = function(name) {
@@ -1654,7 +1924,12 @@ function init(config) {
 			var tasks = [];
 			ents.forEach(function(file) {
 				if (file.indexOf(self.del) === -1) {
-					tasks.push(self.getConfig.bind(self, path.basename(file, path.extname(file))));
+					tasks.push(
+						self.getConfig.bind(
+							self,
+							path.basename(file, path.extname(file))
+						)
+					);
 				}
 			});
 			async.parallel(tasks, fn);
@@ -1663,7 +1938,8 @@ function init(config) {
 
 	EntityRepo.prototype.updateConfig = function(name, config, fn) {
 		if (!name) return fn(new Error("name must be defined"));
-		if (this._systemEntities.indexOf(this.name) !== -1) throw new Error("Cannot Create Entity with that name.");
+		if (this._systemEntities.indexOf(this.name) !== -1)
+			throw new Error("Cannot Create Entity with that name.");
 		var self = this;
 
 		fs.truncate(this.getPath(name), function() {
@@ -1673,7 +1949,8 @@ function init(config) {
 
 	EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 		var self = this,
-			circularDepth = options && options.circularDepth ? options.circularDepth : 1,
+			circularDepth =
+				options && options.circularDepth ? options.circularDepth : 1,
 			referenceCount = {},
 			keys;
 		if (Array.prototype.slice.call(arguments).length == 3) {
@@ -1684,12 +1961,21 @@ function init(config) {
 		function populate(arr, result, parent) {
 			arr.forEach(function(item) {
 				if (parent && new RegExp(item.path + "$").test(parent)) {
-					referenceCount[item.model] = referenceCount[item.model] ? referenceCount[item.model] + 1 : 1;
+					referenceCount[item.model] = referenceCount[item.model]
+						? referenceCount[item.model] + 1
+						: 1;
 				}
 
 				result.push((parent ? parent + "." : "") + item.path);
-				if (self.refs[item.model] && (referenceCount[item.model] || 0) < circularDepth) {
-					populate(self.refs[item.model], result, result[result.length - 1]);
+				if (
+					self.refs[item.model] &&
+					(referenceCount[item.model] || 0) < circularDepth
+				) {
+					populate(
+						self.refs[item.model],
+						result,
+						result[result.length - 1]
+					);
 				}
 			});
 			return result;
@@ -1697,14 +1983,23 @@ function init(config) {
 
 		function transformResult(er, result) {
 			if (er) return fn(er);
-			if (self.transformers[name] && (!options || !options.noTransformaton)) {
+			if (
+				self.transformers[name] &&
+				(!options || !options.noTransformaton)
+			) {
 				async.parallel(
 					_.map(result, function(x) {
-						return self.transformers[name].bind(self.transformers, x);
+						return self.transformers[name].bind(
+							self.transformers,
+							x
+						);
 					}),
 					function(er, transformed) {
 						if (er) return fn(er);
-						if (options && options.one && transformed) transformed = transformed.length ? transformed[0] : null;
+						if (options && options.one && transformed)
+							transformed = transformed.length
+								? transformed[0]
+								: null;
 
 						fn(null, transformed);
 					}
@@ -1712,11 +2007,24 @@ function init(config) {
 				return;
 			}
 
-			fn(null, options && options.one ? (result.length ? result[0] : null) : result);
+			fn(
+				null,
+				options && options.one
+					? result.length ? result[0] : null
+					: result
+			);
 		}
-
+        
+        if(!this.models[name]){
+        	return setImmediate(fn,new Error('Model does not exist'));
+        }
 		var query = this.models[name].find(filter);
-		if (options && options.full && this.refs[name] && this.refs[name].length !== 0) {
+		if (
+			options &&
+			options.full &&
+			this.refs[name] &&
+			this.refs[name].length !== 0
+		) {
 			var populateString = populate(self.refs[name], []);
 			populateString.forEach(function(string) {
 				if ((string.match(/\./gi) || []).length >= 1) {
@@ -1727,7 +2035,8 @@ function init(config) {
 							cur += x;
 							temp += x;
 							if (index < arr.length - 1) {
-								if (populateString.indexOf(temp) !== -1) cur += "|";
+								if (populateString.indexOf(temp) !== -1)
+									cur += "|";
 								else {
 									cur += ".";
 								}
@@ -1766,6 +2075,9 @@ function init(config) {
 
 	EntityRepo.prototype.updateEntity = function(name, data, fn) {
 		var self = this;
+		if(!this.models[name]){
+        	return setImmediate(fn,new Error('Model does not exist'));
+        }
 		if (this._changeDetection[name]) {
 			this.models[name].findOne(
 				{
@@ -1797,11 +2109,17 @@ function init(config) {
 	};
 
 	EntityRepo.prototype.createEntity = function(name, data, fn) {
+		if(!this.models[name]){
+        	return setImmediate(fn,new Error('Model does not exist'));
+        }
 		var item = new this.models[name](data);
 		item.save(fn);
 	};
 
 	EntityRepo.prototype.countEntity = function(name, filter, fn) {
+		if(!this.models[name]){
+        	return setImmediate(fn,new Error('Model does not exist'));
+        }
 		this.models[name].count(filter, fn);
 	};
 
@@ -1823,7 +2141,8 @@ function init(config) {
 		function assignModel(callback) {
 			var that = this;
 			try {
-				var existing = self.models[this.prop] || mongoose.model(this.prop);
+				var existing =
+					self.models[this.prop] || mongoose.model(this.prop);
 				var newSchema = JSON.parse(this.item);
 				var diff = _.omitBy(newSchema, function(v, k) {
 					return _.isEqual(self.schemas[that.prop][k], v);
@@ -1840,7 +2159,9 @@ function init(config) {
 				if (e.name == "MissingSchemaError") {
 					self.schemas[that.prop] = JSON.parse(that.item);
 					self.refs[that.prop] = getRefs(self.schemas[that.prop]);
-					var schema = new mongoose.Schema(generator.convert(self.schemas[that.prop]));
+					var schema = new mongoose.Schema(
+						generator.convert(self.schemas[that.prop])
+					);
 					self.models[that.prop] = mongoose.model(that.prop, schema);
 				} else return callback(e);
 			}
@@ -1879,7 +2200,11 @@ function init(config) {
 			var that = this;
 			self.getValidator(this.name, function(er, v) {
 				if (er) return callback(er);
-				if (!self.validators[that.name]) generator.setValidator(that.name, (self.validators[that.name] = createRunContext(v.code)));
+				if (!self.validators[that.name])
+					generator.setValidator(
+						that.name,
+						(self.validators[that.name] = createRunContext(v.code))
+					);
 
 				return callback();
 			});

@@ -57,6 +57,11 @@ module.exports = function(constants) {
 			}).getFunctionBody(),
 			constants.UIDS.LIB.CONVERT_TO_SELECTABLE_LIST
 		)
+		// .createLib((()=>{
+		// 	exports=function(){
+
+		// 	}
+		// }).getFunctionBody(),constants.UIDS.LIB.CONVERT_AND_SAVE_FILE)
 		.createLib(
 			(() => {
 				function create(entityName, entityLabel, menuGroup, menuCategory, schema, fn) {
@@ -83,16 +88,17 @@ module.exports = function(constants) {
 										this.entityRepo.saveProcessor(
 											{
 												title: `Update ${entityName}`,
+												uid:update_uid,
 												code: `debug('update ${entityName}...'); \n this.entityRepo.update('${entityName}',this.args.entity,callback)`
 											},
 											{ retrieve: true },
 											(er, proc) => {
 												if (er) return callback(er);
-												this.entityRepo.get(
-													this.systemEntities.processor,
-													{ uid: [create_uid, update_uid, constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC] },
+												this.entityRepo.getProcessor(
+													{ uid:{ $in:[create_uid, update_uid, constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC]} },
 													(er, list) => {
 														if (er) return callback(er);
+														//console.log(list);
 														return callback(null, list);
 													}
 												);
@@ -102,7 +108,7 @@ module.exports = function(constants) {
 								);
 							},
 							(processors, callback) => {
-								if (processors.length !== 2) return callback(new Error("Cannot locate all the required processors"));
+								if (processors.length !== 3) return callback(new Error("Cannot locate all the required processors"));
 
 								callback(
 									null,
@@ -114,6 +120,7 @@ module.exports = function(constants) {
 						],
 						(er, result) => {
 							if (er) return fn(er);
+							console.log('here');
 
 							debug("located crud processors...\n converting schema to template...");
 							template = template.concat(new self.libs.ElementsConverter(self.libs, result, constants).convert(schema));
@@ -154,9 +161,9 @@ module.exports = function(constants) {
 														commands: [],
 														extra: {
 															createTemplate: template,
-															createProcessor: result[uid]._id,
+															createProcessor: result[create_uid]._id,
 															editTemplate: template,
-															editProcessor: result[uid]._id
+															editProcessor: result[update_uid]._id
 														}
 													}
 												)
@@ -332,7 +339,7 @@ module.exports = function(constants) {
 					},
 					[constants.ENTITYTYPE.REFERENCE]: function(data, name) {
 						debug(`converter called with arguments ${JSON.stringify(arguments, null, " ")}`);
-						return this.libs.createElement("_id", "id", "", this.constants.ELEMENTTYPE.SELECT, {
+						return this.libs.createElement(name, this.firstWord(name), "", this.constants.ELEMENTTYPE.SELECT, {
 							type: this.constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
 							config: {
 								value: this.processors[this.constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC]._id
