@@ -134,7 +134,8 @@ function init(config) {
 					["CONVERT_SCHEMA_TO_ELEMENTS", "ElementsConverter"],
 					["CREATE_CRUD_PROCESS", "createCRUDProcess"],
 					["CREATE_ELEMENT", "createElement"],
-					["CONVERT_TO_SELECTABLE_LIST", "convertToSelectableList"]
+					["CONVERT_TO_SELECTABLE_LIST", "convertToSelectableList"],
+					["CONVERT_AND_SAVE_FILE","convertFileAndSave"]
 				),
 				PROCESSOR: new Constant(
 					"FETCH_SCHEMA",

@@ -1,4 +1,3 @@
-/*jshint esversion: 6 */
 module.exports = function(constants) {
 	var misc = require("./misc");
 
@@ -19,8 +18,7 @@ module.exports = function(constants) {
 	}
 
 	return createLib
-		.call(
-			{},
+		.call({},
 			(() => {
 				function convertFilter(data) {
 					var query = {};
@@ -57,51 +55,183 @@ module.exports = function(constants) {
 			}).getFunctionBody(),
 			constants.UIDS.LIB.CONVERT_TO_SELECTABLE_LIST
 		)
-		// .createLib((()=>{
-		// 	exports=function(){
+		.createLib((() => {
+			function convert(entityName, file, context, checks, fileUpload, fileParser, threadPool, entityRepo, fn) {
+				function getDefaultChecks(_keys) {
+					return (function(rows, cb) {
+						let errors = [],
+							requiredKeys = _keys.sort();
+						console.log(`sorted keys ${requiredKeys}`);
+						try {
 
-		// 	}
-		// }).getFunctionBody(),constants.UIDS.LIB.CONVERT_AND_SAVE_FILE)
+
+							for (var i = 0; i < rows.length; i++) {
+								let keys = Object.keys(rows[i]);
+								if (keys.length < requiredKeys.length) {
+									errors.push(`Missing column(s) row:${i+1}`);
+									continue;
+								}
+								let _sortedKeys = keys.sort(),
+									mustHave = requiredKeys.slice();
+
+								for (var z = 0; z < _sortedKeys.length; z++) {
+									if (rows[i][_sortedKeys[z]]) {
+										mustHave.splice(mustHave.indexOf(_sortedKeys[z]), 1);
+									}
+								}
+								if (mustHave.length)
+									errors.push(`row ${i+1} does not have a valid value for column(s) ${mustHave.join(',')}`);
+							}
+							console.log(errors)
+							if (errors.length) return cb(errors.join('|'));
+
+							cb(null, rows);
+						} catch (e) {
+							cb(e);
+						}
+					}).toString().replace('_keys', JSON.stringify(_keys));
+				}
+
+				fileUpload.readFile(file, (er, data, description) => {
+					if (er) return debug('An error occurred while reading uploaded file'), fn(new Error('Error occurred while attempting to read uploaded file'));
+
+					fileParser.parseOnly(description, data, (er, rows) => {
+						if (er) return debug('An error occurred while parsing uploaded file'), fn(new Error('Error occurred while attempting to parse uploaded file'));
+
+						let process =
+							"    console.log('its running at all');" +
+							"    if(!data.items.length) return cb(new Error('file has no rows'));" +
+							"    let _innerChecks='{i}';" +
+							"    try{" +
+							"        console.log('converting items...');" +
+							"        let joined=data.items.map(x=>{" +
+							"           return Object.assign({},x,data.rest||{});" +
+							"        });" +
+							"        console.log('conversion successful');" +
+							"        if(!_innerChecks)return cb(null,joined);" +
+							"        _innerChecks(joined,(er,r)=>{" +
+							"            if(er) return cb(er);" +
+
+							"            cb(null,r);" +
+							"        });" +
+
+							"    }catch(e){" +
+							"        return cb(new Error('error occurred processing file records'));" +
+							"    }";
+
+
+						debug(rows);
+
+						let _checks = !checks ? '' : (Function.prototype.isPrototypeOf(checks)) ? checks.toString() : getDefaultChecks(checks),
+							_process = new Function('data', 'cb', process.replace('\'{i}\'', _checks));
+
+						threadPool.run({
+							items: rows,
+							rest: context
+						}, _process, function(er, result) {
+
+							if (er) return debug('an error occurred in threadpool'), debug(er), fn(new Error(Array.prototype.isPrototypeOf(er) && er.join() || er));
+
+							debug(result);
+
+							debug('thread pool work completed successfully');
+
+							// debug(async)
+							let tasks = result.map(x => (entityRepo.create.bind(entityRepo, entityName, x)));
+							debug(tasks);
+
+							async.parallel(tasks, function(er) {
+								if (er) return debug('an error occurred while saving items'), fn(er);
+
+								debug('finished!!!!');
+
+								fn(null, 'Successfully uploaded records');
+							});
+
+						});
+					});
+				});
+			}
+
+
+
+			exports = convert;
+
+		}).getFunctionBody(), constants.UIDS.LIB.CONVERT_AND_SAVE_FILE)
 		.createLib(
 			(() => {
 				function create(entityName, entityLabel, menuGroup, menuCategory, schema, fn) {
 					debug(`creating crud for entity ${entityName}`);
+
 					let constants = this.constants,
 						self = this,
 						title = `Manage ${entityName}`,
 						create_uid = `CREATE_${entityName}_${Math.ceil(Math.random() * 10)}`,
 						update_uid = `UPDATE_${entityName}_${Math.ceil(Math.random() * 10)}`,
-						template = [this.libs.createId()];
+						get_uid = `GET_${entityName}_${Math.ceil(Math.random() * 10)}`,
+						template = [this.libs.createId()],
+						userManager = self.entityRepo.infrastructure().userManager;
+					if (!userManager) return fn(new Error("Entity Repo does not provide a means of creating menus"));
 
 					async.waterfall(
 						[
 							callback => {
-								this.entityRepo.saveProcessor(
-									{
+								this.entityRepo.saveProcessor({
 										title: `Create ${entityName}`,
 										code: `debug('creating new ${entityName}...'); \n this.entityRepo.create('${entityName}',this.args.entity,callback)`,
 										uid: create_uid
+									}, {
+										retrieve: true
 									},
-									{ retrieve: true },
 									(er, proc) => {
 										if (er) return callback(er);
-										this.entityRepo.saveProcessor(
-											{
+										this.entityRepo.saveProcessor({
 												title: `Update ${entityName}`,
-												uid:update_uid,
+												uid: update_uid,
 												code: `debug('update ${entityName}...'); \n this.entityRepo.update('${entityName}',this.args.entity,callback)`
+											}, {
+												retrieve: true
 											},
-											{ retrieve: true },
 											(er, proc) => {
 												if (er) return callback(er);
-												this.entityRepo.getProcessor(
-													{ uid:{ $in:[create_uid, update_uid, constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC]} },
-													(er, list) => {
-														if (er) return callback(er);
-														//console.log(list);
-														return callback(null, list);
-													}
-												);
+
+												this.entityRepo.saveProcessor({
+													title: `Get ${entityName}`,
+													uid: get_uid,
+													code: `debug('fetching ${entityName}...');\nthis.libs.getEntity.call(this,'${entityName}','${entityLabel}',callback);`
+												}, (er, pr) => {
+													if (er) return callback(er);
+
+													this.entityRepo.getProcessor({
+															uid: {
+																$in: [create_uid, update_uid, get_uid]
+															}
+														},
+														(er, list) => {
+															if (er) return callback(er);
+															debug(list);
+
+															async.parallel(list.map(v => userManager.saveClaim.bind(userManager, {
+																type: userManager.constants.CLAIMS.PROCESSOR,
+																description: v.title,
+																value: v._id
+															})), (er) => {
+																if (er) return callback(er);
+
+
+
+																return callback(null, list);
+															});
+
+
+
+														}
+													);
+
+												})
+
+
+
 											}
 										);
 									}
@@ -126,58 +256,56 @@ module.exports = function(constants) {
 							template = template.concat(new self.libs.ElementsConverter(self.libs, result, constants).convert(schema));
 							debug(`finished conversion :${JSON.stringify(template, null, " ")}`);
 							template.push(
-								self.libs.createElement("password", "Enter Password (Current User)", "", constants.ELEMENTTYPE.INPUT, { type: constants.INPUTTYPE.PASSWORD })
+								self.libs.createElement("password", "Enter Password (Current User)", "", constants.ELEMENTTYPE.INPUT, {
+									type: constants.INPUTTYPE.PASSWORD
+								})
 							);
 
 							var processInstance = {
 								title: title,
 								description: `System administators can create and edit existing ${entityName}`,
 								uid: `${entityName}_CRUD_` + Math.ceil(Math.random() * 10),
-								steps: [
-									{
-										stepType: constants.STEPTYPE.CLIENT,
-										mode: constants.STEPMODE.VIEW,
-										processors: [],
-										form: {
-											elements: [
-												self.libs.createElement(
-													"grid",
-													`Manage ${entityName}`,
-													`This view lets administators manage ${entityName}`,
-													constants.ELEMENTTYPE.GRID,
-													{
-														mode: constants.GRIDMODE.CRUD,
-														source: result[constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC]._id,
-														gridArgs: `{"entityName":"${entityName}","entityLabel":"${entityLabel}"}`,
-														filter: [
-															self.libs.createElement(
-																`${entityLabel}`,
-																`By ${entityLabel[0].toUpperCase() + entityLabel.substring(1)}`,
-																"",
-																constants.ELEMENTTYPE.INPUT
-															)
-														],
-														templateConfig: `{"name":"basic","config":{"${entityLabel || "name"}":"Title"}}`,
-														commands: [],
-														extra: {
-															createTemplate: template,
-															createProcessor: result[create_uid]._id,
-															editTemplate: template,
-															editProcessor: result[update_uid]._id
-														}
+								steps: [{
+									stepType: constants.STEPTYPE.CLIENT,
+									mode: constants.STEPMODE.VIEW,
+									processors: [],
+									form: {
+										elements: [
+											self.libs.createElement(
+												"grid",
+												`Manage ${entityName}`,
+												`This view lets administators manage ${entityName}`,
+												constants.ELEMENTTYPE.GRID, {
+													mode: constants.GRIDMODE.CRUD,
+													source: result[get_uid]._id,
+													gridArgs: `{"entityName":"${entityName}","entityLabel":"${entityLabel}"}`,
+													filter: [
+														self.libs.createElement(
+															`${entityLabel}`,
+															`By ${entityLabel[0].toUpperCase() + entityLabel.substring(1)}`,
+															"",
+															constants.ELEMENTTYPE.INPUT
+														)
+													],
+													templateConfig: `{"name":"basic","config":{"${entityLabel || "name"}":"Title"}}`,
+													commands: [],
+													extra: {
+														createTemplate: template,
+														createProcessor: result[create_uid]._id,
+														editTemplate: template,
+														editProcessor: result[update_uid]._id
 													}
-												)
-											]
-										}
+												}
+											)
+										]
 									}
-								]
+								}]
 							};
 
 							self.entityRepo.saveProcess(processInstance, function(er, proc) {
 								if (er) return fn(er);
 
-								let userManager = self.entityRepo.infrastructure().userManager;
-								if (!userManager) return fn(new Error("Entity Repo does not provide a means of creating menus"));
+
 								async.waterfall(
 									[
 										userManager.saveClaim.bind(userManager, {
@@ -194,8 +322,7 @@ module.exports = function(constants) {
 											});
 										},
 										function(result, callback) {
-											userManager.saveMenu(
-												{
+											userManager.saveMenu({
 													displayLabel: title,
 													group: menuGroup,
 													icon: "process",

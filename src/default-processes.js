@@ -627,7 +627,8 @@ module.exports = function(constants, systemEntities) {
 																				}
 																			]
 																		}
-																	)
+																	),
+																	createElement('disabled','Disabled','',constants.ELEMENTTYPE.INPUT,{type:constants.INPUTTYPE.CHECKBOX})
 																]
 															},
 															{
