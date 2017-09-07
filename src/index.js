@@ -135,7 +135,7 @@ function init(config) {
 					["CREATE_CRUD_PROCESS", "createCRUDProcess"],
 					["CREATE_ELEMENT", "createElement"],
 					["CONVERT_TO_SELECTABLE_LIST", "convertToSelectableList"],
-					["CONVERT_AND_SAVE_FILE","convertFileAndSave"]
+					["CONVERT_AND_SAVE_FILE", "convertFileAndSave"]
 				),
 				PROCESSOR: new Constant(
 					"FETCH_SCHEMA",
@@ -387,8 +387,10 @@ function init(config) {
 				handle.getResult(function(er, result) {
 					if (er) return fn(er);
 
-					return (parent.status =
-						constants.STEPSTATUS.COMPLETED), fn(null, result);
+					return (
+						(parent.status = constants.STEPSTATUS.COMPLETED),
+						fn(null, result)
+					);
 				});
 			};
 
@@ -1734,8 +1736,9 @@ function init(config) {
 		this.transformers.form = function(item, fn) {
 			if (!(item instanceof DynamoForm)) {
 				if (!item)
-					return debug("step does not have a form"), fn(
-						new Error("Step requires a form")
+					return (
+						debug("step does not have a form"),
+						fn(new Error("Step requires a form"))
 					);
 				async.parallel(
 					_.map(item.elements, function(element) {
@@ -2015,10 +2018,10 @@ function init(config) {
 					: result
 			);
 		}
-        
-        if(!this.models[name]){
-        	return setImmediate(fn,new Error('Model does not exist'));
-        }
+
+		if (!this.models[name]) {
+			return setImmediate(fn, new Error("Model does not exist"));
+		}
 		var query = this.models[name].find(filter);
 		if (
 			options &&
@@ -2026,6 +2029,7 @@ function init(config) {
 			this.refs[name] &&
 			this.refs[name].length !== 0
 		) {
+			//debug(self.refs[name]);
 			var populateString = populate(self.refs[name], []);
 			populateString.forEach(function(string) {
 				if ((string.match(/\./gi) || []).length >= 1) {
@@ -2056,9 +2060,11 @@ function init(config) {
 						};
 					string.split(".").forEach(iterator);
 					_.reduce(cur.split("|"), reducer, m);
+					//debug(m);
 					query.populate(m);
 					return;
 				}
+				//debug(string);
 				query.populate(string);
 			});
 		}
@@ -2076,9 +2082,9 @@ function init(config) {
 
 	EntityRepo.prototype.updateEntity = function(name, data, fn) {
 		var self = this;
-		if(!this.models[name]){
-        	return setImmediate(fn,new Error('Model does not exist'));
-        }
+		if (!this.models[name]) {
+			return setImmediate(fn, new Error("Model does not exist"));
+		}
 		if (this._changeDetection[name]) {
 			this.models[name].findOne(
 				{
@@ -2110,17 +2116,17 @@ function init(config) {
 	};
 
 	EntityRepo.prototype.createEntity = function(name, data, fn) {
-		if(!this.models[name]){
-        	return setImmediate(fn,new Error('Model does not exist'));
-        }
+		if (!this.models[name]) {
+			return setImmediate(fn, new Error("Model does not exist"));
+		}
 		var item = new this.models[name](data);
 		item.save(fn);
 	};
 
 	EntityRepo.prototype.countEntity = function(name, filter, fn) {
-		if(!this.models[name]){
-        	return setImmediate(fn,new Error('Model does not exist'));
-        }
+		if (!this.models[name]) {
+			return setImmediate(fn, new Error("Model does not exist"));
+		}
 		this.models[name].count(filter, fn);
 	};
 
@@ -2175,7 +2181,7 @@ function init(config) {
 				refs = [];
 			if (!key) key = "";
 			props.forEach(function(prop) {
-				if (prop == "ref") {
+				if (prop == "ref" || prop == "refPath") {
 					refs.push({
 						model: file.ref,
 						path: key.substring(0, key.length - 1)
@@ -2250,7 +2256,10 @@ function init(config) {
 					files[prop] = item;
 				}
 			}
-			async.waterfall(tasks, fn);
+			async.waterfall(tasks, function(er, result) {
+				debug(self.refs);
+				fn(er, result);
+			});
 		}
 
 		function parse(file, allFiles) {
