@@ -58,7 +58,53 @@ module.exports = function(constants, systemEntities) {
 						}
 					})
 				]
-			};
+			},
+			gridCrudElements=[
+																						createElement("createTemplate", "Create Template", "", constants.ELEMENTTYPE.LIST, {
+																							itemTemplate: elementItemTemplate
+																						}),
+																						createElement(
+																							"createProcessor",
+																							"Processor that will create object",
+																							"",
+																							constants.ELEMENTTYPE.SELECT,
+																							{
+																								type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																								config: {
+																									value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																								}
+																							}
+																						),
+																						createElement("editTemplate", "Edit Template", "", constants.ELEMENTTYPE.LIST, {
+																							itemTemplate: elementItemTemplate,
+																							optional: true
+																						}),
+																						createElement(
+																							"editProcessor",
+																							"Processor that will edit object",
+																							"",
+																							constants.ELEMENTTYPE.SELECT,
+																							{
+																								type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																								config: {
+																									value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																								},
+																								optional: true
+																							}
+																						),
+																						createElement(
+																							"fetchSingleItemProcessor",
+																							"Processor that will fetch object before editing",
+																							"",
+																							constants.ELEMENTTYPE.SELECT,
+																							{
+																								type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																								config: {
+																									value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																								}
+																							}
+																						)
+																					];
 		return {
 			title: "Create Process",
 			description: "This process is used by system administrators to create new processes.",
@@ -234,6 +280,29 @@ module.exports = function(constants, systemEntities) {
 													createElement("elementType", "Element type", "The type of element", constants.ELEMENTTYPE.SELECTSET, {
 														path: "args",
 														items: [
+														{
+															id:constants.ELEMENTTYPE.HTMLVIEW,
+															displayLabel:'HTML View',
+															elements:[
+															createElement('html','HTML','',constants.ELEMENTTYPE.SCRIPT,{type:"ejs"})]
+														},
+														 {
+														 	id:constants.ELEMENTTYPE.ACTIONVIEW,
+														 	displayLabel:'Action View',
+														 	elements:[
+														 	createElement('action','Action processor','',constants.ELEMENTTYPE.SELECT,
+														 	{
+														 			type:constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+														 			config:{
+														 				value:opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+														 			}
+														 		}),
+														 	createElement("elements", "Elements supplying action parameters", "", constants.ELEMENTTYPE.LIST, {
+																		itemTemplate: elementItemTemplate
+															}),
+															createElement('commandText','Command Text','',constants.ELEMENTTYPE.INPUT)
+														 	]
+														 },
 															{
 																id: constants.ELEMENTTYPE.LABEL,
 																displayLabel: "Label",
@@ -243,6 +312,11 @@ module.exports = function(constants, systemEntities) {
 																id: constants.ELEMENTTYPE.HIDDEN,
 																displayLabel: "Hidden Field (i.e id)",
 																elements: []
+															},
+															{
+                                                               id:constants.ELEMENTTYPE.SCRIPT,
+                                                               displayLabel:"Scripts(i.e Javascript,JSON,EJS)",
+                                                               elements:[createElement('type','Type (json,Javascript or ejs)','',constants.ELEMENTTYPE.INPUT)]
 															},
 															{
 																id: constants.ELEMENTTYPE.NAV,
@@ -311,54 +385,19 @@ module.exports = function(constants, systemEntities) {
 																					elements: []
 																				},
 																				{
+                                                                                    id:constants.GRIDMODE.EDITONLY,
+                                                                                    displayLabel:"Edit Only",
+                                                                                    elements:gridCrudElements.slice().filter(x=>/edit/i.test(x.name)||/fetch/i.test(x.name))
+																				},
+																				{
+																					id:constants.GRIDMODE.CREATEONLY,
+																					displayLabel:'Create Only',
+																					elements:gridCrudElements.slice().filter(x=>/create/i.test(x.name)||/fetch/i.test(x.name))
+																				}
+																				{
 																					id: constants.GRIDMODE.CRUD,
 																					displayLabel: "CRUD (Create/Edit/Update Templates required)",
-																					elements: [
-																						createElement("createTemplate", "Create Template", "", constants.ELEMENTTYPE.LIST, {
-																							itemTemplate: elementItemTemplate
-																						}),
-																						createElement(
-																							"createProcessor",
-																							"Processor that will create object",
-																							"",
-																							constants.ELEMENTTYPE.SELECT,
-																							{
-																								type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																								config: {
-																									value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
-																								}
-																							}
-																						),
-																						createElement("editTemplate", "Edit Template", "", constants.ELEMENTTYPE.LIST, {
-																							itemTemplate: elementItemTemplate,
-																							optional: true
-																						}),
-																						createElement(
-																							"editProcessor",
-																							"Processor that will edit object",
-																							"",
-																							constants.ELEMENTTYPE.SELECT,
-																							{
-																								type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																								config: {
-																									value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
-																								},
-																								optional: true
-																							}
-																						),
-																						createElement(
-																							"fetchSingleItemProcessor",
-																							"Processor that will fetch object before editing",
-																							"",
-																							constants.ELEMENTTYPE.SELECT,
-																							{
-																								type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																								config: {
-																									value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
-																								}
-																							}
-																						)
-																					]
+																					elements: gridCrudElements
 																				}
 																			]
 																		}
@@ -427,7 +466,9 @@ module.exports = function(constants, systemEntities) {
 																		"templateConfig",
 																		'Template (JSON representing template/template config e.g {"name":"basic","config":{name:"Name"}})',
 																		"",
-																		constants.ELEMENTTYPE.SCRIPT
+																		constants.ELEMENTTYPE.SCRIPT,{
+																			type:'JSON'
+																		}
 																	)
 																]
 															},
@@ -527,7 +568,7 @@ module.exports = function(constants, systemEntities) {
 																								value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
 																							}
 																						}),
-																						createElement("customArgs", "Custom Arguments", "", constants.ELEMENTTYPE.SCRIPT)
+																						createElement("customArgs", "Custom Arguments", "", constants.ELEMENTTYPE.SCRIPT,{type:'JSON'})
 																					]
 																				}
 																			]
@@ -554,7 +595,7 @@ module.exports = function(constants, systemEntities) {
 																			value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
 																		}
 																	}),
-																	createElement('processorArgs','Processor Arguments','',constants.ELEMENTTYPE.SCRIPT),
+																	createElement('processorArgs','Processor Arguments','',constants.ELEMENTTYPE.SCRIPT,{type:'JSON'}),
 																	createElement("items", "Options", "Options under groups.", constants.ELEMENTTYPE.LIST, {
 																		itemTemplate: [
 																			createElement(

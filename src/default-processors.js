@@ -487,6 +487,11 @@ module.exports = function(constants, systemEntities) {
 			constants.UIDS.PROCESSOR.CREATE_SCHEMA
 		)
 		.createProcessor(
+			"Get Domains",
+			"let inf=this.entityRepo.infrastructure(); if(!inf||!inf.userManager)callback(new Error('infrastructure not properly setup'));else inf.userManager.getDomains({}||this.args.query,callback)",
+			constants.UIDS.PROCESSOR.GET_DOMAINS
+		)
+		.createProcessor(
 			"Update Schema",
 			updateSchemaCode,
 			constants.UIDS.PROCESSOR.UPDATE_SCHEMA

@@ -106,7 +106,7 @@ function init(config) {
 			PROCESSSTATUS: new Constant("COMPLETED", "RUNNING"),
 			STEPSTATUS: new Constant("COMPLETED", "RUNNING"),
 			PROCESSORTYPE: new Constant("SERVER", "CLIENT"),
-			GRIDMODE: new Constant("DEFAULT", "CRUD"),
+			GRIDMODE: new Constant("DEFAULT", "CRUD","EDITONLY","CREATEONLY"),
 			GRIDCOMMANDTYPE: new Constant("PROCESSOR", "NAV"),
 			STEPMODE: new Constant("VIEW", "PROCESS"),
 			STEPTYPE: new Constant("OFFLINE", "CLIENT"),
@@ -138,6 +138,7 @@ function init(config) {
 					["CONVERT_AND_SAVE_FILE", "convertFileAndSave"]
 				),
 				PROCESSOR: new Constant(
+					"GET_DOMAINS",
 					"FETCH_SCHEMA",
 					"CREATE_SCHEMA",
 					"UPDATE_SCHEMA",
@@ -193,7 +194,9 @@ function init(config) {
 				"TABS",
 				"SELECT",
 				"LIST",
-				"IMAGE"
+				"IMAGE",
+				"ACTIONVIEW",
+				"HTMLVIEW"
 			)
 		};
 	}
@@ -785,6 +788,7 @@ function init(config) {
 		var self = this,
 			proc = _.pickBy(self, notAFunction),
 			_allSteps = [];
+			proc.fetchProcessor=proc.fetchProcessor ? proc.fetchProcessor._id:null;
 
 		function collect(er, s) {
 			if (er) return fn(er);
@@ -801,10 +805,8 @@ function init(config) {
 						self.entityRepo
 					).run(context, function(er, result, modifiedProcess) {
 						if (er)
-							return fn(
-								new Error(
-									"An error occurred while running fetch processor"
-								)
+							return debug("An error occurred while running fetch processor") ,fn(
+								er
 							);
 
 						return fn(null, modifiedProcess || proc, result);
@@ -905,6 +907,8 @@ function init(config) {
 									}
 								)
 							);
+
+
 
 						async.parallel(tasks, function(er, ps) {
 							if (er) return callback(er);
@@ -1498,6 +1502,7 @@ function init(config) {
 			get: blockSystemEntities.bind(self, self.queryEntity),
 			count: self.countEntity.bind(this),
 			update: blockSystemEntities.bind(self, self.updateEntity),
+			delete:blockSystemEntities.bind(self,self.deleteEntity),
 			create: blockSystemEntities.bind(self, self.createEntity),
 			createSchema: self.createConfig.bind(self),
 			updateSchema: self.updateConfig.bind(self),
@@ -2092,7 +2097,9 @@ function init(config) {
 				},
 				function(er, e) {
 					if (er) return fn(er);
+					if(!e)  return fn(new Error('that entity does not exist'));
 					var merged = _.assign(e, data);
+					debug(merged);
 					self._changeDetection[name].forEach(function(field) {
 						merged.set(field, data[field]);
 					});
@@ -2107,6 +2114,7 @@ function init(config) {
 				data,
 				function(er, stat) {
 					if (er) return fn(er);
+					if (stat <= 0) return fn(new Error('that entity does not exist'));
 					fn(null, {
 						_id: data._id
 					});
@@ -2129,7 +2137,12 @@ function init(config) {
 		}
 		this.models[name].count(filter, fn);
 	};
-
+    EntityRepo.prototype.deleteEntity = function(name,id,fn) {
+    		if (!this.models[name]) {
+			return setImmediate(fn, new Error("Model does not exist"));
+		}
+		this.models[name].remove({_id:id},fn);
+    };
 	EntityRepo.prototype.createSchemas = function(fn) {
 		var self = this;
 
@@ -2154,28 +2167,50 @@ function init(config) {
 				var diff = _.omitBy(newSchema, function(v, k) {
 					return _.isEqual(self.schemas[that.prop][k], v);
 				});
+				
+				var indexes=removeCompoundIndexes(diff);
 				var change = Object.keys(diff);
 				if (diff && change.length) {
 					existing.schema.add(generator.convert(diff));
+					removeCompoundIndexes(newSchema);
 					self.models[this.prop] = existing;
 					self.schemas[this.prop] = newSchema;
 					self._changeDetection[this.prop] = change;
 					self.refs[that.prop] = getRefs(newSchema);
 				}
+				debug(indexes);
+				if(indexes.length) setupCompoundIndexes(self.models[this.prop].schema,indexes);
 			} catch (e) {
 				if (e.name == "MissingSchemaError") {
-					self.schemas[that.prop] = JSON.parse(that.item);
+					var _schema = JSON.parse(that.item);
+					var indexes = removeCompoundIndexes(_schema);
+					self.schemas[that.prop] = _schema;
 					self.refs[that.prop] = getRefs(self.schemas[that.prop]);
 					var schema = new mongoose.Schema(
-						generator.convert(self.schemas[that.prop])
+						generator.convert(self.schemas[that.prop]),{autoIndex:false}
 					);
 					self.models[that.prop] = mongoose.model(that.prop, schema);
+					if(indexes.length){
+						setupCompoundIndexes(schema,indexes);
+					}
 				} else return callback(e);
 			}
 
 			callback();
 		}
-
+		function setupCompoundIndexes(schema,indexes){
+             indexes.forEach(x=>{
+             	schema.index(x.reduce((s,v)=>{ return s[v]=1,s;},{}),{unique:true,sparse:true});
+             });
+		}
+        function removeCompoundIndexes(schema){
+        	let indexes = [];
+				if (schema.compound_index) {
+					indexes = schema.compound_index;
+                    delete schema.compound_index;
+				}
+			return indexes;
+        }
 		function getRefs(file, key) {
 			var props = Object.keys(file),
 				refs = [];
