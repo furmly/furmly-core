@@ -56,7 +56,7 @@ module.exports = function(constants) {
 			constants.UIDS.LIB.CONVERT_TO_SELECTABLE_LIST
 		)
 		.createLib((() => {
-			function convert(entityName, file, context, checks, fileUpload, fileParser, threadPool, entityRepo, fn) {
+			function convert(entityName, file, context, checks, extend, fileUpload, fileParser, threadPool, entityRepo, fn) {
 				function getDefaultChecks(_keys) {
 					return (function(rows, cb) {
 						let errors = [],
@@ -90,13 +90,13 @@ module.exports = function(constants) {
 							cb(e);
 						}
 					}).toString().replace('_keys', JSON.stringify(_keys));
-				}
+				};
 
 				fileUpload.readFile(file, (er, data, description) => {
-					if (er) return debug('An error occurred while reading uploaded file'), fn(new Error('Error occurred while attempting to read uploaded file'));
+					if (er) return debug('An error occurred while reading uploaded file'), debug(er), fn(new Error('Error occurred while attempting to read uploaded file'));
 
 					fileParser.parseOnly(description, data, (er, rows) => {
-						if (er) return debug('An error occurred while parsing uploaded file'), fn(new Error('Error occurred while attempting to parse uploaded file'));
+						if (er) return debug('An error occurred while parsing uploaded file'), debug(er), fn(new Error('Error occurred while attempting to parse uploaded file'));
 
 						let process =
 							"    console.log('its running at all');" +
@@ -104,15 +104,15 @@ module.exports = function(constants) {
 							"    let _innerChecks='{i}';" +
 							"    try{" +
 							"        console.log('converting items...');" +
-							"        let joined=data.items.map(x=>{" +
+							"        let joined = data.items.map((x,ind)=>{" +
 							"           return Object.assign({},x,data.rest||{});" +
 							"        });" +
 							"        console.log('conversion successful');" +
 							"        if(!_innerChecks)return cb(null,joined);" +
-							"        _innerChecks(joined,(er,r)=>{" +
+							"        _innerChecks(joined,(er)=>{" +
 							"            if(er) return cb(er);" +
 
-							"            cb(null,r);" +
+							"            cb(null,joined);" +
 							"        });" +
 
 							"    }catch(e){" +
@@ -136,17 +136,30 @@ module.exports = function(constants) {
 
 							debug('thread pool work completed successfully');
 
-							// debug(async)
-							let tasks = result.map(x => (entityRepo.create.bind(entityRepo, entityName, x)));
-							debug(tasks);
+							extend = extend || function(list, cb) {
+								setImmediate(cb, null, list);
+							};
+							debug('finished setting up extend');
+							//debug(extend);
+							debug(extend.toString());
+							extend(result, (er, extendedResult) => {
+								debug('got here');
+								if (er) return fn(er);
 
-							async.parallel(tasks, function(er) {
-								if (er) return debug('an error occurred while saving items'), fn(er);
+								debug(extendedResult);
+								let tasks = extendedResult.map(x => (entityRepo.create.bind(entityRepo, entityName, x)));
+								//debug(tasks);
 
-								debug('finished!!!!');
+								async.parallel(tasks, function(er) {
+									if (er) return debug('an error occurred while saving items'), fn(er);
 
-								fn(null, 'Successfully uploaded records');
-							});
+									debug('finished!!!!');
+
+									fn(null, 'Successfully uploaded records');
+								});
+							})
+
+
 
 						});
 					});
@@ -171,7 +184,7 @@ module.exports = function(constants) {
 						get_uid = `GET_${entityName}_${Math.ceil(Math.random() * 10)}`,
 						template = [this.libs.createId()],
 						userManager = self.entityRepo.infrastructure().userManager;
-					if (!userManager) return fn(new Error("Entity Repo does not provide a means of creating menus"));
+					if (!userManager) return fn(new Error("Entity Repo does not provide a means of reating menus"));
 
 					async.waterfall(
 						[
@@ -204,23 +217,26 @@ module.exports = function(constants) {
 
 													this.entityRepo.getProcessor({
 															uid: {
-																$in: [create_uid, update_uid, get_uid]
+																$in: [create_uid, update_uid, get_uid, this.constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC]
 															}
 														},
 														(er, list) => {
 															if (er) return callback(er);
 															debug(list);
-
-															async.parallel(list.map(v => userManager.saveClaim.bind(userManager, {
+															let _list = list.slice().filter(x => this.constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC !== x.uid);
+															async.parallel(_list.map(v => userManager.saveClaim.bind(userManager, {
 																type: userManager.constants.CLAIMS.PROCESSOR,
 																description: v.title,
 																value: v._id
-															})), (er) => {
+															})), (er, _claims) => {
 																if (er) return callback(er);
 
+																async.parallel(_claims.map(x => userManager.addClaimToRole.bind(userManager, userManager.defaultRole, null, x)), (er) => {
+																	if (er) return callback(er);
+																	return callback(null, list);
+																});
 
 
-																return callback(null, list);
 															});
 
 
@@ -228,7 +244,7 @@ module.exports = function(constants) {
 														}
 													);
 
-												})
+												});
 
 
 
@@ -238,7 +254,7 @@ module.exports = function(constants) {
 								);
 							},
 							(processors, callback) => {
-								if (processors.length !== 3) return callback(new Error("Cannot locate all the required processors"));
+								if (processors.length !== 4) return callback(new Error("Cannot locate all the required processors"));
 
 								callback(
 									null,
@@ -250,7 +266,6 @@ module.exports = function(constants) {
 						],
 						(er, result) => {
 							if (er) return fn(er);
-							console.log('here');
 
 							debug("located crud processors...\n converting schema to template...");
 							template = template.concat(new self.libs.ElementsConverter(self.libs, result, constants).convert(schema));
@@ -304,7 +319,6 @@ module.exports = function(constants) {
 
 							self.entityRepo.saveProcess(processInstance, function(er, proc) {
 								if (er) return fn(er);
-
 
 								async.waterfall(
 									[
@@ -362,6 +376,7 @@ module.exports = function(constants) {
 		)
 		.createLib(
 			(() => {
+
 				function ElementsConverter(libs, processors, constants) {
 					this.libs = libs;
 					this.processors = processors;
@@ -465,13 +480,13 @@ module.exports = function(constants) {
 						});
 					},
 					[constants.ENTITYTYPE.REFERENCE]: function(data, name) {
-						debug(`converter called with arguments ${JSON.stringify(arguments, null, " ")}`);
+						debug(`reference converter called with arguments ${JSON.stringify(arguments, null, " ")}`);
 						return this.libs.createElement(name, this.firstWord(name), "", this.constants.ELEMENTTYPE.SELECT, {
 							type: this.constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
 							config: {
 								value: this.processors[this.constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC]._id
 							},
-							customArgs: `{"entityName":"${data.ref}",entityLabel:"displayLabel"}`
+							customArgs: `{"entityName":"${data.ref}",entityLabel:"name"}`
 						});
 					}
 				};
@@ -479,6 +494,7 @@ module.exports = function(constants) {
 					return string[0].toUpperCase() + string.substring(1);
 				};
 				exports = ElementsConverter;
+
 			}).getFunctionBody(),
 			constants.UIDS.LIB.CONVERT_SCHEMA_TO_ELEMENTS
 		)

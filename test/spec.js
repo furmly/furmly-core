@@ -957,6 +957,7 @@ describe('Integration', function() {
 					defaulRole: 'admin',
 					saveClaim: sinon.spy(function() {
 						var args = Array.prototype.slice.call(arguments);
+						//console.log(args);
 						assert.equal(args[0].type, userManager.constants.CLAIMS.PROCESS);
 						args[0]._id = id;
 						args[args.length - 1](null, args[0]);
@@ -976,7 +977,8 @@ describe('Integration', function() {
 					},
 					constants: {
 						CLAIMS: {
-							PROCESS: 'http://test.com'
+							PROCESS: 'http://test.com',
+							PROCESSOR:'http://test.com'
 						}
 					}
 				},
@@ -1037,8 +1039,8 @@ describe('Integration', function() {
 						category: 'MAINMENU'
 					}, proc, function(er, result) {
 						assert.isNull(er);
-						assert.equal(userManager.saveClaim.callCount, 1);
-						assert.equal(userManager.addClaimToRole.callCount, 1);
+						assert.equal(userManager.saveClaim.callCount, 4);
+						assert.equal(userManager.addClaimToRole.callCount, 4);
 						assert.equal(userManager.saveMenu.callCount, 1);
 
 						fixture.engine.queryProcess({}, function(er, processes) {

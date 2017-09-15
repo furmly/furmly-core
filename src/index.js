@@ -106,7 +106,7 @@ function init(config) {
 			PROCESSSTATUS: new Constant("COMPLETED", "RUNNING"),
 			STEPSTATUS: new Constant("COMPLETED", "RUNNING"),
 			PROCESSORTYPE: new Constant("SERVER", "CLIENT"),
-			GRIDMODE: new Constant("DEFAULT", "CRUD","EDITONLY","CREATEONLY"),
+			GRIDMODE: new Constant("DEFAULT", "CRUD", "EDITONLY", "CREATEONLY"),
 			GRIDCOMMANDTYPE: new Constant("PROCESSOR", "NAV"),
 			STEPMODE: new Constant("VIEW", "PROCESS"),
 			STEPTYPE: new Constant("OFFLINE", "CLIENT"),
@@ -237,20 +237,6 @@ function init(config) {
 	 */
 	function DynamoStep(opts) {
 		var self = this;
-		if (
-			(!opts.processors || !opts.processors.length) &&
-			opts.mode !== constants.STEPMODE.VIEW
-		)
-			throw new Error("Steps must have atleast one processor");
-
-		if (!opts.stepType || !constants.STEPTYPE.in(opts.stepType))
-			throw new Error(
-				"Step type is null or undefined or not a valid type"
-			);
-
-		if (!opts.save)
-			throw new Error("Step needs save service for persistence");
-
 		this._id = opts._id;
 		this.stepType = opts.stepType;
 		this._save = opts.save;
@@ -284,7 +270,8 @@ function init(config) {
 				}
 			}
 		});
-
+		//call class invariant
+		this.validate();
 		/**
 		 * Offline State
 		 * @param {Step} parent State Owner
@@ -414,6 +401,11 @@ function init(config) {
 	 */
 	DynamoStep.prototype.save = function(fn) {
 		var self = this;
+		try {
+			this.validate();
+		} catch (e) {
+			return setImmediate(fn, e);
+		}
 		var unsavedProcessors = _.filter(this.processors, _.isObject);
 		var unsavedPostProcessors = _.filter(this.postprocessors, _.isObject);
 		var tasks = [],
@@ -470,14 +462,28 @@ function init(config) {
 	};
 
 	/**
-	 * Enforce Class invariant
+	 * Class invariant
 	 */
-	DynamoStep.prototype.validate = function() {
-		if (!this._id) throw new Error("opts._id is null or undefined");
+	DynamoStep.prototype.validate = function(shouldBePersisted) {
+		if (shouldBePersisted && !this._id)
+			throw new Error("opts._id is null or undefined");
+
+		if (
+			(!this.processors || !this.processors.length) &&
+			this.mode !== constants.STEPMODE.VIEW
+		)
+			throw new Error("Steps must have atleast one processor");
+
+		if (!this.stepType || !constants.STEPTYPE.in(this.stepType))
+			throw new Error(
+				"Step type is null or undefined or not a valid type"
+			);
+		if (!this._save)
+			throw new Error("Step needs save service for persistence");
 	};
 
 	DynamoStep.prototype.describe = function(fn) {
-		this.validate();
+		this.validate(true);
 		var self = this,
 			step = _.pickBy(self, notAFunction);
 		self.state.describe(function(er, res) {
@@ -490,7 +496,7 @@ function init(config) {
 	};
 
 	DynamoStep.prototype.run = function(context, fn) {
-		this.validate();
+		this.validate(true);
 		this.state.run(context, fn);
 	};
 
@@ -650,6 +656,24 @@ function init(config) {
 	};
 
 	/**
+	 * Utility function for updating a process properties. Primarily used during initialization
+	 * @param  {Object} data Object or Type of DynamoProcess
+	 * @return {Void}      Nothing.
+	 */
+	DynamoProcess.prototype.updateProps = function(opts) {
+		if (opts.steps) {
+			let steps = opts.steps;
+			delete opts.steps;
+
+			steps.forEach((x, index) => {
+				if (this.steps.length < index)
+					this.steps[index].updateProps(steps[index]);
+				else this.steps.push(steps[index]);
+			});
+		}
+		Object.assign(this, opts);
+	};
+	/**
 	 * This function chooses and runs the current step
 	 * @param  {Any}   context contains the details of the request in question.
 	 * @param  {Function} fn      callback
@@ -788,7 +812,9 @@ function init(config) {
 		var self = this,
 			proc = _.pickBy(self, notAFunction),
 			_allSteps = [];
-			proc.fetchProcessor=proc.fetchProcessor ? proc.fetchProcessor._id:null;
+		proc.fetchProcessor = proc.fetchProcessor
+			? proc.fetchProcessor._id
+			: null;
 
 		function collect(er, s) {
 			if (er) return fn(er);
@@ -805,8 +831,11 @@ function init(config) {
 						self.entityRepo
 					).run(context, function(er, result, modifiedProcess) {
 						if (er)
-							return debug("An error occurred while running fetch processor") ,fn(
-								er
+							return (
+								debug(
+									"An error occurred while running fetch processor"
+								),
+								fn(er)
 							);
 
 						return fn(null, modifiedProcess || proc, result);
@@ -886,14 +915,24 @@ function init(config) {
 				}),
 				(processors, callback) => {
 					if (
-						!processors ||
-						processors.length !== dProcessors.length
+						true
+						// !processors ||
+						// processors.length !== dProcessors.length
 					) {
-						var uidsNotIn = _.differenceWith(
+						var uidsIn = [],
+							uidsNotIn = _.differenceWith(
 								dProcessors,
 								processors,
 								function(uid, obj) {
-									return uid == obj.uid;
+									let result = uid == obj.uid;
+									if (result) {
+										var _proc = Object.assign(
+											{ _id: obj._id },
+											defaultProcessors[uid]
+										);
+										uidsIn.push(_proc);
+									}
+									return result;
 								}
 							),
 							tasks = [];
@@ -908,17 +947,28 @@ function init(config) {
 								)
 							);
 
-
+						for (var i = 0; i < uidsIn.length; i++)
+							tasks.push(
+								self.saveProcessor.bind(self, uidsIn[i], {
+									retrieve: true
+								})
+							);
 
 						async.parallel(tasks, function(er, ps) {
 							if (er) return callback(er);
 
-							ps.forEach(x =>
-								self.emit(
-									"default-processor-created",
-									_.cloneDeep(x)
+							ps.forEach(x => {
+								if (
+									!uidsIn.filter(
+										v =>
+											v._id.toString() == x._id.toString()
+									).length
 								)
-							);
+									self.emit(
+										"default-processor-created",
+										_.cloneDeep(x)
+									);
+							});
 							callback(null, ps);
 						});
 						return;
@@ -935,12 +985,24 @@ function init(config) {
 					}
 				}),
 				(libs, callback) => {
-					if (!libs || libs.length !== dLibs.length) {
-						var uidsNotIn = _.differenceWith(dLibs, libs, function(
+					if (
+						true
+						// !libs || libs.length !== dLibs.length
+					) {
+						var uidsIn = [],
+							uidsNotIn = _.differenceWith(dLibs, libs, function(
 								uid,
 								obj
 							) {
-								return uid == obj.uid;
+								var result = uid == obj.uid;
+								if (result) {
+									var _lib = Object.assign(
+										{ _id: obj._id },
+										defaultLibs[uid]
+									);
+									uidsIn.push(_lib);
+								}
+								return result;
 							}),
 							tasks = [];
 
@@ -953,6 +1015,13 @@ function init(config) {
 										retrieve: true
 									}
 								)
+							);
+
+						for (var i = 0; i < uidsIn.length; i++)
+							tasks.push(
+								self.saveLib.bind(self, uidsIn[i], {
+									retrieve: true
+								})
 							);
 
 						async.parallel(tasks, function(er, ps) {
@@ -970,9 +1039,10 @@ function init(config) {
 					}
 				}),
 				(exists, callback) => {
-					if (!exists || exists.length !== dProcesses.length) {
-						//it does not exist
-						var tasks = [],
+					//debug(exists);
+					//debug(defaultProcesses);
+					if (!exists.length || dProcesses.length !== exists.length) {
+						let tasks = [],
 							cb = (data, callback) => {
 								self.saveProcess(
 									data,
@@ -982,7 +1052,6 @@ function init(config) {
 									},
 									function(er, proc) {
 										if (er) return fn(er);
-
 										self.emit(
 											"default-process-created",
 											_.cloneDeep(proc)
@@ -991,17 +1060,18 @@ function init(config) {
 									}
 								);
 							},
+							args = _processors.reduce((x, a) => {
+								x[a.uid] = a._id;
+								return x;
+							}, {}),
 							doesntExist = _.differenceWith(
 								dProcesses,
 								exists,
 								(uid, obj) => {
 									return uid == obj.uid;
 								}
-							),
-							args = _processors.reduce((x, a) => {
-								x[a.uid] = a._id;
-								return x;
-							}, {});
+							);
+
 						for (var i = 0; i < doesntExist.length; i++)
 							tasks.push(
 								cb.bind(
@@ -1011,10 +1081,7 @@ function init(config) {
 							);
 
 						async.parallel(tasks, callback);
-
-						return;
-					}
-					callback();
+					} else return callback();
 				}
 			],
 			(er, result) => {
@@ -1122,6 +1189,7 @@ function init(config) {
 		};
 		DynamoEngine.prototype["save" + cap] = function(data, options, fn) {
 			var self = this;
+
 			if (Array.prototype.slice.call(arguments).length == 2) {
 				fn = options;
 				options = null;
@@ -1161,6 +1229,16 @@ function init(config) {
 					data,
 					fn
 				);
+		};
+
+		DynamoEngine.prototype[`delete${cap}`] = function(id, fn) {
+			if (!id) {
+				return setImmediate(
+					fn,
+					new Error("cannot delete item without an id")
+				);
+			}
+			this.entitiesRepository.deleteEntity(systemEntities[key], id, fn);
 		};
 	});
 
@@ -1293,12 +1371,20 @@ function init(config) {
 	 * @param {Any} opts Constructor arguments
 	 */
 	function DynamoProcessor(opts) {
-		if (!opts.code) throw new Error("Processor must include code to run");
+		if (!opts.code) {
+			debug(opts);
+			throw new Error("Processor must include code to run");
+		}
 
-		if (!opts.title) throw new Error("Processor must have a title");
+		if (!opts.title) {
+			debug(opts);
+			throw new Error("Processor must have a title");
+		}
 
-		if (!opts.save)
+		if (!opts.save) {
+			debug(opts);
 			throw new Error("Processor needs save service for persistence");
+		}
 
 		var self = this;
 		this._id = opts._id;
@@ -1502,7 +1588,7 @@ function init(config) {
 			get: blockSystemEntities.bind(self, self.queryEntity),
 			count: self.countEntity.bind(this),
 			update: blockSystemEntities.bind(self, self.updateEntity),
-			delete:blockSystemEntities.bind(self,self.deleteEntity),
+			delete: blockSystemEntities.bind(self, self.deleteEntity),
 			create: blockSystemEntities.bind(self, self.createEntity),
 			createSchema: self.createConfig.bind(self),
 			updateSchema: self.updateConfig.bind(self),
@@ -2097,7 +2183,7 @@ function init(config) {
 				},
 				function(er, e) {
 					if (er) return fn(er);
-					if(!e)  return fn(new Error('that entity does not exist'));
+					if (!e) return fn(new Error("that entity does not exist"));
 					var merged = _.assign(e, data);
 					debug(merged);
 					self._changeDetection[name].forEach(function(field) {
@@ -2114,7 +2200,8 @@ function init(config) {
 				data,
 				function(er, stat) {
 					if (er) return fn(er);
-					if (stat <= 0) return fn(new Error('that entity does not exist'));
+					if (stat <= 0)
+						return fn(new Error("that entity does not exist"));
 					fn(null, {
 						_id: data._id
 					});
@@ -2137,12 +2224,25 @@ function init(config) {
 		}
 		this.models[name].count(filter, fn);
 	};
-    EntityRepo.prototype.deleteEntity = function(name,id,fn) {
-    		if (!this.models[name]) {
+	EntityRepo.prototype.deleteEntity = function(name, id, fn) {
+		if (!this.models[name]) {
 			return setImmediate(fn, new Error("Model does not exist"));
 		}
-		this.models[name].remove({_id:id},fn);
-    };
+		let query = { _id: id };
+		if (Array.prototype.isPrototypeOf(id)) {
+			query = { _id: { $in: id } };
+		}
+		if (!Array.prototype.isPrototypeOf(id) && typeof id == "object") {
+			if (!Object.keys(id).length)
+				return setImmediate(
+					fn,
+					new Error(`That would delete all ${name}`)
+				);
+			query = id;
+		}
+
+		this.models[name].remove(query, fn);
+	};
 	EntityRepo.prototype.createSchemas = function(fn) {
 		var self = this;
 
@@ -2167,8 +2267,8 @@ function init(config) {
 				var diff = _.omitBy(newSchema, function(v, k) {
 					return _.isEqual(self.schemas[that.prop][k], v);
 				});
-				
-				var indexes=removeCompoundIndexes(diff);
+
+				var indexes = removeCompoundIndexes(diff);
 				var change = Object.keys(diff);
 				if (diff && change.length) {
 					existing.schema.add(generator.convert(diff));
@@ -2179,7 +2279,11 @@ function init(config) {
 					self.refs[that.prop] = getRefs(newSchema);
 				}
 				debug(indexes);
-				if(indexes.length) setupCompoundIndexes(self.models[this.prop].schema,indexes);
+				if (indexes.length)
+					setupCompoundIndexes(
+						self.models[this.prop].schema,
+						indexes
+					);
 			} catch (e) {
 				if (e.name == "MissingSchemaError") {
 					var _schema = JSON.parse(that.item);
@@ -2187,30 +2291,36 @@ function init(config) {
 					self.schemas[that.prop] = _schema;
 					self.refs[that.prop] = getRefs(self.schemas[that.prop]);
 					var schema = new mongoose.Schema(
-						generator.convert(self.schemas[that.prop]),{autoIndex:false}
+						generator.convert(self.schemas[that.prop]),
+						{ autoIndex: false }
 					);
 					self.models[that.prop] = mongoose.model(that.prop, schema);
-					if(indexes.length){
-						setupCompoundIndexes(schema,indexes);
+					if (indexes.length) {
+						setupCompoundIndexes(schema, indexes);
 					}
 				} else return callback(e);
 			}
 
 			callback();
 		}
-		function setupCompoundIndexes(schema,indexes){
-             indexes.forEach(x=>{
-             	schema.index(x.reduce((s,v)=>{ return s[v]=1,s;},{}),{unique:true,sparse:true});
-             });
+		function setupCompoundIndexes(schema, indexes) {
+			indexes.forEach(x => {
+				schema.index(
+					x.reduce((s, v) => {
+						return (s[v] = 1), s;
+					}, {}),
+					{ unique: true, sparse: true }
+				);
+			});
 		}
-        function removeCompoundIndexes(schema){
-        	let indexes = [];
-				if (schema.compound_index) {
-					indexes = schema.compound_index;
-                    delete schema.compound_index;
-				}
+		function removeCompoundIndexes(schema) {
+			let indexes = [];
+			if (schema.compound_index) {
+				indexes = schema.compound_index;
+				delete schema.compound_index;
+			}
 			return indexes;
-        }
+		}
 		function getRefs(file, key) {
 			var props = Object.keys(file),
 				refs = [];
@@ -2293,7 +2403,7 @@ function init(config) {
 			}
 			async.waterfall(tasks, function(er, result) {
 				debug(self.refs);
-				fn(er, result);
+				fn(er);
 			});
 		}
 
