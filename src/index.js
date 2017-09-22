@@ -1206,7 +1206,7 @@ function init(config) {
 								entName,
 								item,
 								function(e, x) {
-									fn(e, x[0]);
+									fn(e, x && x[0]);
 								}
 							);
 							return;

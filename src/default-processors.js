@@ -468,7 +468,7 @@ module.exports = function(constants, systemEntities) {
 		)
 		.createProcessor(
 			"Menu Filter",
-			"callback(null,this.args.menu)",
+			"\nlet commands= this.libs.menuFilters;\nif(!commands||!Array.prototype.isPrototypeOf(commands) ||!commands.length)\ncallback(null,this.args.menu);\n\n\ncommands[0]=commands[0].bind(this,this.args.menu);\n\nasync.waterfall(commands.map(command=>{\n    return command.bind(this);\n}),(er,menu)=>{\n    if(er) return callback(er);\n    \n    callback(null,menu);\n});\n",
 			constants.UIDS.PROCESSOR.MENU_FILTER
 		)
 		.createProcessor(

@@ -27,8 +27,12 @@ module.exports = function(constants) {
 							query[key] = new RegExp(data[key], "i");
 							return;
 						}
-						if (typeof data[key] == "object" && !RegExp.prototype.isPrototypeOf(data[key])) {
+						if (typeof data[key] == "object" && !RegExp.prototype.isPrototypeOf(data[key]) && !data[key].isObjectID) {
 							query[key] = convertFilter(data[key]);
+							return;
+						}
+						if (typeof data[key] == "object" && data[key].isObjectID) {
+							query[key] = data[key].value;
 							return;
 						}
 						query[key] = data[key];
@@ -230,8 +234,8 @@ module.exports = function(constants) {
 																value: v._id
 															})), (er, _claims) => {
 																if (er) return callback(er);
-
-																async.parallel(_claims.map(x => userManager.addClaimToRole.bind(userManager, userManager.defaultRole, null, x)), (er) => {
+                                                                debug(_claims);
+																async.parallel(_claims.map(x => userManager.addClaimToRole.bind(userManager, userManager.defaultRole, null, x[0])), (er) => {
 																	if (er) return callback(er);
 																	return callback(null, list);
 																});

@@ -361,6 +361,15 @@ module.exports = function(constants, systemEntities) {
 																itemTemplate: elementItemTemplate,
 																optional: true
 															}),
+															createElement("filterProcessor","async retrieve items used to filter grid","",constants.ELEMENTTYPE.SELECT,{
+																type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																	config: {
+																		value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																	}
+															}),
+															createElement('pageCount','Page Count','',constants.ELEMENTTYPE.INPUT,{
+																type:constants.INPUTTYPE.NUMBER
+															}),
 															createElement(
 																"mode",
 																"Grid mode (CRUD expects Create/Edit/Update Templates)",
