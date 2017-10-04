@@ -196,7 +196,9 @@ function init(config) {
 				"LIST",
 				"IMAGE",
 				"ACTIONVIEW",
-				"HTMLVIEW"
+				"HTMLVIEW",
+				"WEBVIEW",
+				"MESSENGER"
 			)
 		};
 	}
@@ -812,9 +814,10 @@ function init(config) {
 		var self = this,
 			proc = _.pickBy(self, notAFunction),
 			_allSteps = [];
-		proc.fetchProcessor = proc.fetchProcessor
-			? proc.fetchProcessor._id
-			: null;
+		delete proc.fetchProcessor;
+		// proc.fetchProcessor
+		// 	? proc.fetchProcessor._id
+		// 	: null;
 
 		function collect(er, s) {
 			if (er) return fn(er);

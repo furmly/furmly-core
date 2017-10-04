@@ -278,7 +278,23 @@ module.exports = function(constants, systemEntities) {
 											[
 												createElement("elementType", "Element type", "The type of element", constants.ELEMENTTYPE.SELECTSET, {
 													path: "args",
-													items: [{
+													items: [
+													{
+														id:constants.ELEMENTTYPE.MESSENGER,
+														displayLabel:'Chat Messenger',
+														elements:[
+                                                             
+														]
+													},
+														{
+														id:constants.ELEMENTTYPE.WEBVIEW,
+														displayLabel:'Web View',
+														elements:[
+														        createElement('url','URL','',constants.ELEMENTTYPE.INPUT)
+														]
+														},
+
+													{
 														id: constants.ELEMENTTYPE.HTMLVIEW,
 														displayLabel: 'HTML View',
 														elements: [
