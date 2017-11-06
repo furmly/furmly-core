@@ -12,6 +12,7 @@ var assert = require("assert"),
 	generator = require("mongoose-gen"),
 	glob = require("glob"),
 	path = require("path"),
+	uuid = require("uuid/v4"),
 	sandboxCode = fs.readFileSync(
 		__dirname + path.sep + "processor-sandbox.js"
 	),
@@ -40,6 +41,21 @@ function init(config) {
 	var toObjectString = function(obj) {
 		return JSON.stringify(obj, null, " ");
 	};
+	function runThroughObj(conditions, data, result = {}, parent = null) {
+		Object.keys(data).forEach(key => {
+			let send = false;
+			for (var v = 0; v < conditions.length; v++) {
+				if (conditions[v](key, data, result, parent)) return result;
+			}
+			if (Array.prototype.isPrototypeOf(data[key]))
+				return data[key].forEach(function(element) {
+					runThroughObj(conditions, element, result, data);
+				});
+			if (data[key] && typeof data[key] == "object")
+				return runThroughObj(conditions, data[key], result, data);
+		});
+		return result;
+	}
 	/**
 	 * Returns a function that checks if a property is defined
 	 * @param  {String} propertyName
@@ -198,7 +214,8 @@ function init(config) {
 				"ACTIONVIEW",
 				"HTMLVIEW",
 				"WEBVIEW",
-				"MESSENGER"
+				"MESSENGER",
+				"PARTIAL"
 			)
 		};
 	}
@@ -372,7 +389,8 @@ function init(config) {
 						constants: constants,
 						entityRepo: this.entityRepo,
 						async: async,
-						debug: debug
+						debug: debug,
+						uuid: uuid
 					}
 				});
 				var handle = vm.run(sandboxCode);
@@ -582,7 +600,8 @@ function init(config) {
 					constants: constants,
 					entityRepo: entityRepo,
 					async: async,
-					debug: debug
+					debug: debug,
+					uuid: uuid
 				}
 			});
 			let handle = vm.run(sandboxCode);
@@ -1272,6 +1291,7 @@ function init(config) {
 		this.validators = opts.validators || [];
 		this.uid = opts.uid;
 		this.order = opts.order;
+		this.component_uid = opts.component_uid || uuid();
 	}
 	/**
 	 * Creates a description of an element  a client can consume
@@ -1288,8 +1308,23 @@ function init(config) {
 			validators: this.validators,
 			uid: this.uid,
 			order: this.order,
+			component_uid: this.component_uid,
 			asyncValidators: _.map(this.asyncValidators, "_id")
 		});
+	};
+	DynamoElement.prototype.updateArgsComponentUID = function() {
+		if (this.args) {
+			runThroughObj(
+				[
+					(key, data) => {
+						if (key == "elementType" && !data[key].component_uid) {
+							data.component_uid = uuid();
+						}
+					}
+				],
+				this.args
+			);
+		}
 	};
 	/**
 	 * uses save service to save/update any async validators.
@@ -1298,6 +1333,9 @@ function init(config) {
 	 */
 	DynamoElement.prototype.save = function(fn) {
 		var self = this;
+
+		this.updateArgsComponentUID();
+
 		async.parallel(
 			_.map(this.asyncValidators, function(x) {
 				return x.save.bind(x);
@@ -1313,6 +1351,7 @@ function init(config) {
 					args: self.args,
 					description: self.description,
 					validators: self.validators,
+					component_uid: self.component_uid,
 					uid: self.uid,
 					order: self.order,
 					asyncValidators: _.map(asyncValidators, "_id")
@@ -1600,7 +1639,8 @@ function init(config) {
 			infrastructure: function() {
 				return self.infrastructure;
 			},
-			store: self.store
+			store: self.store,
+			aggregate: blockSystemEntities.bind(self, self.aggregateEntity)
 		};
 
 		this.transformers[systemEntities.process] = function(item, fn) {
@@ -1761,7 +1801,7 @@ function init(config) {
 						try {
 							_step = new DynamoStep(item);
 						} catch (e) {
-							return fn(er);
+							return fn(e);
 						}
 						return fn(null, _step);
 					});
@@ -1894,7 +1934,7 @@ function init(config) {
 	EntityRepo.prototype.init = function(callback) {
 		var self = this;
 		let element =
-			'{"order":{"type":"Number"}, "uid":{"type":"String"},"name":{"type":"String","required":true},"label":{"type":"String"},"description":{"type":"String"},"elementType":{"type":"String","enum":[' +
+			'{"component_uid":{"type":"String"}, "order":{"type":"Number"}, "uid":{"type":"String"},"name":{"type":"String","required":true},"label":{"type":"String"},"description":{"type":"String"},"elementType":{"type":"String","enum":[' +
 			_.map(Object.keys(constants.ELEMENTTYPE), function(x) {
 				return '"' + x + '"';
 			}).join(",") +
@@ -2169,6 +2209,9 @@ function init(config) {
 			if (options.limit) {
 				query.limit(options.limit);
 			}
+			if (options.fields) {
+				query.select(options.fields);
+			}
 		}
 
 		query.lean().exec(transformResult);
@@ -2220,7 +2263,10 @@ function init(config) {
 		var item = new this.models[name](data);
 		item.save(fn);
 	};
-
+	EntityRepo.prototype.aggregateEntity = function(name, ...rest) {
+		let model = this.models[name];
+		return model.aggregate.apply(model, rest);
+	};
 	EntityRepo.prototype.countEntity = function(name, filter, fn) {
 		if (!this.models[name]) {
 			return setImmediate(fn, new Error("Model does not exist"));

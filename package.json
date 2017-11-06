@@ -5,7 +5,7 @@
   "main": "./src/index.js",
   "scripts": {
     "test": "set profile=unitTest&& mocha --require  test-helpers/chai.js",
-    "test:debug":"set profile=unitTest&& mocha --debug-brk --inspect --require  test-helpers/chai.js"
+    "test:debug": "set profile=unitTest&& mocha --debug-brk --inspect --require  test-helpers/chai.js"
   },
   "keywords": [
     "dynamo",
@@ -28,6 +28,7 @@
     "glob": "^7.1.2",
     "mongoose": "^4.10.2",
     "mongoose-gen": "git+https://github.com/chidionuekwusi/mongoose-gen.git",
+    "uuid": "^3.1.0",
     "vm2": "^3.4.6"
   }
 }

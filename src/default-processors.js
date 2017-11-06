@@ -111,10 +111,33 @@ module.exports = function(constants, systemEntities) {
 			});
 		}).getFunctionBody(),
 		createProcessorCode = (() => {
+
 			this.libs.isAuthorized.call(this, er => {
 				if (er) return callback(er);
-				this.entityRepo.saveProcessor(this.args.entity, callback);
+				this.entityRepo.saveProcessor(this.args.entity,{retrieve:true}, (er,_p)=>{
+				    if(er) return callback(er);
+				    const success=()=>callback(null,{message:`Successfully saved ${_p.title}`});
+				    if(this.args.entity.createClaim){
+				        let um=this.entityRepo.infrastructure().userManager;
+				        um.getClaims({value:_p._id.toString()},(er,claims)=>{
+				            if(!er && !claims.length){
+				                return um.saveClaim({type:um.constants.CLAIMS.PROCESSOR,description:_p.title,value:_p._id.toString()},(er)=>{
+				                    if(!er){
+				                        return callback(null,{message:`Successfully saved ${_p.title} and Claim`});
+				                    }
+				                    return success();
+				                });
+				            }
+				            return success();
+				        })
+				        return;
+				    }
+				    
+				   return success();
+				    
+				});
 			});
+		
 		}).getFunctionBody(),
 		createLibCode = (() => {
 			this.libs.isAuthorized.call(this, er => {

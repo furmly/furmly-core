@@ -215,7 +215,7 @@ module.exports = function(constants) {
 												this.entityRepo.saveProcessor({
 													title: `Get ${entityName}`,
 													uid: get_uid,
-													code: `debug('fetching ${entityName}...');\nthis.libs.getEntity.call(this,'${entityName}','${entityLabel}',callback);`
+													code: `debug('fetching ${entityName}...');\nthis.$checkDomain=true; \nthis.libs.getEntity.call(this,'${entityName}','${entityLabel}',callback);`
 												}, (er, pr) => {
 													if (er) return callback(er);
 

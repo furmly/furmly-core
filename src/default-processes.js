@@ -280,6 +280,24 @@ module.exports = function(constants, systemEntities) {
 													path: "args",
 													items: [
 													{
+														id:constants.ELEMENTTYPE.PARTIAL,
+														displayLabel:'Partial',
+														elements:[
+														createElement("elements", "Elements in the section", "Elements in the partial", constants.ELEMENTTYPE.LIST, {
+																itemTemplate: elementItemTemplate,
+															}),
+														createElement("processor","Processor that will fire","",constants.ELEMENTTYPE.SELECT,{
+															type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																config: {
+																	value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																}
+														}),
+														createElement('processorArgs', 'Processor Arguments', '', constants.ELEMENTTYPE.SCRIPT, {
+																type: 'JSON'
+															})
+														]
+													},
+													{
 														id:constants.ELEMENTTYPE.MESSENGER,
 														displayLabel:'Chat Messenger',
 														elements:[

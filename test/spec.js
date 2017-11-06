@@ -964,6 +964,7 @@ describe('Integration', function() {
 					}),
 					addClaimToRole: sinon.spy(function() {
 						var args = Array.prototype.slice.call(arguments);
+						console.log(args);
 						assert.equal(args[2]._id, id);
 						args[args.length - 1](null);
 					}),
