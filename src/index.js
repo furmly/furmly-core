@@ -936,66 +936,58 @@ function init(config) {
 					}
 				}),
 				(processors, callback) => {
-					if (
-						true
-						// !processors ||
-						// processors.length !== dProcessors.length
-					) {
-						var uidsIn = [],
-							uidsNotIn = _.differenceWith(
-								dProcessors,
-								processors,
-								function(uid, obj) {
-									let result = uid == obj.uid;
-									if (result) {
-										var _proc = Object.assign(
-											{ _id: obj._id },
-											defaultProcessors[uid]
-										);
-										uidsIn.push(_proc);
-									}
-									return result;
-								}
-							),
-							tasks = [];
-						for (var i = 0; i < uidsNotIn.length; i++)
-							tasks.push(
-								self.saveProcessor.bind(
-									self,
-									defaultProcessors[uidsNotIn[i]],
-									{
-										retrieve: true
-									}
-								)
-							);
-
-						for (var i = 0; i < uidsIn.length; i++)
-							tasks.push(
-								self.saveProcessor.bind(self, uidsIn[i], {
-									retrieve: true
-								})
-							);
-
-						async.parallel(tasks, function(er, ps) {
-							if (er) return callback(er);
-
-							ps.forEach(x => {
-								if (
-									!uidsIn.filter(
-										v =>
-											v._id.toString() == x._id.toString()
-									).length
-								)
-									self.emit(
-										"default-processor-created",
-										_.cloneDeep(x)
+					var uidsIn = [],
+						uidsNotIn = _.differenceWith(
+							dProcessors,
+							processors,
+							function(uid, obj) {
+								let result = uid == obj.uid;
+								if (result) {
+									var _proc = Object.assign(
+										{ _id: obj._id },
+										defaultProcessors[uid]
 									);
-							});
-							callback(null, ps);
+									uidsIn.push(_proc);
+								}
+								return result;
+							}
+						),
+						tasks = [];
+					for (var i = 0; i < uidsNotIn.length; i++)
+						tasks.push(
+							self.saveProcessor.bind(
+								self,
+								defaultProcessors[uidsNotIn[i]],
+								{
+									retrieve: true
+								}
+							)
+						);
+
+					for (var i = 0; i < uidsIn.length; i++)
+						tasks.push(
+							self.saveProcessor.bind(self, uidsIn[i], {
+								retrieve: true
+							})
+						);
+
+					async.parallel(tasks, function(er, ps) {
+						if (er) return callback(er);
+
+						ps.forEach(x => {
+							if (
+								!uidsIn.filter(
+									v => v._id.toString() == x._id.toString()
+								).length
+							)
+								self.emit(
+									"default-processor-created",
+									_.cloneDeep(x)
+								);
 						});
-						return;
-					}
-					callback(null, processors);
+						callback(null, ps);
+					});
+					return;
 				},
 				(processors, callback) => {
 					_processors = processors;
@@ -1551,6 +1543,7 @@ function init(config) {
 		this._changeDetection = {};
 		this.entityExt = opts.ext || ".json";
 		this.entityFolder = opts.folder || "./src/entities/";
+		this.systemEntityFolder = opts.sysFolder || "./src/system-entities/";
 		this.delimiter = opts.delimiter || /('|")\$\{(\w+)\}+('|")/i;
 		this._systemEntities = _.map(systemEntities, function(x) {
 			return x;
@@ -1897,6 +1890,7 @@ function init(config) {
 			}
 			return fn(null, form);
 		};
+
 		this.transformers[systemEntities.lib] = function(item, fn) {
 			basicTransformer(item, DynamoLib, systemEntities.lib, fn);
 		};
@@ -1928,61 +1922,71 @@ function init(config) {
 		}
 	}
 
+	function mkdir(path) {
+		return !fs.existsSync(path) && fs.mkdirSync(path);
+	}
 	EntityRepo.prototype.setInfrastructure = function(manager) {
 		this.infrastructure = manager;
 	};
 	EntityRepo.prototype.init = function(callback) {
-		var self = this;
-		let element =
-			'{"component_uid":{"type":"String"}, "order":{"type":"Number"}, "uid":{"type":"String"},"name":{"type":"String","required":true},"label":{"type":"String"},"description":{"type":"String"},"elementType":{"type":"String","enum":[' +
-			_.map(Object.keys(constants.ELEMENTTYPE), function(x) {
-				return '"' + x + '"';
-			}).join(",") +
-			'],"required":true},"asyncValidators":[{"type":"ObjectId","ref":"' +
-			systemEntities.asyncValidator +
-			'"}],"validators":[{"validatorType":{"type":"String","enum":[' +
-			_.map(Object.keys(constants.VALIDATORTYPE), function(x) {
-				return '"' + x + '"';
-			}).join(",") +
-			'],"required":true},"args":{"type":"Mixed"}}],"args":{"type":"Mixed"}}';
+		if (!this.entityFolder)
+			return callback(new Error("entityFolder cannot be blank"));
+
+		if (!this.systemEntityFolder)
+			return callback(new Error("systemFolder cannot be blank"));
+
+		mkdir(this.systemEntityFolder);
+		mkdir(this.entityFolder);
+		// let element =
+		// 	'{"component_uid":{"type":"String"}, "order":{"type":"Number"}, "uid":{"type":"String"},"name":{"type":"String","required":true},"label":{"type":"String"},"description":{"type":"String"},"elementType":{"type":"String","enum":[' +
+		// 	_.map(Object.keys(constants.ELEMENTTYPE), function(x) {
+		// 		return '"' + x + '"';
+		// 	}).join(",") +
+		// 	'],"required":true},"asyncValidators":[{"type":"ObjectId","ref":"' +
+		// 	systemEntities.asyncValidator +
+		// 	'"}],"validators":[{"validatorType":{"type":"String","enum":[' +
+		// 	_.map(Object.keys(constants.VALIDATORTYPE), function(x) {
+		// 		return '"' + x + '"';
+		// 	}).join(",") +
+		// 	'],"required":true},"args":{"type":"Mixed"}}],"args":{"type":"Mixed"}}';
 
 		async.parallel(
 			[
-				fs.writeFile.bind(
-					this,
-					self.getPath(systemEntities.process),
-					'{"requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"fetchProcessor":{"type":"ObjectId","ref":"' +
-						systemEntities.processor +
-						'"},"uid":{"type":"String","unique":true,"sparse":true},"title":{"type":"String","required":true},"description":{"type":"String","required":true},"steps":[{"type":"ObjectId","ref":"' +
-						systemEntities.step +
-						'"}]}'
-				),
-				fs.writeFile.bind(
-					this,
-					self.getPath(systemEntities.step),
-					'{"mode":{"type":"String"},"processors":[{"type":"ObjectId","ref":"' +
-						systemEntities.processor +
-						'"}],"postprocessors":[{"type":"ObjectId","ref":"' +
-						systemEntities.processor +
-						'"}],"stepType":{"type":"String","required":true},"form":{"elements":[' +
-						element +
-						"]}}"
-				),
-				fs.writeFile.bind(
-					this,
-					self.getPath(systemEntities.processor),
-					'{"requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'
-				),
-				fs.writeFile.bind(
-					this,
-					self.getPath(systemEntities.lib),
-					'{"uid":{"type":"String","unique":true,"required":true},"code":{"type":"String","required":true}}'
-				),
-				fs.writeFile.bind(
-					this,
-					self.getPath(systemEntities.asyncValidator),
-					'{"requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'
-				)
+				// fs.writeFile.bind(
+				// 	this,
+				// 	self.getPath(systemEntities.process),
+				// 	'{"requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"fetchProcessor":{"type":"ObjectId","ref":"' +
+				// 		systemEntities.processor +
+				// 		'"},"uid":{"type":"String","unique":true,"sparse":true},"title":{"type":"String","required":true},"description":{"type":"String","required":true},"steps":[{"type":"ObjectId","ref":"' +
+				// 		systemEntities.step +
+				// 		'"}]}'
+				// ),
+				// fs.writeFile.bind(
+				// 	this,
+				// 	self.getPath(systemEntities.step),
+				// 	'{"mode":{"type":"String"},"processors":[{"type":"ObjectId","ref":"' +
+				// 		systemEntities.processor +
+				// 		'"}],"postprocessors":[{"type":"ObjectId","ref":"' +
+				// 		systemEntities.processor +
+				// 		'"}],"stepType":{"type":"String","required":true},"form":{"elements":[' +
+				// 		element +
+				// 		"]}}"
+				// ),
+				// fs.writeFile.bind(
+				// 	this,
+				// 	self.getPath(systemEntities.processor),
+				// 	'{"requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'
+				// ),
+				// fs.writeFile.bind(
+				// 	this,
+				// 	self.getPath(systemEntities.lib),
+				// 	'{"uid":{"type":"String","unique":true,"required":true},"code":{"type":"String","required":true}}'
+				// ),
+				// fs.writeFile.bind(
+				// 	this,
+				// 	self.getPath(systemEntities.asyncValidator),
+				// 	'{"requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'
+				// )
 			],
 			function(er) {
 				if (er) return callback(er);
