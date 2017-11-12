@@ -1523,19 +1523,26 @@ function init(config) {
 	util.inherits(DynamoAsyncValidator, DynamoProcessor);
 
 	function LokiMongooseAdapter(
-		{ collectionName, folderPath, aggregator } = {}
+		{ collectionName, folderPath, aggregator, config } = {}
 	) {
 		if (!collectionName) throw new Error("Collection Name cannot be null");
 		if (typeof folderPath === "undefined")
 			throw new Error("Folderpath cannot be undefined");
 
-		this.db = new loki(`${folderPath}/${collectionName}.db`, {
-			lokiAdapter,
-			autoload: true,
-			autoloadCallback: this.databaseInitialize,
-			autosave: true,
-			autosaveInterval: 1000
-		});
+		this.db = new loki(
+			`${folderPath}/${collectionName}.db`,
+			Object.assign(
+				{},
+				{
+					lokiAdapter,
+					autoload: true,
+					autoloadCallback: this.databaseInitialize,
+					autosave: true,
+					autosaveInterval: 1000
+				},
+				config || {}
+			)
+		);
 
 		Object.defineProperties(this, {
 			name: {
@@ -1570,12 +1577,15 @@ function init(config) {
 			}
 			return;
 		}
-		const proxy = () => this;
 
-		return () => {
-			let chain = this.collection.chain().find(query);
+		return new function(context) {
+			const proxy = () => this;
+			let chain = context.collection.chain().find(query);
 			this.exec = fn => {
-				setImmediate(fn, null, chain.data());
+				if(!this._populate)
+				return setImmediate(fn, null, chain.data());
+
+			    
 			};
 			this.lean = proxy;
 			this.sort = obj => {
@@ -1585,16 +1595,31 @@ function init(config) {
 				chain = chain.compoundsort(obj);
 				return this;
 			};
-			this.select = () => {};
+			this.select = obj => {
+				chain.map(x => {
+					let mapped = {};
+					selected.forEach(s => {
+						if (obj[s]) mapped[s] = x[s];
+					});
+					return mapped;
+				});
+				return this;
+			};
 			this.limit = count => {
 				chain = chain.limit(count);
 				return this;
 			};
 			this.populate = args => {
 				debug(`populate:${args}`);
-				if(!this.aggregator) throw new Error('populate requires an aggregator');
+				if (!this.aggregator)
+					throw new Error("populate requires an aggregator");
+
+				if(!this._populate){
+					this._populate=[];
+				}
+				this._populate.push(args);
 			};
-		};
+		}(this);
 	};
 
 	/**

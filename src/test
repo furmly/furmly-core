@@ -1,0 +1,9 @@
+    _0Process:
+      [ { model: '_0Processor', path: 'fetchProcessor' },
+        { model: '_0Step', path: 'steps' } ],
+     _0Processor: [],
+     _0Step:
+      [ { model: '_0Processor', path: 'processors' },
+        { model: '_0Processor', path: 'postprocessors' },
+        { model: '_0AsyncValidator',
+         path: 'form.elements.asyncValidators' } ],
