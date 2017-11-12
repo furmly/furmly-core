@@ -2163,7 +2163,8 @@ function init(config) {
 			this.refs[name] &&
 			this.refs[name].length !== 0
 		) {
-			//debug(self.refs[name]);
+			debug(`entity being queried : ${name}`);
+			debug(self.refs[name]);
 			var populateString = populate(self.refs[name], []);
 			populateString.forEach(function(string) {
 				if ((string.match(/\./gi) || []).length >= 1) {
@@ -2194,11 +2195,11 @@ function init(config) {
 						};
 					string.split(".").forEach(iterator);
 					_.reduce(cur.split("|"), reducer, m);
-					//debug(m);
+					debug(m);
 					query.populate(m);
 					return;
 				}
-				//debug(string);
+				debug(string);
 				query.populate(string);
 			});
 		}
