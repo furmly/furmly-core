@@ -5,6 +5,8 @@ var assert = require("assert"),
 	debug = _debug("dynamo"),
 	ObjectID = require("mongodb").ObjectID,
 	util = require("util"),
+	loki = require("lokijs"),
+	lfsa = require("./node_modules/lokijs/src/loki-fs-structured-adapter"),
 	_ = require("lodash"),
 	vm = require("vm"),
 	path = require("path"),
@@ -16,7 +18,8 @@ var assert = require("assert"),
 	sandboxCode = fs.readFileSync(
 		__dirname + path.sep + "processor-sandbox.js"
 	),
-	mongoose = require("mongoose");
+	mongoose = require("mongoose"),
+	lokiAdapter = new lfsa();
 
 mongoose.Promise = global.Promise;
 const { NodeVM } = require("vm2");
@@ -1519,6 +1522,81 @@ function init(config) {
 	}
 	util.inherits(DynamoAsyncValidator, DynamoProcessor);
 
+	function LokiMongooseAdapter(
+		{ collectionName, folderPath, aggregator } = {}
+	) {
+		if (!collectionName) throw new Error("Collection Name cannot be null");
+		if (typeof folderPath === "undefined")
+			throw new Error("Folderpath cannot be undefined");
+
+		this.db = new loki(`${folderPath}/${collectionName}.db`, {
+			lokiAdapter,
+			autoload: true,
+			autoloadCallback: this.databaseInitialize,
+			autosave: true,
+			autosaveInterval: 1000
+		});
+
+		Object.defineProperties(this, {
+			name: {
+				get: function() {
+					return collectionName;
+				}
+			},
+			folderPath: {
+				get: function() {
+					return folderPath;
+				}
+			},
+			aggregator: {
+				get: function() {
+					return aggregator;
+				}
+			}
+		});
+	}
+	LokiMongooseAdapter.prototype.databaseInitialize = function() {
+		this.collection = this.db.getCollection(this.name);
+		if (!this.collection)
+			this.collection = this.db.addCollection(this.name);
+	};
+	LokiMongooseAdapter.prototype.find = function(query, ...rest) {
+		if (rest.length) {
+			let fn = rest[rest.length - 1];
+			try {
+				setImmediate(fn, null, this.collection.find(query));
+			} catch (e) {
+				setImmediate(fn, e);
+			}
+			return;
+		}
+		const proxy = () => this;
+
+		return () => {
+			let chain = this.collection.chain().find(query);
+			this.exec = fn => {
+				setImmediate(fn, null, chain.data());
+			};
+			this.lean = proxy;
+			this.sort = obj => {
+				if (typeof obj === "string") chain = chain.simplesort(obj);
+				let keys = Object.keys(obj);
+				if (!keys.length) return this;
+				chain = chain.compoundsort(obj);
+				return this;
+			};
+			this.select = () => {};
+			this.limit = count => {
+				chain = chain.limit(count);
+				return this;
+			};
+			this.populate = args => {
+				debug(`populate:${args}`);
+				if(!this.aggregator) throw new Error('populate requires an aggregator');
+			};
+		};
+	};
+
 	/**
 	 * This class contains the persistence logic for entities.
 	 * @param {Object} opts Class constructor parameters , includes ext,folder,delimiter,store...etc
@@ -1937,6 +2015,8 @@ function init(config) {
 
 		mkdir(this.systemEntityFolder);
 		mkdir(this.entityFolder);
+
+		Object.keys(systemEntities).map(e => {});
 		// let element =
 		// 	'{"component_uid":{"type":"String"}, "order":{"type":"Number"}, "uid":{"type":"String"},"name":{"type":"String","required":true},"label":{"type":"String"},"description":{"type":"String"},"elementType":{"type":"String","enum":[' +
 		// 	_.map(Object.keys(constants.ELEMENTTYPE), function(x) {
