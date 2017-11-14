@@ -6,7 +6,8 @@ var assert = require("assert"),
 	ObjectID = require("mongodb").ObjectID,
 	util = require("util"),
 	loki = require("lokijs"),
-	lfsa = require("./node_modules/lokijs/src/loki-fs-structured-adapter"),
+	lfsa = require(__dirname +
+		"/../node_modules/lokijs/src/loki-fs-structured-adapter"),
 	_ = require("lodash"),
 	vm = require("vm"),
 	path = require("path"),
@@ -45,18 +46,19 @@ function init(config) {
 		return JSON.stringify(obj, null, " ");
 	};
 	function runThroughObj(conditions, data, result = {}, parent = null) {
-		Object.keys(data).forEach(key => {
-			let send = false;
-			for (var v = 0; v < conditions.length; v++) {
-				if (conditions[v](key, data, result, parent)) return result;
-			}
-			if (Array.prototype.isPrototypeOf(data[key]))
-				return data[key].forEach(function(element) {
-					runThroughObj(conditions, element, result, data);
-				});
-			if (data[key] && typeof data[key] == "object")
-				return runThroughObj(conditions, data[key], result, data);
-		});
+		if (data)
+			Object.keys(data).forEach(key => {
+				let send = false;
+				for (var v = 0; v < conditions.length; v++) {
+					if (conditions[v](key, data, result, parent)) return result;
+				}
+				if (Array.prototype.isPrototypeOf(data[key]))
+					return data[key].forEach(function(element) {
+						runThroughObj(conditions, element, result, data);
+					});
+				if (data[key] && typeof data[key] == "object")
+					return runThroughObj(conditions, data[key], result, data);
+			});
 		return result;
 	}
 	/**
@@ -1522,37 +1524,323 @@ function init(config) {
 	}
 	util.inherits(DynamoAsyncValidator, DynamoProcessor);
 
+	function LokiMongooseAdapterFactory(opts, onInit) {
+		let _adapter = new LokiMongooseAdapter(opts, onInit);
+		let _constructor = function(data) {
+			this.save = function(fn) {
+				_adapter.save(data, fn);
+			};
+		};
+		Object.assign(_constructor, _adapter, _adapter.__proto__);
+
+		return _constructor;
+	}
 	function LokiMongooseAdapter(
-		{ collectionName, folderPath, aggregator, config } = {}
+		{ db, collectionName, aggregator, config } = {}
 	) {
 		if (!collectionName) throw new Error("Collection Name cannot be null");
-		if (typeof folderPath === "undefined")
-			throw new Error("Folderpath cannot be undefined");
+		if (!db) throw new Error("DB cannot be null");
 
-		this.db = new loki(
-			`${folderPath}/${collectionName}.db`,
-			Object.assign(
-				{},
-				{
-					lokiAdapter,
-					autoload: true,
-					autoloadCallback: this.databaseInitialize,
-					autosave: true,
-					autosaveInterval: 1000
-				},
-				config || {}
-			)
+		this.db = db;
+		this.collection = this.db.getCollection(collectionName);
+		debug(this.collection);
+		if (!this.collection) {
+			debug("creating collection");
+			this.collection = this.db.addCollection(this.collectionName, {
+				unique: ["_id"]
+			});
+		}
+
+		debug(
+			`number of items in collection ${collectionName} is ${this.collection
+				.chain()
+				.find({})
+				.data().length}`
 		);
+
+		this.update = (query, data, fn) => {
+			let item = this.collection.findOne(query);
+			if (!item)
+				return setImmediate(
+					fn,
+					new Error("Item does not exist " + JSON.stringify(query))
+				);
+			let update = Object.assign(item, data);
+			this.collection.update(update);
+			return setImmediate(fn, null, { modifiedCount: 1 });
+		};
+		this.count = (query, fn) => {
+			let result = this.collection.find(query);
+			return setImmediate(fn, null, result.length);
+		};
+		this.find = (query, ...rest) => {
+			debug(query);
+			toLoki(query);
+			debug("---loki---");
+			debug(query);
+			debug("x-----------x");
+			if (rest.length) {
+				let fn = rest[rest.length - 1];
+				try {
+					setImmediate(fn, null, this.collection.find(query));
+				} catch (e) {
+					setImmediate(fn, e);
+				}
+				return;
+			}
+			function toLoki(query) {
+				runThroughObj(
+					[
+						(key, data) => {
+							if (
+								RegExp.prototype.isPrototypeOf(data[key]) &&
+								key !== "$regex"
+							) {
+								data[key] = { $regex: data[key] };
+							}
+						}
+					],
+					query
+				);
+			}
+			return new function(context) {
+				const proxy = () => this;
+				let chain = context.collection.chain().find(query);
+				this.exec = fn => {
+					let data = chain.data().slice();
+					if (!this._populate || !data.length)
+						return setImmediate(fn, null, data);
+
+					let loaded = {},
+						refs = context.aggregator.refs,
+						result = [],
+						arrange = function(
+							name,
+							popObj,
+							result = [],
+							fullPath = ""
+						) {
+							let i = refs[name].filter(
+								x => x.path == popObj.path
+							);
+							if (i.length) {
+								//arrange to fetch items from the aggregator.
+								let link = i[0];
+								//make sure this link is loaded
+								result.push((d, cb) => {
+									//check if link is loaded and load link if otherwise.
+									let pathKey = `${fullPath}${popObj.path}`;
+									if (!loaded[pathKey])
+										//load
+										return load(
+											link.model,
+											d,
+											fullPath
+												? `${fullPath}.${popObj.path}`
+												: popObj.path,
+											cb
+										);
+
+									return setImmediate(cb);
+								});
+								if (popObj.populate && popObj.populate.path) {
+									arrange(
+										link.model,
+										popObj.populate,
+										result,
+										fullPath
+											? `${fullPath}.${popObj.path}`
+											: popObj.path
+									);
+								}
+							}
+						},
+						load = function(model, item, path, cb) {
+							let paths = path.split("."),
+								curr = item,
+								currPath = "";
+							for (var i = 0; i < paths.length; i++) {
+								let old = curr;
+								if (Array.prototype.isPrototypeOf(curr)) {
+									curr = curr.map(x => x[paths[i]]);
+								} else {
+									curr = curr[paths[i]];
+								}
+
+								if (i == paths.length - 1) {
+									if (Array.prototype.isPrototypeOf(curr)) {
+										if (
+											curr.length &&
+											Array.prototype.isPrototypeOf(
+												curr[0]
+											)
+										) {
+											let tasks = [];
+											curr.forEach(x => {
+												tasks.push(cb => {
+													let _q = x.map(
+														v =>
+															typeof v == "object"
+																? v._id
+																: v
+													);
+													if (!_q.length) return cb();
+													let result = context.aggregator.models[
+														model
+													].find({
+														_id: {
+															$in: _q
+														}
+													});
+													x.length = 0;
+													result.exec((er, r) => {
+														if (er) return cb(er);
+														if (r && r.length) {
+															x.length = 0;
+															for (
+																var i =
+																	r.length -
+																	1;
+																i >= 0;
+																i--
+															) {
+																x[i] = r[i];
+															}
+															loaded[path] = r;
+														}
+
+														return cb();
+													});
+												});
+											});
+											return async.parallel(tasks, er =>
+												cb(er)
+											);
+										}
+										let _q = curr.map(
+											x =>
+												typeof x === "object"
+													? x._id
+													: x
+										);
+										if (!_q.length) return cb();
+										let result = context.aggregator.models[
+											model
+										].find({
+											_id: {
+												$in: _q
+											}
+										});
+										curr.length = 0;
+										result.exec((er, r) => {
+											if (er) return cb(er);
+											loaded[path] = r;
+											for (
+												var i = r.length - 1;
+												i >= 0;
+												i--
+											) {
+												curr[i] = r[i];
+											}
+											return cb();
+										});
+									} else {
+										let _q =
+											typeof curr == "object"
+												? curr._id
+												: curr;
+
+										if (!_q) return cb();
+										let _item = context.aggregator.models[
+											model
+										].find(
+											{
+												_id: _q
+											},
+											(er, r) => {
+												if (er) return cb(er);
+												old[paths[i]] = loaded[path] =
+													(r.length && r[0]) || null;
+												return cb();
+											}
+										);
+									}
+								}
+							}
+
+							//return setImmediate(cb);
+						};
+
+					if (this._populate)
+						this._populate.forEach(pop => {
+							if (typeof pop === "string") {
+								arrange(context.name, { path: pop }, result);
+							}
+							if (typeof pop === "object") {
+								arrange(context.name, pop, result);
+							}
+						});
+					let tasks = [callback => setImmediate(callback)];
+					data.forEach(x => {
+						result.forEach((_fn, index) => {
+							tasks.push(_fn.bind(this, x));
+						});
+					});
+					async.waterfall(tasks, er => {
+						if (er) return setImmediate(fn, er);
+						return setImmediate(fn, null, data);
+					});
+				};
+				this.lean = proxy;
+				this.sort = obj => {
+					if (typeof obj === "string")
+						chain = chain.simplesort([obj, false]);
+					let keys = Object.keys(obj);
+					if (!keys.length) return this;
+
+					chain = chain.compoundsort(keys.map(x => [x, !!obj[x]]));
+					return this;
+				};
+				this.select = obj => {
+					chain.map(x => {
+						let mapped = {};
+						selected.forEach(s => {
+							if (obj[s]) mapped[s] = x[s];
+						});
+						return mapped;
+					});
+					return this;
+				};
+				this.limit = count => {
+					chain = chain.limit(count);
+					return this;
+				};
+				this.populate = args => {
+					//debug(`populate:${args}`);
+					if (!context.aggregator)
+						throw new Error("populate requires an aggregator");
+
+					if (!this._populate) {
+						this._populate = [];
+					}
+					this._populate.push(args);
+				};
+			}(this);
+		};
+
+		this.save = (data, fn) => {
+			if (data._id) {
+				return this.update({ _id: data._id }, data, fn);
+			}
+			data._id = mongoose.Types.ObjectId().toString();
+			this.collection.insert(data);
+			return setImmediate(fn, null, { _id: data._id });
+		};
 
 		Object.defineProperties(this, {
 			name: {
 				get: function() {
 					return collectionName;
-				}
-			},
-			folderPath: {
-				get: function() {
-					return folderPath;
 				}
 			},
 			aggregator: {
@@ -1562,65 +1850,6 @@ function init(config) {
 			}
 		});
 	}
-	LokiMongooseAdapter.prototype.databaseInitialize = function() {
-		this.collection = this.db.getCollection(this.name);
-		if (!this.collection)
-			this.collection = this.db.addCollection(this.name);
-	};
-	LokiMongooseAdapter.prototype.find = function(query, ...rest) {
-		if (rest.length) {
-			let fn = rest[rest.length - 1];
-			try {
-				setImmediate(fn, null, this.collection.find(query));
-			} catch (e) {
-				setImmediate(fn, e);
-			}
-			return;
-		}
-
-		return new function(context) {
-			const proxy = () => this;
-			let chain = context.collection.chain().find(query);
-			this.exec = fn => {
-				if(!this._populate)
-				return setImmediate(fn, null, chain.data());
-
-			    
-			};
-			this.lean = proxy;
-			this.sort = obj => {
-				if (typeof obj === "string") chain = chain.simplesort(obj);
-				let keys = Object.keys(obj);
-				if (!keys.length) return this;
-				chain = chain.compoundsort(obj);
-				return this;
-			};
-			this.select = obj => {
-				chain.map(x => {
-					let mapped = {};
-					selected.forEach(s => {
-						if (obj[s]) mapped[s] = x[s];
-					});
-					return mapped;
-				});
-				return this;
-			};
-			this.limit = count => {
-				chain = chain.limit(count);
-				return this;
-			};
-			this.populate = args => {
-				debug(`populate:${args}`);
-				if (!this.aggregator)
-					throw new Error("populate requires an aggregator");
-
-				if(!this._populate){
-					this._populate=[];
-				}
-				this._populate.push(args);
-			};
-		}(this);
-	};
 
 	/**
 	 * This class contains the persistence logic for entities.
@@ -1991,7 +2220,7 @@ function init(config) {
 				);
 				return;
 			}
-			return fn(null, form);
+			return fn(null, item);
 		};
 
 		this.transformers[systemEntities.lib] = function(item, fn) {
@@ -2026,11 +2255,20 @@ function init(config) {
 	}
 
 	function mkdir(path) {
-		return !fs.existsSync(path) && fs.mkdirSync(path);
+		try {
+			if (!fs.existsSync(path)) {
+				debug(`creating directory: ${path}`);
+				fs.mkdirSync(path);
+			}
+		} catch (e) {
+			debug(e);
+		}
 	}
+
 	EntityRepo.prototype.setInfrastructure = function(manager) {
 		this.infrastructure = manager;
 	};
+
 	EntityRepo.prototype.init = function(callback) {
 		if (!this.entityFolder)
 			return callback(new Error("entityFolder cannot be blank"));
@@ -2040,64 +2278,45 @@ function init(config) {
 
 		mkdir(this.systemEntityFolder);
 		mkdir(this.entityFolder);
-
-		Object.keys(systemEntities).map(e => {});
-		// let element =
-		// 	'{"component_uid":{"type":"String"}, "order":{"type":"Number"}, "uid":{"type":"String"},"name":{"type":"String","required":true},"label":{"type":"String"},"description":{"type":"String"},"elementType":{"type":"String","enum":[' +
-		// 	_.map(Object.keys(constants.ELEMENTTYPE), function(x) {
-		// 		return '"' + x + '"';
-		// 	}).join(",") +
-		// 	'],"required":true},"asyncValidators":[{"type":"ObjectId","ref":"' +
-		// 	systemEntities.asyncValidator +
-		// 	'"}],"validators":[{"validatorType":{"type":"String","enum":[' +
-		// 	_.map(Object.keys(constants.VALIDATORTYPE), function(x) {
-		// 		return '"' + x + '"';
-		// 	}).join(",") +
-		// 	'],"required":true},"args":{"type":"Mixed"}}],"args":{"type":"Mixed"}}';
-
-		async.parallel(
-			[
-				// fs.writeFile.bind(
-				// 	this,
-				// 	self.getPath(systemEntities.process),
-				// 	'{"requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"fetchProcessor":{"type":"ObjectId","ref":"' +
-				// 		systemEntities.processor +
-				// 		'"},"uid":{"type":"String","unique":true,"sparse":true},"title":{"type":"String","required":true},"description":{"type":"String","required":true},"steps":[{"type":"ObjectId","ref":"' +
-				// 		systemEntities.step +
-				// 		'"}]}'
-				// ),
-				// fs.writeFile.bind(
-				// 	this,
-				// 	self.getPath(systemEntities.step),
-				// 	'{"mode":{"type":"String"},"processors":[{"type":"ObjectId","ref":"' +
-				// 		systemEntities.processor +
-				// 		'"}],"postprocessors":[{"type":"ObjectId","ref":"' +
-				// 		systemEntities.processor +
-				// 		'"}],"stepType":{"type":"String","required":true},"form":{"elements":[' +
-				// 		element +
-				// 		"]}}"
-				// ),
-				// fs.writeFile.bind(
-				// 	this,
-				// 	self.getPath(systemEntities.processor),
-				// 	'{"requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'
-				// ),
-				// fs.writeFile.bind(
-				// 	this,
-				// 	self.getPath(systemEntities.lib),
-				// 	'{"uid":{"type":"String","unique":true,"required":true},"code":{"type":"String","required":true}}'
-				// ),
-				// fs.writeFile.bind(
-				// 	this,
-				// 	self.getPath(systemEntities.asyncValidator),
-				// 	'{"requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'
-				// )
-			],
-			function(er) {
-				if (er) return callback(er);
-				self.createSchemas(callback);
+		this.refs[systemEntities.process] = [
+			{ model: systemEntities.processor, path: "fetchProcessor" },
+			{ model: systemEntities.step, path: "steps" }
+		];
+		this.refs[systemEntities.step] = [
+			{ model: systemEntities.processor, path: "processors" },
+			{ model: systemEntities.processor, path: "postprocessors" },
+			{
+				model: systemEntities.asyncValidator,
+				path: "form.elements.asyncValidators"
 			}
-		);
+		];
+		let ents = Object.keys(systemEntities),
+			init = 0,
+			db = new loki(
+				path.normalize(`${this.systemEntityFolder}/Dynamo.db`),
+				Object.assign(
+					{},
+					{
+						adapter: lokiAdapter,
+						autoload: true,
+						autoloadCallback: () => {
+							ents.forEach(e => {
+								this.models[
+									systemEntities[e]
+								] = LokiMongooseAdapterFactory({
+									collectionName: systemEntities[e],
+									db,
+									aggregator: this
+								});
+							});
+							this.createSchemas(callback);
+						},
+						autosave: true,
+						autosaveInterval: 5000
+					},
+					config || {}
+				)
+			);
 	};
 
 	//service injected into domain objects for persistence.
@@ -2263,8 +2482,9 @@ function init(config) {
 		}
 
 		if (!this.models[name]) {
-			return setImmediate(fn, new Error("Model does not exist"));
+			return setImmediate(fn, new Error("Model does not exist:" + name));
 		}
+		//debug(this.models[name]);
 		var query = this.models[name].find(filter);
 		if (
 			options &&
@@ -2367,8 +2587,9 @@ function init(config) {
 
 	EntityRepo.prototype.createEntity = function(name, data, fn) {
 		if (!this.models[name]) {
-			return setImmediate(fn, new Error("Model does not exist"));
+			return setImmediate(fn, new Error("Model does not exist:" + name));
 		}
+		debug(data);
 		var item = new this.models[name](data);
 		item.save(fn);
 	};
@@ -2608,7 +2829,8 @@ function init(config) {
 		constants: constants,
 		systemEntities: systemEntities,
 		EntityRepo: EntityRepo,
-		Element: DynamoElement
+		Element: DynamoElement,
+		LokiMongooseAdapter: LokiMongooseAdapterFactory
 	};
 }
 

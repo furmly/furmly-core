@@ -26,6 +26,7 @@
     "async": "^2.4.1",
     "debug": "^3.0.0",
     "glob": "^7.1.2",
+    "lokijs": "^1.5.1",
     "mongoose": "^4.10.2",
     "mongoose-gen": "git+https://github.com/chidionuekwusi/mongoose-gen.git",
     "uuid": "^3.1.0",
