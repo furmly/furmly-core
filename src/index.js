@@ -42,6 +42,7 @@ function init(config) {
 		return JSON.stringify(obj, null, " ");
 	};
 	function runThroughObj(conditions, data, result = {}, parent = null) {
+		if(data)
 		Object.keys(data).forEach(key => {
 			let send = false;
 			for (var v = 0; v < conditions.length; v++) {
@@ -1895,7 +1896,7 @@ function init(config) {
 				);
 				return;
 			}
-			return fn(null, form);
+			return fn(null, item);
 		};
 		this.transformers[systemEntities.lib] = function(item, fn) {
 			basicTransformer(item, DynamoLib, systemEntities.lib, fn);
