@@ -5,6 +5,17 @@ Function.prototype.getFunctionBody = function() {
 	return entire.substring(entire.indexOf("{") + 1, entire.lastIndexOf("}"));
 };
 
+/**
+ * Used to create elements
+ * @param  {String} name        Name of element
+ * @param  {String} label       Element label
+ * @param  {Strirng} description Description of the elements use
+ * @param  {String} type        Element type  eg INPUT,SELECT etc
+ * @param  {Object} args        Elements custom arguments
+ * @param  {Array} validators  Element validators
+ * @param  {Array} asyncVals   Elements asyncValidators
+ * @return {Object}             New Element.
+ */
 var createElement = function(
 	name,
 	label,

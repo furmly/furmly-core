@@ -260,6 +260,11 @@ module.exports = function(constants, systemEntities) {
 			this.entityRepo.getSchemas(
 				function(er, types) {
 					if (er) return callback(er);
+					if(this.args.query && this.args.query.name){
+						let exp=new RegExp(this.args.query.name,"i")
+						types=types.filter(x=>exp.test(x))
+					}
+					
 					var every = this.libs.convertToSelectableList(types);
 					var total = every.length;
 					if (self.args.count) {
