@@ -637,6 +637,10 @@ module.exports = function(constants) {
 			constants.UIDS.LIB.CREATE_ELEMENT
 		)
 		.createLib(
+			`exports=${misc.findElementByName.toString()}`,
+			constants.UIDS.LIB.FIND_ELEMENT_BY_NAME
+		)
+		.createLib(
 			(() => {
 				exports = function() {
 					return this.createElement(
