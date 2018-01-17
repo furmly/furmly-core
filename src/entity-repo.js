@@ -291,7 +291,9 @@ function EntityRepo(opts) {
 					if (er) return fn(er);
 					let _step;
 					try {
-						_step = new DynamoStep(item);
+						_step = new DynamoStep(
+							Object.assign(item, { config: self.config })
+						);
 					} catch (e) {
 						return fn(e);
 					}
@@ -420,13 +422,12 @@ function EntityRepo(opts) {
 EntityRepo.prototype.setInfrastructure = function(manager) {
 	this.infrastructure = manager;
 };
+
 EntityRepo.prototype.init = function(callback) {
 	generator.setDefault("requiresIdentity", function(value) {
 		return true;
 	});
-	mongoose.connect(this.config.data.dynamo_url, er => {
-		if (er) return callback(er);
-
+	const _init = () => {
 		if (typeof this.store == "function") {
 			this.store = this.store();
 		}
@@ -488,7 +489,16 @@ EntityRepo.prototype.init = function(callback) {
 				self.createSchemas(callback);
 			}
 		);
-	});
+	};
+	mongoose
+		.connect(this.config.data.dynamo_url)
+		.then(_init)
+		.catch(e => {
+			if (e && e.message !== "Trying to open unclosed connection.")
+				return callback();
+
+			return _init(e);
+		});
 };
 
 //service injected into domain objects for persistence.
@@ -767,7 +777,7 @@ EntityRepo.prototype.createEntity = function(name, data, fn) {
 };
 EntityRepo.prototype.aggregateEntity = function(name, ...rest) {
 	let model = this.models[name];
-	runThroughObj(
+	misc.runThroughObj(
 		[
 			(key, data, result, parent, parentKey, index) => {
 				if (key == "$objectID") {

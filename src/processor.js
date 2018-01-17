@@ -1,5 +1,3 @@
-const debug = require("debug")("processor");
-
 /**
 	 * Class Constuctor for a DynamoProcessor
 	 * @constructor
@@ -7,18 +5,20 @@ const debug = require("debug")("processor");
 	 * @param {Any} opts Constructor arguments
 	 */
 function DynamoProcessor(opts) {
+	(this.debug = require("debug")("processor-constructor")),
+		(constants = require("./constants"));
 	if (!opts.code) {
-		debug(opts);
+		this.debug(opts);
 		throw new Error("Processor must include code to run");
 	}
 
 	if (!opts.title) {
-		debug(opts);
+		this.debug(opts);
 		throw new Error("Processor must have a title");
 	}
 
 	if (!opts.save) {
-		debug(opts);
+		this.debug(opts);
 		throw new Error("Processor needs save service for persistence");
 	}
 
@@ -36,6 +36,7 @@ function DynamoProcessor(opts) {
 		 * @param  {Function} callback callback function.
 		 * @return {Any}            result of process.
 		 */
+
 	this.process = function(result, callback) {
 		if (typeof result == "function") {
 			callback = result;
@@ -44,19 +45,23 @@ function DynamoProcessor(opts) {
 		try {
 			self.validate();
 			/* jshint ignore:start */
-			if (this.SANDBOX_CONTEXT)
+			if (this.SANDBOX_CONTEXT) {
 				//added extra check to ensure this code never runs in engine context.
+				this.debug(`running processor '${self.title}' ${self._id} `);
 				eval(self.code);
+			}
+
 			/* jshint ignore:end */
 		} catch (e) {
 			// statements
-			console.log(
+			this.debug(
 				"error caught by processor , description: \n" + e.message
 			);
 			callback(e);
 		}
 	};
 }
+
 /**
 	 * Class invariant function
 	 * @return {Void} nothing

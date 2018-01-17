@@ -37,7 +37,7 @@ module.exports = function(constants, systemEntities) {
 						if (this.args.createClaim) {
 							let inf = this.entityRepo.infrastructure();
 							if (!inf || !inf.userManager)
-								return debug(
+								return this.debug(
 									"infrastructure not available for create process"
 								), callback(
 									new Error("infrastructure is not available")
@@ -52,7 +52,7 @@ module.exports = function(constants, systemEntities) {
 									},
 									[]
 								);
-								async.parallel(
+								this.async.parallel(
 									_processors.map(x =>
 										inf.userManager.saveClaim.bind(
 											inf.userManager,
@@ -67,9 +67,9 @@ module.exports = function(constants, systemEntities) {
 									),
 									er => {
 										if (er)
-											return debug(
+											return this.debug(
 												`an error occurred while attempting to save claims for processes processors ${er.message}`
-											), debug(er);
+											), this.debug(er);
 									}
 								);
 							}
@@ -78,7 +78,7 @@ module.exports = function(constants, systemEntities) {
 								{ value: proc._id },
 								(er, claim) => {
 									if (er)
-										return debug(
+										return this.debug(
 											"error occurred while querying claims"
 										), callback(er);
 									if (!claim || !claim.length)
@@ -165,7 +165,7 @@ module.exports = function(constants, systemEntities) {
 						full: true,
 						noTransformaton: true
 					},
-					function(er, proc) {
+					(er, proc)=> {
 						if (er) return callback(er);
 
 						callback(
@@ -207,9 +207,9 @@ module.exports = function(constants, systemEntities) {
 					}
 
 				if (this.args.query)
-					_.assign(query, this.libs.convertFilter(this.args.query));
+					Object.assign(query, this.libs.convertFilter(this.args.query));
 			}
-			this.entityRepo.$get($parameters, options, function(er, x) {
+			this.entityRepo.$get($parameters, options, function(er, x){
 				if (er) return callback(er);
 				var result = !args.full
 					? x.map(function(z) {
@@ -295,21 +295,21 @@ module.exports = function(constants, systemEntities) {
 		}).getFunctionBody(),
 		createSchemaCode = (() => {
 			function resolve(type, data) {
-				function parsePropertyWithName(template, x) {
-					if (x.propertyType == constants.ENTITYTYPE.OBJECT) {
+				const parsePropertyWithName=(template, x)=> {
+					if (x.propertyType == this.constants.ENTITYTYPE.OBJECT) {
 						template[
 							x.propertyName || x.props.propertyName
 						] = parse(x.props.properties);
 						return;
 					}
-					if (x.propertyType == constants.ENTITYTYPE.ARRAY) {
+					if (x.propertyType == this.constants.ENTITYTYPE.ARRAY) {
 						template[x.propertyName || x.props.propertyName] = [
 							parse(x.props.properties)
 						];
 						return;
 					}
 
-					if (x.propertyType == constants.ENTITYTYPE.REFERENCE) {
+					if (x.propertyType == this.constants.ENTITYTYPE.REFERENCE) {
 						template[x.propertyName || x.props.propertyName] = {
 							type: "ObjectId",
 							ref: x.props.ref
@@ -322,8 +322,8 @@ module.exports = function(constants, systemEntities) {
 					};
 				}
 
-				function parsePropertyWithoutName(template, x) {
-					if (x.propertyType !== constants.ENTITYTYPE.REFERENCE)
+				const parsePropertyWithoutName=(template, x)=> {
+					if (x.propertyType !== this.constants.ENTITYTYPE.REFERENCE)
 						throw new Error(
 							"all entity types must have a propertyName except REFERENCE"
 						);
@@ -332,7 +332,7 @@ module.exports = function(constants, systemEntities) {
 					template.ref = x.props.ref;
 				}
 
-				function parse(data) {
+				const parse=(data)=> {
 					var template = {};
 					data.forEach(x => {
 						if (
@@ -354,12 +354,12 @@ module.exports = function(constants, systemEntities) {
 				}
 			}
 
-			var data = resolve(
+			var data = resolve.call(this,
 					this.args.entity.choice,
 					this.args.entity.template.value
 				),
 				self = this;
-			debug(
+			this.debug(
 				"entity to create--------:\n" +
 					JSON.stringify(data) +
 					"\n-----------:"
@@ -369,7 +369,7 @@ module.exports = function(constants, systemEntities) {
 				this.entityRepo.createSchema(
 					this.args.entity.name,
 					data,
-					function(er) {
+					(er)=> {
 						if (er) return callback(er);
 
 						if (
@@ -384,10 +384,10 @@ module.exports = function(constants, systemEntities) {
 								self.args.entity.group,
 								self.args.entity.category,
 								data,
-								function(er, result) {
+								(er, result)=> {
 									if (er)
 										//delete what you just created this.entityRepo.deleteSchema()
-										return debug(
+										return this.debug(
 											"an error occurred while creating schema ..rolling back"
 										), callback(er);
 
@@ -496,7 +496,7 @@ module.exports = function(constants, systemEntities) {
 		)
 		.createProcessor(
 			"Menu Filter",
-			"\nlet commands= this.libs.menuFilters;\nif(!commands||!Array.prototype.isPrototypeOf(commands) ||!commands.length)\ncallback(null,this.args.menu);\n\n\ncommands[0]=commands[0].bind(this,this.args.menu);\n\nasync.waterfall(commands.map(command=>{\n    return command.bind(this);\n}),(er,menu)=>{\n    if(er) return callback(er);\n    \n    callback(null,menu);\n});\n",
+			"\nlet commands= this.libs.menuFilters;\nif(!commands||!Array.prototype.isPrototypeOf(commands) ||!commands.length)\ncallback(null,this.args.menu);\n\n\ncommands[0]=commands[0].bind(this,this.args.menu);\n\nthis.async.waterfall(commands.map(command=>{\n    return command.bind(this);\n}),(er,menu)=>{\n    if(er) return callback(er);\n    \n    callback(null,menu);\n});\n",
 			constants.UIDS.PROCESSOR.MENU_FILTER
 		)
 		.createProcessor(

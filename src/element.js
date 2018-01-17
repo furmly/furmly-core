@@ -1,4 +1,6 @@
 const misc = require("./misc"),
+	_ = require("lodash"),
+	async=require('async'),
 	uuid = require("uuid");
 
 /**

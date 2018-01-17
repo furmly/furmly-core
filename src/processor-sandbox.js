@@ -1,84 +1,139 @@
 /*jshint loopfunc: true */
 //'use strict';
 
-
-var module_context = {
-	SANDBOX_CONTEXT: true
-};
+let module_context = context,
+	async = context.async,
+	entityRepo = context.entityRepo,
+	debug = context.debug,
+	systemEntities = context.systemEntities,
+	constants = context.constants,
+	lib_context = {};
 module_context.skip = {};
-if (typeof entityRepo !== 'undefined')
-	module_context.entityRepo = entityRepo;
-if (typeof constants !== 'undefined') {
-	module_context.constants = constants;
-	global.constants = constants;
+module_context.SANDBOX_CONTEXT = true;
+
+if (typeof context.constants !== "undefined")
+	addGetProp("constants", lib_context, constants);
+
+if (typeof context.systemEntities !== "undefined")
+	addGetProp("systemEntities", lib_context, systemEntities);
+
+if (typeof async !== "undefined") addGetProp("async", lib_context, async);
+if (typeof debug !== "undefined") addGetProp("debug", lib_context, debug);
+if (typeof context.uuid !== "undefined")
+	addGetProp("uuid", lib_context, context.uuid);
+
+function addGetProp(name, obj, result) {
+	Object.defineProperties(obj, {
+		[name]: {
+			enumerable: false,
+			get: function() {
+				return result;
+			}
+		}
+	});
 }
-if (typeof systemEntities !== 'undefined')
-	module_context.systemEntities = systemEntities;
-
-
-module_context.args = context.args;
 module.exports = {
-	getResult: function(fn) {
-		function run() {
+	getResult: fn => {
+		const run = () => {
 			var firstProcessor = context.processors[0],
 				tasks = [];
-			tasks.push(async.timeout(function(cb) {
-				firstProcessor.process.call(module_context, cb);
-			}, context.processorsTimeout));
+			tasks.push(
+				async.timeout(cb => {
+					debug(
+						`async is ${typeof async !== "undefined"
+							? "defined"
+							: "undefined"}`
+					);
+					debug(
+						`constants is ${typeof constants !== "undefined"
+							? "defined"
+							: "undefined"}`
+					);
+					firstProcessor.process.call(module_context, cb);
+				}, context.processorsTimeout)
+			);
 
-			function process(i, list, timeout) {
-				return async.timeout(function(result, cb) {
-					if (!module_context.skip[list[i]._id] && !module_context.completed) {
+			const process = (i, list, timeout) => {
+				return async.timeout((result, cb) => {
+					if (
+						!module_context.skip[list[i]._id] &&
+						!module_context.completed
+					) {
 						list[i].process.call(module_context, result, cb);
 						return;
 					}
 					cb(null, result);
 				}, timeout);
-			}
+			};
 
 			for (var i = 1; i < context.processors.length; i++) {
-				tasks.push(process(i, context.processors, context.processorsTimeout || 1500));
+				tasks.push(
+					process(
+						i,
+						context.processors,
+						context.processorsTimeout || 1500
+					)
+				);
 			}
 
-			async.waterfall(tasks, function(er, result) {
-
+			async.waterfall(tasks, (er, result) => {
 				if (er) return fn(er);
 				if (context.postprocessors && context.postprocessors.length) {
 					var postTasks = [];
 					var first = context.postprocessors[0];
-					postTasks.push(async.timeout(function(cb) {
-						first.process.call(module_context, cb);
-					}, context.postprocessorsTimeout));
+					postTasks.push(
+						async.timeout(cb => {
+							first.process.call(module_context, cb);
+						}, context.postprocessorsTimeout)
+					);
 					for (var i = 1; i < context.postprocessors; i++)
-						postTasks.push(process(i, context.postprocessors, context.postprocessorsTimeout || 1500));
+						postTasks.push(
+							process(
+								i,
+								context.postprocessors,
+								context.postprocessorsTimeout || 1500
+							)
+						);
 
-					async.waterfall(tasks, function(er, result) {
+					async.waterfall(tasks, (er, result) => {
 						if (er) {
 							//write to some error log somewhere.
-							console.log('postprocessors failed:' + JSON.stringify(er));
+							debug(
+								"postprocessors failed:" + JSON.stringify(er)
+							);
 						}
 					});
 				}
 
 				fn(er, result);
 			});
-		}
-		if (typeof systemEntities !== 'undefined' && typeof entityRepo !== 'undefined') {
+		};
+		if (
+			typeof systemEntities !== "undefined" &&
+			typeof entityRepo !== "undefined"
+		) {
 			//load reusable libs
-			entityRepo.getLib(systemEntities.lib, {}, function(er, libs) {
+
+			entityRepo.getLib({}, (er, libs) => {
 				if (er) return fn(er);
+
 				module_context.libs = libs.reduce(function(holder, lib) {
-					//console.log(lib);
-					return lib.load(holder);
-				}, {});
+					try {
+						return lib.load(holder);
+					} catch (e) {
+						debug(
+							`failed to load library ${lib.title} id:${lib._id}`
+						);
+						debug(e);
+						return holder;
+					}
+					//give holder async and debug.
+				}, lib_context);
 
 				run();
 			});
 			return;
 		}
 		run();
-
-
-
 	}
 };

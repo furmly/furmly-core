@@ -11,11 +11,19 @@ function DynamoLib(opts) {
 		throw new Error("a valid key is required by dynamo lib");
 
 	if (!opts.code) throw new Error("code is required by dynamo lib");
-
+	const debug = require("debug")("lib");
 	this._id = opts._id;
 	this.code = opts.code;
 	this.uid = opts.uid;
 	this._save = opts.save;
+	Object.defineProperties(this, {
+		debug: {
+			enumerable: false,
+			get: function() {
+				return debug;
+			}
+		}
+	});
 }
 /**
 	 * This loads its code into the holder object.
@@ -31,6 +39,7 @@ DynamoLib.prototype.load = function(holder) {
 		let exports = {};
 		/* jshint ignore:start */
 		//added extra check to ensure this code never runs in engine context.
+		self.debug(`loading ${self._id}`);
 		eval(self.code);
 		/* jshint ignore:end */
 		return (holder[self.uid] = exports), holder;

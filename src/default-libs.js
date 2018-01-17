@@ -148,10 +148,10 @@ module.exports = function(constants) {
 					fileUpload.readFile(file, (er, data, description) => {
 						if (er)
 							return (
-								debug(
+								this.debug(
 									"An error occurred while reading uploaded file"
 								),
-								debug(er),
+								this.debug(er),
 								fn(
 									new Error(
 										"Error occurred while attempting to read uploaded file"
@@ -162,10 +162,10 @@ module.exports = function(constants) {
 						fileParser.parseOnly(description, data, (er, rows) => {
 							if (er)
 								return (
-									debug(
+									this.debug(
 										"An error occurred while parsing uploaded file"
 									),
-									debug(er),
+									this.debug(er),
 									fn(
 										new Error(
 											"Error occurred while attempting to parse uploaded file"
@@ -192,7 +192,7 @@ module.exports = function(constants) {
 								"        return cb(new Error('error occurred processing file records'));" +
 								"    }";
 
-							debug(rows);
+							this.debug(rows);
 
 							let _checks = !checks
 									? ""
@@ -214,10 +214,10 @@ module.exports = function(constants) {
 								function(er, result) {
 									if (er)
 										return (
-											debug(
+											this.debug(
 												"an error occurred in threadpool"
 											),
-											debug(er),
+											this.debug(er),
 											fn(
 												new Error(
 													(Array.prototype.isPrototypeOf(
@@ -229,9 +229,9 @@ module.exports = function(constants) {
 											)
 										);
 
-									debug(result);
+									this.debug(result);
 
-									debug(
+									this.debug(
 										"thread pool work completed successfully"
 									);
 
@@ -240,14 +240,14 @@ module.exports = function(constants) {
 										function(list, cb) {
 											setImmediate(cb, null, list);
 										};
-									debug("finished setting up extend");
-									//debug(extend);
-									debug(extend.toString());
+									this.debug("finished setting up extend");
+									//this.debug(extend);
+									this.debug(extend.toString());
 									extend(result, (er, extendedResult) => {
-										debug("got here");
+										this.debug("got here");
 										if (er) return fn(er);
 
-										debug(extendedResult);
+										this.debug(extendedResult);
 										let tasks = extendedResult.map(x =>
 											entityRepo.create.bind(
 												entityRepo,
@@ -255,18 +255,18 @@ module.exports = function(constants) {
 												x
 											)
 										);
-										//debug(tasks);
+										//this.debug(tasks);
 
-										async.parallel(tasks, function(er) {
+										this.async.parallel(tasks, function(er) {
 											if (er)
 												return (
-													debug(
+													this.debug(
 														"an error occurred while saving items"
 													),
 													fn(er)
 												);
 
-											debug("finished!!!!");
+											this.debug("finished!!!!");
 
 											fn(
 												null,
@@ -294,7 +294,7 @@ module.exports = function(constants) {
 					schema,
 					fn
 				) {
-					debug(`creating crud for entity ${entityName}`);
+					this.debug(`creating crud for entity ${entityName}`);
 
 					let constants = this.constants,
 						self = this,
@@ -318,13 +318,13 @@ module.exports = function(constants) {
 							)
 						);
 
-					async.waterfall(
+					this.async.waterfall(
 						[
 							callback => {
 								this.entityRepo.saveProcessor(
 									{
 										title: `Create ${entityName}`,
-										code: `debug('creating new ${entityName}...'); \n this.entityRepo.create('${entityName}',this.args.entity,callback)`,
+										code: `this.debug('creating new ${entityName}...'); \n this.entityRepo.create('${entityName}',this.args.entity,callback)`,
 										uid: create_uid
 									},
 									{
@@ -336,7 +336,7 @@ module.exports = function(constants) {
 											{
 												title: `Update ${entityName}`,
 												uid: update_uid,
-												code: `debug('update ${entityName}...'); \n this.entityRepo.update('${entityName}',this.args.entity,callback)`
+												code: `this.debug('update ${entityName}...'); \n this.entityRepo.update('${entityName}',this.args.entity,callback)`
 											},
 											{
 												retrieve: true
@@ -348,7 +348,7 @@ module.exports = function(constants) {
 													{
 														title: `Get ${entityName}`,
 														uid: get_uid,
-														code: `debug('fetching ${entityName}...');\nthis.$checkDomain=true; \nthis.libs.getEntity.call(this,'${entityName}','${entityLabel}',callback);`
+														code: `this.debug('fetching ${entityName}...');\nthis.$checkDomain=true; \nthis.libs.getEntity.call(this,'${entityName}','${entityLabel}',callback);`
 													},
 													(er, pr) => {
 														if (er)
@@ -374,7 +374,7 @@ module.exports = function(constants) {
 																	return callback(
 																		er
 																	);
-																debug(list);
+																this.debug(list);
 																let _list = list
 																	.slice()
 																	.filter(
@@ -386,7 +386,7 @@ module.exports = function(constants) {
 																				.LIST_ENTITY_GENERIC !==
 																			x.uid
 																	);
-																async.parallel(
+																this.async.parallel(
 																	_list.map(
 																		v =>
 																			userManager.saveClaim.bind(
@@ -412,17 +412,17 @@ module.exports = function(constants) {
 																			return callback(
 																				er
 																			);
-																		debug(
+																		this.debug(
 																			_claims
 																		);
-																		async.parallel(
+																		this.async.parallel(
 																			_claims.map(
 																				x =>
 																					userManager.addClaimToRole.bind(
 																						userManager,
 																						userManager.defaultRole,
 																						null,
-																						x[0]
+																						x
 																					)
 																			),
 																			er => {
@@ -468,7 +468,7 @@ module.exports = function(constants) {
 						(er, result) => {
 							if (er) return fn(er);
 
-							debug(
+							this.debug(
 								"located crud processors...\n converting schema to template..."
 							);
 							template = template.concat(
@@ -478,7 +478,7 @@ module.exports = function(constants) {
 									constants
 								).convert(schema)
 							);
-							debug(
+							this.debug(
 								`finished conversion :${JSON.stringify(
 									template,
 									null,
@@ -560,10 +560,10 @@ module.exports = function(constants) {
 
 							self.entityRepo.saveProcess(
 								processInstance,
-								function(er, proc) {
+								(er, proc)=> {
 									if (er) return fn(er);
 
-									async.waterfall(
+									this.async.waterfall(
 										[
 											userManager.saveClaim.bind(
 												userManager,
@@ -647,7 +647,7 @@ module.exports = function(constants) {
 						"_id",
 						"",
 						"",
-						constants.ELEMENTTYPE.HIDDEN
+						this.constants.ELEMENTTYPE.HIDDEN
 					);
 				};
 			}).getFunctionBody(),
@@ -659,82 +659,236 @@ module.exports = function(constants) {
 					this.libs = libs;
 					this.processors = processors;
 					this.constants = constants;
-					debug("elements converter constructor called");
+					//debug("elements converter constructor called");
+					this.map = {
+						[this.constants.ENTITYTYPE.STRING]: function(
+							data,
+							name
+						) {
+							// debug(
+							// 	`converter called with arguments ${JSON.stringify(
+							// 		arguments,
+							// 		null,
+							// 		" "
+							// 	)}`
+							// );
+							return this.libs.createElement(
+								name,
+								this.firstWord(name),
+								"",
+								this.constants.ELEMENTTYPE.INPUT,
+								{
+									type: this.constants.INPUTTYPE.TEXT
+								}
+							);
+						},
+						[this.constants.ENTITYTYPE.NUMBER]: function(
+							data,
+							name
+						) {
+							// debug(
+							// 	`converter called with arguments ${JSON.stringify(
+							// 		arguments,
+							// 		null,
+							// 		" "
+							// 	)}`
+							// );
+							return this.libs.createElement(
+								name,
+								this.firstWord(name),
+								"",
+								this.constants.ELEMENTTYPE.INPUT,
+								{
+									type: this.constants.INPUTTYPE.NUMBER
+								}
+							);
+						},
+						[this.constants.ENTITYTYPE.BOOLEAN]: function(
+							data,
+							name
+						) {
+							// debug(
+							// 	`converter called with arguments ${JSON.stringify(
+							// 		arguments,
+							// 		null,
+							// 		" "
+							// 	)}`
+							// );
+							return this.libs.createElement(
+								name,
+								this.firstWord(name),
+								"",
+								this.constants.ELEMENTTYPE.INPUT,
+								{
+									type: this.constants.INPUTTYPE.CHECKBOX
+								}
+							);
+						},
+						[this.constants.ENTITYTYPE.DATE]: function(data, name) {
+							// debug(
+							// 	`converter called with arguments ${JSON.stringify(
+							// 		arguments,
+							// 		null,
+							// 		" "
+							// 	)}`
+							// );
+							return this.libs.createElement(
+								name,
+								this.firstWord(name),
+								"",
+								this.constants.ELEMENTTYPE.INPUT,
+								{
+									type: this.constants.INPUTTYPE.DATE
+								}
+							);
+						},
+						[this.constants.ENTITYTYPE.OBJECT]: function(
+							data,
+							name
+						) {
+							// debug(
+							// 	`converter called with arguments ${JSON.stringify(
+							// 		arguments,
+							// 		null,
+							// 		" "
+							// 	)}`
+							// );
+							return this.libs.createElement(
+								name,
+								this.firstWord(name),
+								"",
+								this.constants.ELEMENTTYPE.SECTION,
+								{
+									elements: this.convert(data)
+								}
+							);
+						},
+						[this.constants.ENTITYTYPE.ARRAY]: function(
+							data,
+							name
+						) {
+							// debug(
+							// 	`converter called with arguments ${JSON.stringify(
+							// 		arguments,
+							// 		null,
+							// 		" "
+							// 	)}`
+							// );
+							return this.libs.createElement(
+								name,
+								this.firstWord(name),
+								"",
+								this.constants.ELEMENTTYPE.LIST,
+								{
+									itemTemplate: this.convert(data[0])
+								}
+							);
+						},
+						[this.constants.ENTITYTYPE.REFERENCE]: function(
+							data,
+							name
+						) {
+							// debug(
+							// 	`reference converter called with arguments ${JSON.stringify(
+							// 		arguments,
+							// 		null,
+							// 		" "
+							// 	)}`
+							// );
+							return this.libs.createElement(
+								name,
+								this.firstWord(name),
+								"",
+								this.constants.ELEMENTTYPE.SELECT,
+								{
+									type: this.constants
+										.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+									config: {
+										value: this.processors[
+											this.constants.UIDS.PROCESSOR
+												.LIST_ENTITY_GENERIC
+										]._id
+									},
+									customArgs: `{"entityName":"${data.ref}",entityLabel:"name"}`
+								}
+							);
+						}
+					};
 				}
 				ElementsConverter.prototype.convert = function(x) {
 					let elements = [],
 						keys = Object.keys(x),
 						self = this;
-					debug("converting---x");
-					debug(x);
-					debug("------x");
-					debug("number of properties " + keys.length);
-					debug(keys);
+					// debug("converting---x");
+					// debug(x);
+					// debug("------x");
+					// debug("number of properties " + keys.length);
+					// debug(keys);
 
 					for (var i = 0; i < keys.length; i++) {
 						let result,
 							y = keys[i];
 
 						if (Array.prototype.isPrototypeOf(x[y])) {
-							debug(
-								`converting property ${y} which is an array ${JSON.stringify(
-									x[y],
-									null,
-									" "
-								)} `
-							);
+							// debug(
+							// 	`converting property ${y} which is an array ${JSON.stringify(
+							// 		x[y],
+							// 		null,
+							// 		" "
+							// 	)} `
+							// );
 							result = self.map[
-								`${constants.ENTITYTYPE.ARRAY}`
+								this.constants.ENTITYTYPE.ARRAY
 							].call(self, x[y], y);
-							debug("array result-----x");
-							debug(result);
-							debug("------x");
+							// debug("array result-----x");
+							// debug(result);
+							// debug("------x");
 						}
 						if (typeof x[y] == "string" && self.map[x[y]]) {
 							//this should only happen if entity is a reference in an array.
-							debug(`converting property ${y} string ${x[y]}`);
-							if (x[y] !== constants.ENTITYTYPE.REFERENCE)
+							// debug(`converting property ${y} string ${x[y]}`);
+							if (x[y] !== this.constants.ENTITYTYPE.REFERENCE)
 								throw new Error("Must be a Reference");
 
 							result = self.map[x[y]].call(self, x, y);
-							debug("result-----x");
-							debug(result);
-							debug("------x");
+							// debug("result-----x");
+							// debug(result);
+							// debug("------x");
 							elements.push(result);
 							break;
 						}
 
 						if (!result && typeof x[y] == "object") {
-							debug(
-								`converting property ${y} which is an object ${JSON.stringify(
-									x[y],
-									null,
-									" "
-								)} `
-							);
+							// debug(
+							// 	`converting property ${y} which is an object ${JSON.stringify(
+							// 		x[y],
+							// 		null,
+							// 		" "
+							// 	)} `
+							// );
 							if (self.map[x[y].type]) {
-								debug(
-									"type is known calling the appropriate type"
-								);
+								// debug(
+								// 	"type is known calling the appropriate type"
+								// );
 								result = self.map[x[y].type].call(
 									self,
 									x[y],
 									y
 								);
-								debug("result-----x");
-								debug(result);
-								debug("-------x");
+								// debug("result-----x");
+								// debug(result);
+								// debug("-------x");
 							} else {
 								//it doesnt have a type therefore treat it like an object.
-								debug(
-									"type is unknown so treating it like an object..."
-								);
+								// debug(
+								// 	"type is unknown so treating it like an object..."
+								// );
 								result = self.map[
-									`${constants.ENTITYTYPE.OBJECT}`
+									`${this.constants.ENTITYTYPE.OBJECT}`
 								].call(self, x[y], y);
-								debug("result-----x");
-								debug(result);
-								debug("-------x");
+								// debug("result-----x");
+								// debug(result);
+								// debug("-------x");
 							}
 						}
 						if (!result)
@@ -742,152 +896,17 @@ module.exports = function(constants) {
 
 						elements.push(result);
 					}
-					debug(
-						`elements---------x\n ${JSON.stringify(
-							elements,
-							null,
-							" "
-						)}\n-------x`
-					);
+					// debug(
+					// 	`elements---------x\n ${JSON.stringify(
+					// 		elements,
+					// 		null,
+					// 		" "
+					// 	)}\n-------x`
+					// );
 
 					return elements;
 				};
-				ElementsConverter.prototype.map = {
-					[constants.ENTITYTYPE.STRING]: function(data, name) {
-						debug(
-							`converter called with arguments ${JSON.stringify(
-								arguments,
-								null,
-								" "
-							)}`
-						);
-						return this.libs.createElement(
-							name,
-							this.firstWord(name),
-							"",
-							this.constants.ELEMENTTYPE.INPUT,
-							{
-								type: constants.INPUTTYPE.TEXT
-							}
-						);
-					},
-					[constants.ENTITYTYPE.NUMBER]: function(data, name) {
-						debug(
-							`converter called with arguments ${JSON.stringify(
-								arguments,
-								null,
-								" "
-							)}`
-						);
-						return this.libs.createElement(
-							name,
-							this.firstWord(name),
-							"",
-							this.constants.ELEMENTTYPE.INPUT,
-							{
-								type: constants.INPUTTYPE.NUMBER
-							}
-						);
-					},
-					[constants.ENTITYTYPE.BOOLEAN]: function(data, name) {
-						debug(
-							`converter called with arguments ${JSON.stringify(
-								arguments,
-								null,
-								" "
-							)}`
-						);
-						return this.libs.createElement(
-							name,
-							this.firstWord(name),
-							"",
-							this.constants.ELEMENTTYPE.INPUT,
-							{
-								type: this.constants.INPUTTYPE.CHECKBOX
-							}
-						);
-					},
-					[constants.ENTITYTYPE.DATE]: function(data, name) {
-						debug(
-							`converter called with arguments ${JSON.stringify(
-								arguments,
-								null,
-								" "
-							)}`
-						);
-						return this.libs.createElement(
-							name,
-							this.firstWord(name),
-							"",
-							this.constants.ELEMENTTYPE.INPUT,
-							{
-								type: constants.INPUTTYPE.DATE
-							}
-						);
-					},
-					[constants.ENTITYTYPE.OBJECT]: function(data, name) {
-						debug(
-							`converter called with arguments ${JSON.stringify(
-								arguments,
-								null,
-								" "
-							)}`
-						);
-						return this.libs.createElement(
-							name,
-							this.firstWord(name),
-							"",
-							this.constants.ELEMENTTYPE.SECTION,
-							{
-								elements: this.convert(data)
-							}
-						);
-					},
-					[constants.ENTITYTYPE.ARRAY]: function(data, name) {
-						debug(
-							`converter called with arguments ${JSON.stringify(
-								arguments,
-								null,
-								" "
-							)}`
-						);
-						return this.libs.createElement(
-							name,
-							this.firstWord(name),
-							"",
-							this.constants.ELEMENTTYPE.LIST,
-							{
-								itemTemplate: this.convert(data[0])
-							}
-						);
-					},
-					[constants.ENTITYTYPE.REFERENCE]: function(data, name) {
-						debug(
-							`reference converter called with arguments ${JSON.stringify(
-								arguments,
-								null,
-								" "
-							)}`
-						);
-						return this.libs.createElement(
-							name,
-							this.firstWord(name),
-							"",
-							this.constants.ELEMENTTYPE.SELECT,
-							{
-								type: this.constants.ELEMENT_SELECT_SOURCETYPE
-									.PROCESSOR,
-								config: {
-									value: this.processors[
-										this.constants.UIDS.PROCESSOR
-											.LIST_ENTITY_GENERIC
-									]._id
-								},
-								customArgs: `{"entityName":"${data.ref}",entityLabel:"name"}`
-							}
-						);
-					}
-				};
+
 				ElementsConverter.prototype.firstWord = function(string) {
 					return string[0].toUpperCase() + string.substring(1);
 				};

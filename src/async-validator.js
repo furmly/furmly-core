@@ -1,4 +1,5 @@
-let util = require("util");
+let util = require("util"),
+	DynamoProcessor = require("./processor");
 /**
 	 * Inherits from processor. Runs user editable code for validation. It is used to validate elements before submission.
 	 * @constructor
@@ -25,6 +26,6 @@ function DynamoAsyncValidator(opts) {
 		});
 	};
 }
-util.inherits(DynamoAsyncValidator, require("./processor"));
+util.inherits(DynamoAsyncValidator, DynamoProcessor);
 
 module.exports = DynamoAsyncValidator;

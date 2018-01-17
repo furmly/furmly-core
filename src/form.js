@@ -1,3 +1,5 @@
+const async = require("async"),
+	_ = require("lodash");
 /**
 	 * Form used by Client based Steps
 	 * @constructor

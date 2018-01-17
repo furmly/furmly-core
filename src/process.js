@@ -1,5 +1,8 @@
 const assert = require("assert"),
 	debug = require("debug")("process"),
+	misc = require("./misc"),
+	async = require("async"),
+	_ = require("lodash"),
 	DynamoSandbox = require("./sandbox"),
 	DynamoStep = require("./step"),
 	constants = require("./constants");
@@ -254,7 +257,7 @@ DynamoProcess.prototype.describe = function(context, fn) {
 
 	this.validate(fn);
 	var self = this,
-		proc = _.pickBy(self, notAFunction),
+		proc = _.pickBy(self, misc.notAFunction),
 		_allSteps = [];
 	delete proc.fetchProcessor;
 

@@ -3,6 +3,11 @@ const { NodeVM } = require("vm2"),
 	systemEntities = constants.systemEntities,
 	async = require("async"),
 	debug = require("debug")("sandbox"),
+	DynamoProcessor = require("./processor"),
+	path = require("path"),
+	sandboxCode = require("fs").readFileSync(
+		__dirname + path.sep + "processor-sandbox.js"
+	),
 	uuid = require("uuid");
 
 /**
@@ -37,16 +42,16 @@ function DynamoSandbox(opts) {
 			sandbox: {
 				context: {
 					args: context,
-					processors: processors,
+					processors,
 					postprocessors: [],
-					processorsTimeout: 60000
-				},
-				systemEntities: systemEntities,
-				constants: constants,
-				entityRepo: entityRepo,
-				async: async,
-				debug: debug,
-				uuid: uuid
+					processorsTimeout: 60000,
+					systemEntities,
+					constants,
+					entityRepo: entityRepo,
+					async,
+					debug,
+					uuid
+				}
 			}
 		});
 		let handle = vm.run(sandboxCode);

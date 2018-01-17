@@ -35,7 +35,7 @@ let createElement = function(
 		(args && typeof args !== "object")
 	)
 		throw new Error("illegal argument(s) passed to createElement");
-
+	uuid = typeof uuid !== "undefined" ? uuid : this.uuid;
 	return {
 		elementType: type,
 		label: label,

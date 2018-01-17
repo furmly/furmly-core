@@ -1,8 +1,13 @@
 const constants = require("./constants"),
 	fs = require("fs"),
+	debug = require("debug")("sandbox"),
+	async = require("async"),
+	systemEntities = constants.systemEntities,
 	misc = require("./misc"),
 	path = require("path"),
+	uuid = require("uuid"),
 	assert = require("assert"),
+	_ = require("lodash"),
 	sandboxCode = fs.readFileSync(
 		__dirname + path.sep + "processor-sandbox.js"
 	),
@@ -45,6 +50,12 @@ function DynamoStep(opts) {
 			enumerable: false,
 			get: function() {
 				return opts.form;
+			}
+		},
+		config: {
+			enumerable: false,
+			get: function() {
+				return opts.config;
 			}
 		}
 	});
@@ -112,8 +123,8 @@ function DynamoStep(opts) {
 			_context.args = opts.args;
 			_context.postprocessors = _.cloneDeep(opts.postprocessors);
 			_context.processors = _.cloneDeep(opts.processors);
-			_context.postprocessorsTimeout = config.postprocessors.ttl;
-			_context.processorsTimeout = config.processors.ttl;
+			_context.postprocessorsTimeout = parent.config.postprocessors.ttl;
+			_context.processorsTimeout = parent.config.processors.ttl;
 			return _context;
 		}
 
@@ -158,13 +169,14 @@ function DynamoStep(opts) {
 				require: false,
 				requireExternal: false,
 				sandbox: {
-					context: _context,
-					systemEntities: systemEntities,
-					constants: constants,
-					entityRepo: this.entityRepo,
-					async: async,
-					debug: debug,
-					uuid: uuid
+					context: Object.assign(_context, {
+						systemEntities,
+						constants,
+						entityRepo: this.entityRepo,
+						async,
+						debug,
+						uuid
+					})
 				}
 			});
 			var handle = vm.run(sandboxCode);
@@ -277,7 +289,7 @@ DynamoStep.prototype.validate = function(shouldBePersisted) {
 DynamoStep.prototype.describe = function(fn) {
 	this.validate(true);
 	var self = this,
-		step = _.pickBy(self, notAFunction);
+		step = _.pickBy(self, misc.notAFunction);
 	self.state.describe(function(er, res) {
 		if (er) return fn(er);
 
