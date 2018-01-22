@@ -298,6 +298,35 @@ module.exports = function(constants, systemEntities) {
 														]
 													},
 													{
+														id:constants.ELEMENTTYPE.COMMAND,
+														displayLabel:'Command',
+														elements:[
+														    createElement('commandProcessor', 'Processor', '', constants.ELEMENTTYPE.SELECT, {
+																type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																config: {
+																	value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																}
+															}),
+															createElement('commandType','Type','',constants.ELEMENTTYPE.SELECTSET,{
+																items: [
+																	{
+																		id: constants.COMMANDTYPE.DEFAULT,
+																		displayLabel: "Default",
+																		elements: []
+																	},
+																	{
+																		id: constants.COMMANDTYPE.DOWNLOAD,
+																		displayLabel: "Download",
+																		elements: []
+																	}
+																]
+															}),
+															createElement('commandText','Text','',constants.ELEMENTTYPE.INPUT),
+															createElement('commandIcon','Icon','',constants.ELEMENTTYPE.INPUT),
+															createElement('commandProcessorArgs','Processor Args','',constants.ELEMENTTYPE.SCRIPT)
+														]
+													},
+													{
 														id:constants.ELEMENTTYPE.MESSENGER,
 														displayLabel:'Chat Messenger',
 														elements:[
@@ -400,6 +429,16 @@ module.exports = function(constants, systemEntities) {
 																	config: {
 																		value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
 																	}
+															}),
+															createElement("filterCommands","commands used by the filter to perform things like print...etc","",constants.ELEMENTTYPE.LIST,{
+                                                               itemTemplate:[createElement("commandProcessor","Processor that will run when command fires","",constants.ELEMENTTYPE.SELECT,{
+                                                               	type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																	config: {
+																		value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																	}
+																}),
+                                                               createElement("commandText","Text Displayed by the client","",constants.ELEMENTTYPE.INPUT),
+                                                               createElement("commandIcon","Name of the icon to be displayed by the client","",constants.ELEMENTTYPE.INPUT)]
 															}),
 															createElement('pageCount','Page Count','',constants.ELEMENTTYPE.INPUT,{
 																type:constants.INPUTTYPE.NUMBER

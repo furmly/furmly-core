@@ -22,6 +22,7 @@ function createConstants() {
 
 	return {
 		PROCESSSTATUS: new Constant("COMPLETED", "RUNNING"),
+		COMMANDTYPE: new Constant("DEFAULT", "DOWNLOAD"),
 		STEPSTATUS: new Constant("COMPLETED", "RUNNING"),
 		PROCESSORTYPE: new Constant("SERVER", "CLIENT"),
 		GRIDMODE: new Constant("DEFAULT", "CRUD", "EDITONLY", "CREATEONLY"),
