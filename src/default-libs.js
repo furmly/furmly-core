@@ -38,7 +38,8 @@ module.exports = function(constants) {
 						if (
 							typeof data[key] == "object" &&
 							!RegExp.prototype.isPrototypeOf(data[key]) &&
-							!data[key].isObjectID
+							!data[key].isObjectID &&
+							!data[key].$objectID
 						) {
 							Object.assign(
 								query,
@@ -51,9 +52,9 @@ module.exports = function(constants) {
 						}
 						if (
 							typeof data[key] == "object" &&
-							data[key].isObjectID
+							(data[key].isObjectID || data[key].$objectID)
 						) {
-							query[key] = data[key].value;
+							query[key] = data[key].value || data[key].$objectID;
 							return;
 						}
 						query[key] = data[key];
@@ -257,7 +258,9 @@ module.exports = function(constants) {
 										);
 										//this.debug(tasks);
 
-										this.async.parallel(tasks, function(er) {
+										this.async.parallel(tasks, function(
+											er
+										) {
 											if (er)
 												return (
 													this.debug(
@@ -374,7 +377,9 @@ module.exports = function(constants) {
 																	return callback(
 																		er
 																	);
-																this.debug(list);
+																this.debug(
+																	list
+																);
 																let _list = list
 																	.slice()
 																	.filter(
@@ -560,7 +565,7 @@ module.exports = function(constants) {
 
 							self.entityRepo.saveProcess(
 								processInstance,
-								(er, proc)=> {
+								(er, proc) => {
 									if (er) return fn(er);
 
 									this.async.waterfall(
