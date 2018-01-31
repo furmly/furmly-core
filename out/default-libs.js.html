@@ -1,4 +1,32 @@
-/**
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: default-libs.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: default-libs.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
  * Function for creating default lib functions.
  * @param  {Object} constants System Constants
  * @return {Void}           Nothing
@@ -31,27 +59,27 @@ module.exports = function(constants) {
 					Object.keys(data).forEach(function(key) {
 						if (typeof data[key] === "string") {
 							query[
-								(parent && `${parent}.${key}`) || key
+								(parent &amp;&amp; `${parent}.${key}`) || key
 							] = new RegExp(data[key], "i");
 							return;
 						}
 						if (
-							typeof data[key] == "object" &&
-							!RegExp.prototype.isPrototypeOf(data[key]) &&
-							!data[key].isObjectID &&
+							typeof data[key] == "object" &amp;&amp;
+							!RegExp.prototype.isPrototypeOf(data[key]) &amp;&amp;
+							!data[key].isObjectID &amp;&amp;
 							!data[key].$objectID
 						) {
 							Object.assign(
 								query,
 								convertFilter(
 									data[key],
-									(parent && `${parent}.${key}`) || key
+									(parent &amp;&amp; `${parent}.${key}`) || key
 								)
 							);
 							return;
 						}
 						if (
-							typeof data[key] == "object" &&
+							typeof data[key] == "object" &amp;&amp;
 							(data[key].isObjectID || data[key].$objectID)
 						) {
 							query[key] = data[key].value || data[key].$objectID;
@@ -93,7 +121,6 @@ module.exports = function(constants) {
 					fileParser,
 					threadPool,
 					entityRepo,
-					user,
 					fn
 				) {
 					function getDefaultChecks(_keys) {
@@ -102,9 +129,9 @@ module.exports = function(constants) {
 								requiredKeys = _keys.sort();
 							console.log(`sorted keys ${requiredKeys}`);
 							try {
-								for (var i = 0; i < rows.length; i++) {
+								for (var i = 0; i &lt; rows.length; i++) {
 									let keys = Object.keys(rows[i]);
-									if (keys.length < requiredKeys.length) {
+									if (keys.length &lt; requiredKeys.length) {
 										errors.push(
 											`Missing column(s) row:${i + 1}`
 										);
@@ -115,7 +142,7 @@ module.exports = function(constants) {
 
 									for (
 										var z = 0;
-										z < _sortedKeys.length;
+										z &lt; _sortedKeys.length;
 										z++
 									) {
 										if (rows[i][_sortedKeys[z]]) {
@@ -147,7 +174,7 @@ module.exports = function(constants) {
 							.replace("_keys", JSON.stringify(_keys));
 					}
 
-					fileUpload.readFile(file, user, (er, data, description) => {
+					fileUpload.readFile(file, (er, data, description) => {
 						if (er)
 							return (
 								this.debug(
@@ -224,7 +251,7 @@ module.exports = function(constants) {
 												new Error(
 													(Array.prototype.isPrototypeOf(
 														er
-													) &&
+													) &amp;&amp;
 														er.join()) ||
 														er
 												)
@@ -324,98 +351,134 @@ module.exports = function(constants) {
 
 					this.async.waterfall(
 						[
-							this.async.parallel.bind(this.async, [
-								this.entityRepo.saveProcessor.bind(
-									this.entityRepo,
+							callback => {
+								this.entityRepo.saveProcessor(
 									{
 										title: `Create ${entityName}`,
 										code: `this.debug('creating new ${entityName}...'); \n this.entityRepo.create('${entityName}',this.args.entity,callback)`,
 										uid: create_uid
-									}
-								),
-								this.entityRepo.saveProcessor.bind(
-									this.entityRepo,
-									{
-										title: `Update ${entityName}`,
-										uid: update_uid,
-										code: `this.debug('update ${entityName}...'); \n this.entityRepo.update('${entityName}',this.args.entity,callback)`
-									}
-								),
-								this.entityRepo.saveProcessor.bind(
-									this.entityRepo,
-									{
-										title: `Get ${entityName}`,
-										uid: get_uid,
-										code: `this.debug('fetching ${entityName}...');\nthis.$checkDomain=true; \nthis.libs.getEntity.call(this,'${entityName}','${entityLabel}',callback);`
-									}
-								)
-							]),
-							(_processors, callback) => {
-								this.entityRepo.getProcessor(
-									{
-										uid: {
-											$in: [
-												create_uid,
-												update_uid,
-												get_uid,
-												this.constants.UIDS.PROCESSOR
-													.LIST_ENTITY_GENERIC
-											]
-										}
 									},
-									(er, list) => {
+									{
+										retrieve: true
+									},
+									(er, proc) => {
 										if (er) return callback(er);
-										this.debug(list);
-										let _list = list
-											.slice()
-											.filter(
-												x =>
-													this.constants.UIDS
-														.PROCESSOR
-														.LIST_ENTITY_GENERIC !==
-													x.uid
-											);
-										callback(null, { _list, list });
-									}
-								);
-							},
-							({ _list, list }, callback) => {
-								this.async.parallel(
-									_list.map(v => {
-										return cb => {
-											userManager.saveClaim(
-												{
-													type:
-														userManager.constants
-															.CLAIMS.PROCESSOR,
-													description: v.title,
-													value: v._id
-												},
-												(er, claim) => {
-													cb(er, claim);
-												}
-											);
-										};
-									}),
-									(er, _claims) => {
-										return callback(er, { list, _claims });
-									}
-								);
-							},
-							({ list, _claims }, callback) => {
-								this.debug(_claims);
-								this.async.parallel(
-									_claims.map(x =>
-										userManager.addClaimToRole.bind(
-											userManager,
-											userManager.defaultRole,
-											null,
-											x
-										)
-									),
-									er => {
-										if (er) return callback(er);
-										return callback(null, list);
+										this.entityRepo.saveProcessor(
+											{
+												title: `Update ${entityName}`,
+												uid: update_uid,
+												code: `this.debug('update ${entityName}...'); \n this.entityRepo.update('${entityName}',this.args.entity,callback)`
+											},
+											{
+												retrieve: true
+											},
+											(er, proc) => {
+												if (er) return callback(er);
+
+												this.entityRepo.saveProcessor(
+													{
+														title: `Get ${entityName}`,
+														uid: get_uid,
+														code: `this.debug('fetching ${entityName}...');\nthis.$checkDomain=true; \nthis.libs.getEntity.call(this,'${entityName}','${entityLabel}',callback);`
+													},
+													(er, pr) => {
+														if (er)
+															return callback(er);
+
+														this.entityRepo.getProcessor(
+															{
+																uid: {
+																	$in: [
+																		create_uid,
+																		update_uid,
+																		get_uid,
+																		this
+																			.constants
+																			.UIDS
+																			.PROCESSOR
+																			.LIST_ENTITY_GENERIC
+																	]
+																}
+															},
+															(er, list) => {
+																if (er)
+																	return callback(
+																		er
+																	);
+																this.debug(
+																	list
+																);
+																let _list = list
+																	.slice()
+																	.filter(
+																		x =>
+																			this
+																				.constants
+																				.UIDS
+																				.PROCESSOR
+																				.LIST_ENTITY_GENERIC !==
+																			x.uid
+																	);
+																this.async.parallel(
+																	_list.map(
+																		v =>
+																			userManager.saveClaim.bind(
+																				userManager,
+																				{
+																					type:
+																						userManager
+																							.constants
+																							.CLAIMS
+																							.PROCESSOR,
+																					description:
+																						v.title,
+																					value:
+																						v._id
+																				}
+																			)
+																	),
+																	(
+																		er,
+																		_claims
+																	) => {
+																		if (er)
+																			return callback(
+																				er
+																			);
+																		this.debug(
+																			_claims
+																		);
+																		this.async.parallel(
+																			_claims.map(
+																				x =>
+																					userManager.addClaimToRole.bind(
+																						userManager,
+																						userManager.defaultRole,
+																						null,
+																						x
+																					)
+																			),
+																			er => {
+																				if (
+																					er
+																				)
+																					return callback(
+																						er
+																					);
+																				return callback(
+																					null,
+																					list
+																				);
+																			}
+																		);
+																	}
+																);
+															}
+														);
+													}
+												);
+											}
+										);
 									}
 								);
 							},
@@ -437,6 +500,7 @@ module.exports = function(constants) {
 						],
 						(er, result) => {
 							if (er) return fn(er);
+
 							this.debug(
 								"located crud processors...\n converting schema to template..."
 							);
@@ -570,7 +634,6 @@ module.exports = function(constants) {
 														claims: [result._id],
 														type: "DYNAMO",
 														value: proc._id,
-														activated:true,
 														category:
 															menuCategory ||
 															"MAINMENU",
@@ -609,22 +672,6 @@ module.exports = function(constants) {
 		.createLib(
 			`exports=${misc.findElementByName.toString()}`,
 			constants.UIDS.LIB.FIND_ELEMENT_BY_NAME
-		)
-		.createLib(
-			`exports=${misc.createRegexValidator.toString()}`,
-			constants.UIDS.LIB.CREATE_REGEX_VALIDATOR
-		)
-		.createLib(
-			`exports=${misc.createMinLengthValidator.toString()}`,
-			constants.UIDS.LIB.CREATE_MIN_LENGTH_VALIDATOR
-		)
-		.createLib(
-			`exports=${misc.createMaxLengthValidator.toString()}`,
-			constants.UIDS.LIB.CREATE_MAX_LENGTH_VALIDATOR
-		)
-		.createLib(
-			`exports=${misc.createRequiredValidator.toString()}`,
-			constants.UIDS.LIB.CREATE_REQUIRED_VALIDATOR
 		)
 		.createLib(
 			(() => {
@@ -811,7 +858,7 @@ module.exports = function(constants) {
 					// debug("number of properties " + keys.length);
 					// debug(keys);
 
-					for (var i = 0; i < keys.length; i++) {
+					for (var i = 0; i &lt; keys.length; i++) {
 						let result,
 							y = keys[i];
 
@@ -830,7 +877,7 @@ module.exports = function(constants) {
 							// debug(result);
 							// debug("------x");
 						}
-						if (typeof x[y] == "string" && self.map[x[y]]) {
+						if (typeof x[y] == "string" &amp;&amp; self.map[x[y]]) {
 							//this should only happen if entity is a reference in an array.
 							// debug(`converting property ${y} string ${x[y]}`);
 							if (x[y] !== this.constants.ENTITYTYPE.REFERENCE)
@@ -844,7 +891,7 @@ module.exports = function(constants) {
 							break;
 						}
 
-						if (!result && typeof x[y] == "object") {
+						if (!result &amp;&amp; typeof x[y] == "object") {
 							// debug(
 							// 	`converting property ${y} which is an object ${JSON.stringify(
 							// 		x[y],
@@ -911,7 +958,7 @@ module.exports = function(constants) {
 						user = this.args.$user,
 						password =
 							this.args.password ||
-							(this.args.entity && this.args.entity.password);
+							(this.args.entity &amp;&amp; this.args.entity.password);
 					if (!userManager)
 						return fn(
 							new Error(
@@ -939,3 +986,26 @@ module.exports = function(constants) {
 			constants.UIDS.LIB.CHECK_USER_PASSWORD_AND_PRIVILEDGE
 		).libs;
 };
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dynamo.html">Dynamo</a></li><li><a href="module-misc.html">misc</a></li></ul><h3>Classes</h3><ul><li><a href="module-Dynamo.DynamoAsyncValidator.html">DynamoAsyncValidator</a></li><li><a href="module-Dynamo.DynamoElement.html">DynamoElement</a></li><li><a href="module-Dynamo.DynamoEngine.html">DynamoEngine</a></li><li><a href="module-Dynamo.DynamoForm.html">DynamoForm</a></li><li><a href="module-Dynamo.DynamoLib.html">DynamoLib</a></li><li><a href="module-Dynamo.DynamoProcess.html">DynamoProcess</a></li><li><a href="module-Dynamo.DynamoProcessor.html">DynamoProcessor</a></li><li><a href="module-Dynamo.DynamoSandbox.html">DynamoSandbox</a></li><li><a href="module-Dynamo.DynamoStep.html">DynamoStep</a></li><li><a href="module-Dynamo.DynamoStep-Client.html">Client</a></li><li><a href="module-Dynamo.EntityRepo.html">EntityRepo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#blockSystemEntities">blockSystemEntities</a></li><li><a href="global.html#init">init</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed Jan 24 2018 14:21:35 GMT+0100 (W. Central Africa Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

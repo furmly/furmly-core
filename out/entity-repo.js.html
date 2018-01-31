@@ -1,4 +1,32 @@
-const constants = require("./constants"),
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: entity-repo.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: entity-repo.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const constants = require("./constants"),
 	systemEntities = constants.systemEntities,
 	async = require("async"),
 	misc = require("./misc"),
@@ -131,22 +159,8 @@ function EntityRepo(opts) {
 			};
 		};
 	this.config = opts.config;
-	const isIDOnly = function(item) {
-			return (
-				typeof item == "string" ||
-				item instanceof ObjectID ||
-				(item && Object.keys(item).length == 1 && item._id)
-			);
-		},
-		getIDOnly = function(item) {
-			return (
-				((typeof item == "string" || item instanceof ObjectID) &&
-					item) ||
-				item._id
-			);
-		};
 	/**
-	 * @type {module:Dynamo~ProcessorContext}
+	 * @type {module:Dynamo.ProcessorContext}
 	 * @property {module:Dynamo.EntityRepo#queryEntity} get function for querying objects
 	 */
 	this.processorEntityRepo = {
@@ -251,11 +265,11 @@ function EntityRepo(opts) {
 			var tasks = [],
 				processorTasks = [],
 				postprocessorTasks = [];
-			if (isIDOnly(item)) {
+			if (typeof item == "string" || item instanceof ObjectID) {
 				self.queryEntity(
 					systemEntities.step,
 					{
-						_id: getIDOnly(item)
+						_id: item
 					},
 					{
 						full: true,
@@ -349,11 +363,11 @@ function EntityRepo(opts) {
 	this.transformers[systemEntities.element] = function(item, fn) {
 		if (!(item instanceof DynamoElement)) {
 			//this shouldnt happen now , elements are part of steps.
-			if (isIDOnly(item)) {
+			if (typeof item == "string" || item instanceof ObjectID) {
 				return self.queryEntity(
 					systemEntities.element,
 					{
-						_id: getIDOnly(item)
+						_id: item
 					},
 					{
 						full: true,
@@ -424,12 +438,12 @@ function EntityRepo(opts) {
 
 	function basicTransformer(item, clazz, entName, fn) {
 		if (!(item instanceof clazz)) {
-			if (isIDOnly(item)) {
+			if (typeof item == "string" || item instanceof ObjectID) {
 				//
 				return self.queryEntity(
 					entName,
 					{
-						_id: getIDOnly(item)
+						_id: item
 					},
 					{
 						full: true,
@@ -499,7 +513,7 @@ EntityRepo.prototype.init = function(callback) {
 				fs.writeFile.bind(
 					this,
 					self.getPath(systemEntities.step),
-					'{"description":{"type":"String"},"mode":{"type":"String"},"processors":[{"type":"ObjectId","ref":"' +
+					'{"mode":{"type":"String"},"processors":[{"type":"ObjectId","ref":"' +
 						systemEntities.processor +
 						'"}],"postprocessors":[{"type":"ObjectId","ref":"' +
 						systemEntities.processor +
@@ -533,7 +547,7 @@ EntityRepo.prototype.init = function(callback) {
 		.connect(this.config.data.dynamo_url)
 		.then(_init)
 		.catch(e => {
-			if (e && e.message !== "Trying to open unclosed connection.")
+			if (e &amp;&amp; e.message !== "Trying to open unclosed connection.")
 				return callback();
 
 			return _init(e);
@@ -657,7 +671,7 @@ EntityRepo.prototype.createId = function(string) {
 EntityRepo.prototype.updateConfig = function(name, config, fn) {
 	if (!name) return fn(new Error("name must be defined"));
 	if (this._systemEntities.indexOf(this.name) !== -1)
-		throw new Error("Cannot Update Entity with that name.");
+		throw new Error("Cannot Create Entity with that name.");
 	var self = this;
 
 	fs.truncate(this.getPath(name), function() {
@@ -676,7 +690,7 @@ EntityRepo.prototype.updateConfig = function(name, config, fn) {
 EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 	var self = this,
 		circularDepth =
-			options && options.circularDepth ? options.circularDepth : 1,
+			options &amp;&amp; options.circularDepth ? options.circularDepth : 1,
 		referenceCount = {},
 		keys;
 	if (Array.prototype.slice.call(arguments).length == 3) {
@@ -686,7 +700,7 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 
 	function populate(arr, result, parent) {
 		arr.forEach(function(item) {
-			if (parent && new RegExp(item.path + "$").test(parent)) {
+			if (parent &amp;&amp; new RegExp(item.path + "$").test(parent)) {
 				referenceCount[item.model] = referenceCount[item.model]
 					? referenceCount[item.model] + 1
 					: 1;
@@ -694,8 +708,8 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 
 			result.push((parent ? parent + "." : "") + item.path);
 			if (
-				self.refs[item.model] &&
-				(referenceCount[item.model] || 0) < circularDepth
+				self.refs[item.model] &amp;&amp;
+				(referenceCount[item.model] || 0) &lt; circularDepth
 			) {
 				populate(
 					self.refs[item.model],
@@ -709,7 +723,7 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 
 	function transformResult(er, result) {
 		if (er) return fn(er);
-		if (self.transformers[name] && (!options || !options.noTransformaton)) {
+		if (self.transformers[name] &amp;&amp; (!options || !options.noTransformaton)) {
 			async.parallel(
 				_.map(result, function(x) {
 					return self.transformers[name].bind(self.transformers, x);
@@ -720,7 +734,7 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 						debug("no callback");
 					}
 					if (er) return fn(er);
-					if (options && options.one && transformed)
+					if (options &amp;&amp; options.one &amp;&amp; transformed)
 						transformed = transformed.length
 							? transformed[0]
 							: null;
@@ -736,7 +750,7 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 		}
 		fn(
 			null,
-			options && options.one ? (result.length ? result[0] : null) : result
+			options &amp;&amp; options.one ? (result.length ? result[0] : null) : result
 		);
 	}
 
@@ -745,9 +759,9 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 	}
 	var query = this.models[name].find(filter);
 	if (
-		options &&
-		options.full &&
-		this.refs[name] &&
+		options &amp;&amp;
+		options.full &amp;&amp;
+		this.refs[name] &amp;&amp;
 		this.refs[name].length !== 0
 	) {
 		debug(`entity being queried : ${name}`);
@@ -761,7 +775,7 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 					iterator = function(x, index, arr) {
 						cur += x;
 						temp += x;
-						if (index < arr.length - 1) {
+						if (index &lt; arr.length - 1) {
 							if (populateString.indexOf(temp) !== -1) cur += "|";
 							else {
 								cur += ".";
@@ -839,7 +853,7 @@ EntityRepo.prototype.updateEntity = function(name, data, fn) {
 			data,
 			function(er, stat) {
 				if (er) return fn(er);
-				if (stat <= 0)
+				if (stat &lt;= 0)
 					return fn(new Error("that entity does not exist"));
 				fn(null, {
 					_id: data._id
@@ -906,7 +920,7 @@ EntityRepo.prototype.countEntity = function(name, filter, fn) {
  * @return {String}      Correct collection name.
  */
 EntityRepo.prototype.getCollectionName = function(name) {
-	return (this.models[name] && this.models[name].collection.name) || null;
+	return (this.models[name] &amp;&amp; this.models[name].collection.name) || null;
 };
 /**
  * Delete an entity with the supplied id
@@ -923,7 +937,7 @@ EntityRepo.prototype.deleteEntity = function(name, id, fn) {
 	if (Array.prototype.isPrototypeOf(id)) {
 		query = { _id: { $in: id } };
 	}
-	if (!Array.prototype.isPrototypeOf(id) && typeof id == "object") {
+	if (!Array.prototype.isPrototypeOf(id) &amp;&amp; typeof id == "object") {
 		if (!Object.keys(id).length)
 			return setImmediate(fn, new Error(`That would delete all ${name}`));
 		query = id;
@@ -957,7 +971,7 @@ EntityRepo.prototype.createSchemas = function(fn) {
 
 			var indexes = removeCompoundIndexes(diff);
 			var change = Object.keys(diff);
-			if (diff && change.length) {
+			if (diff &amp;&amp; change.length) {
 				existing.schema.add(generator.convert(diff));
 				removeCompoundIndexes(newSchema);
 				self.models[this.prop] = existing;
@@ -1126,3 +1140,26 @@ EntityRepo.prototype.createSchemas = function(fn) {
 };
 
 module.exports = EntityRepo;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dynamo.html">Dynamo</a></li><li><a href="module-misc.html">misc</a></li></ul><h3>Classes</h3><ul><li><a href="module-Dynamo.DynamoAsyncValidator.html">DynamoAsyncValidator</a></li><li><a href="module-Dynamo.DynamoElement.html">DynamoElement</a></li><li><a href="module-Dynamo.DynamoEngine.html">DynamoEngine</a></li><li><a href="module-Dynamo.DynamoForm.html">DynamoForm</a></li><li><a href="module-Dynamo.DynamoLib.html">DynamoLib</a></li><li><a href="module-Dynamo.DynamoProcess.html">DynamoProcess</a></li><li><a href="module-Dynamo.DynamoProcessor.html">DynamoProcessor</a></li><li><a href="module-Dynamo.DynamoSandbox.html">DynamoSandbox</a></li><li><a href="module-Dynamo.DynamoStep.html">DynamoStep</a></li><li><a href="module-Dynamo.DynamoStep-Client.html">Client</a></li><li><a href="module-Dynamo.EntityRepo.html">EntityRepo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#blockSystemEntities">blockSystemEntities</a></li><li><a href="global.html#init">init</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed Jan 24 2018 14:21:35 GMT+0100 (W. Central Africa Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

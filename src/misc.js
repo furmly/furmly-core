@@ -9,6 +9,7 @@ Function.prototype.getFunctionBody = function() {
 
 /**
  * Used to create elements
+ * @memberOf module:misc
  * @param  {String} name        Name of element
  * @param  {String} label       Element label
  * @param  {Strirng} description Description of the elements use
@@ -48,30 +49,83 @@ let createElement = function(
 	};
 };
 
+let createRequiredValidator = function() {
+	return {
+		validatorType: this.constants.VALIDATORTYPE.REQUIRED
+	};
+};
+let createRegexValidator = function(exp, error) {
+	return {
+		validatorType: this.constants.VALIDATORTYPE.REGEX,
+		error,
+		args: {
+			exp
+		}
+	};
+};
+let createMinLengthValidator = function(min, error) {
+	return {
+		validatorType: this.constants.VALIDATORTYPE.MINLENGTH,
+		error,
+		args: {
+			min
+		}
+	};
+};
+let createMaxLengthValidator = function(max, error) {
+	return {
+		validatorType: this.constants.VALIDATORTYPE.MAXLENGTH,
+		error,
+		args: {
+			max
+		}
+	};
+};
 function findElementByName(arr, name) {
 	let constants =
 		typeof this.constants == "undefined" ? constants : this.constants;
+	//this.debug(constants);
+	this.debug(`looking for ${name}`);
 	const _internalSearches = {
-		default: function(...args) {
+		default: (...args) => {
 			return findElementByName.apply(this, args);
 		},
-		[constants.GRID]: function(grid, name) {
+		[constants.GRID]: (grid, name) => {
 			let item = null;
-			if ((item = findElementByName(grid.args.filter, name))) return item;
+			if (
+				(item = findElementByName.call(
+					this,
+					(grid.args && grid.args.filter) || null,
+					name
+				))
+			)
+				return item;
 
 			return item;
 		},
-		[constants.SELECTSET]: function(set, name) {
+		[constants.SELECTSET]: (set, name) => {
 			let item = null;
-			if ((item = findElementByName(set.args.items, name))) {
+			if (
+				(item = findElementByName.call(
+					this,
+					(set.args && set.args.items) || null,
+					name
+				))
+			) {
 				return item;
 			}
 
 			return item;
 		},
-		[constants.LIST]: function(list, name) {
+		[constants.LIST]: (list, name) => {
 			let item = null;
-			if ((item = findElementByName(list.args.itemTemplate, name))) {
+			if (
+				(item = findElementByName.call(
+					this,
+					(list.args && list.args.itemTemplate) || null,
+					name
+				))
+			) {
 				return item;
 			}
 
@@ -90,8 +144,9 @@ function findElementByName(arr, name) {
 				(item = _internalSearches[item.elementType](item, name))) ||
 			(item.args &&
 				item.args.elements &&
-				(item = internalSearches.default(item.args.elements))) ||
-			(item.elements && (item = internalSearches.default(item.elements)))
+				(item = _internalSearches.default(item.args.elements, name))) ||
+			(item.elements &&
+				(item = _internalSearches.default(item.elements, name)))
 		) {
 			return item;
 		}
@@ -101,7 +156,7 @@ function findElementByName(arr, name) {
 
 /**
 	 * Returns Array of Strings
-	 * @memberOf module:Dynamo
+	 * @memberOf module:misc
 	 * @param  {String} folderPath
 	 * @param  {Function} callback
 	 * @return {String}
@@ -146,7 +201,7 @@ function runThroughObj(
 }
 /**
 	 * Returns a function that checks if a property is defined
-	 * @memberOf module:Dynamo
+	 * @memberOf module:misc
 	 * @param  {String} propertyName
 	 * @return {Function}
 	 */
@@ -158,7 +213,7 @@ var isNotDefined = function(prop) {
 
 /**
 	 * Returns a function that checks the type of the supplied argument
-	 * @memberOf module:Dynamo
+	 * @memberOf module:misc
 	 * @param  {String} value
 	 * @return {Function}
 	 */
@@ -170,7 +225,7 @@ var typeOf = function(value) {
 
 /**
 	 * Returns a function that returns the first child of an array result.
-	 * @memberOf module:Dynamo
+	 * @memberOf module:misc
 	 * @param  {Function} fn
 	 * @return {Object}
 	 */
@@ -189,7 +244,7 @@ var notAFunction = function(x) {
 
 /**
 	 * Capitalizes Text
-	 * @memberOf module:Dynamo
+	 * @memberOf module:misc
 	 * @param  {String} txt
 	 * @return {String}
 	 */
@@ -197,6 +252,10 @@ function capitalizeText(txt) {
 	return txt ? txt.charAt(0).toUpperCase() + txt.slice(1) : txt;
 }
 
+/**
+ * Returns an initialization function for dynamo
+ * @module misc
+ */
 module.exports = {
 	createElement,
 	findElementByName,
@@ -207,5 +266,9 @@ module.exports = {
 	typeOf,
 	isNotDefined,
 	runThroughObj,
-	toObjectString
+	toObjectString,
+	createRegexValidator,
+	createRequiredValidator,
+	createMaxLengthValidator,
+	createMinLengthValidator
 };

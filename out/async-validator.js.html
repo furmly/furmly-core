@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: index.js</title>
+    <title>JSDoc: Source: async-validator.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: index.js</h1>
+    <h1 class="page-title">Source: async-validator.js</h1>
 
     
 
@@ -26,34 +26,37 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>const debug = require("debug")("init");
+            <pre class="prettyprint source linenums"><code>let util = require("util"),
+	DynamoProcessor = require("./processor");
 /**
- * Startup initialization
- * @param  {Object} config Configuration
- * @return {Object}        Dynamo classes and constants.
- */
-function init(config) {
-	var constants = require("./constants");
+	 * Inherits from processor. Runs user editable code for validation. It is used to validate elements before submission.
+	 * @constructor
+	 * @memberOf module:Dynamo
+	 * @param {Object} opts [description]
+	 */
+function DynamoAsyncValidator(opts) {
+	var self = this;
+	DynamoProcessor.call(this, opts);
 
-	return {
-		Engine: require("./engine"),
-		Form: require("./form"),
-		Process: require("./process"),
-		Lib: require("./lib"),
-		Step: require("./step"),
-		Processor: require("./processor"),
-		constants,
-		systemEntities: constants.systemEntities,
-		EntityRepo: require("./entity-repo"),
-		Element: require("./element")
+	var _process = this.process;
+	//convert result to boolean value.
+	/**
+		 * Runs user editable code and returns a boolean.
+		 * @param  {Any}   result result of previous processor in chain
+		 * @param  {Function} fn     callback
+		 * @return {Any}          result of processing sent to client
+		 */
+	this.process = function(result, fn) {
+		_process.call(this, result, function(er, result) {
+			fn(er, {
+				valid: !!result
+			});
+		});
 	};
 }
+util.inherits(DynamoAsyncValidator, DynamoProcessor);
 
-/**
- * Returns an initialization function for dynamo
- * @module Dynamo
- */
-module.exports = init;
+module.exports = DynamoAsyncValidator;
 </code></pre>
         </article>
     </section>

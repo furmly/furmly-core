@@ -20,7 +20,8 @@
     "chai": "^3.5.0",
     "mocha": "^3.5.3",
     "sandboxed-module": "^2.0.3",
-    "sinon": "^2.3.1"
+    "sinon": "^2.3.1",
+    "tern": "^0.21.0"
   },
   "dependencies": {
     "async": "^2.4.1",

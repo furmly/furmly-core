@@ -39,16 +39,6 @@ module.exports = {
 				tasks = [];
 			tasks.push(
 				async.timeout(cb => {
-					debug(
-						`async is ${typeof async !== "undefined"
-							? "defined"
-							: "undefined"}`
-					);
-					debug(
-						`constants is ${typeof constants !== "undefined"
-							? "defined"
-							: "undefined"}`
-					);
 					firstProcessor.process.call(module_context, cb);
 				}, context.processorsTimeout)
 			);

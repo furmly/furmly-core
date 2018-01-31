@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: index.js</title>
+    <title>JSDoc: Source: sandbox.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: index.js</h1>
+    <h1 class="page-title">Source: sandbox.js</h1>
 
     
 
@@ -26,34 +26,73 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>const debug = require("debug")("init");
-/**
- * Startup initialization
- * @param  {Object} config Configuration
- * @return {Object}        Dynamo classes and constants.
- */
-function init(config) {
-	var constants = require("./constants");
+            <pre class="prettyprint source linenums"><code>const { NodeVM } = require("vm2"),
+	constants = require("./constants"),
+	systemEntities = constants.systemEntities,
+	async = require("async"),
+	debug = require("debug")("sandbox"),
+	DynamoProcessor = require("./processor"),
+	path = require("path"),
+	sandboxCode = require("fs").readFileSync(
+		__dirname + path.sep + "processor-sandbox.js"
+	),
+	uuid = require("uuid");
 
-	return {
-		Engine: require("./engine"),
-		Form: require("./form"),
-		Process: require("./process"),
-		Lib: require("./lib"),
-		Step: require("./step"),
-		Processor: require("./processor"),
-		constants,
-		systemEntities: constants.systemEntities,
-		EntityRepo: require("./entity-repo"),
-		Element: require("./element")
-	};
+/**
+	 * Class used for running processors that are not part of a steps chain of processors
+	 * @class
+	 * @memberOf module:Dynamo
+	 * @param {Object} opts Class constructor options , including entityRepo and processors.
+	 */
+function DynamoSandbox(opts) {
+	var args;
+	if (
+		!opts ||
+		(!(opts instanceof DynamoProcessor) &amp;&amp;
+			(!opts.processors || !opts.processors.length))
+	)
+		throw new Error("A sandbox needs atleast one processor to run");
+
+	if (
+		!opts.entityRepo &amp;&amp;
+		opts instanceof DynamoProcessor &amp;&amp;
+		(args = Array.prototype.slice.call(arguments)).length == 1
+	)
+		throw new Error("EntityRepo is required by all processors");
+
+	(this.processors = opts instanceof DynamoProcessor ? [opts] : opts),
+		(this.entityRepo =
+			opts instanceof DynamoProcessor ? args[1] : opts.entityRepo);
 }
-
 /**
- * Returns an initialization function for dynamo
- * @module Dynamo
+ * Run processor(s) created in constructor
+ * @param  {Object}   context Processor context
+ * @param  {Function} fn      Callback
+ * @return {Object}           Result of operation
  */
-module.exports = init;
+DynamoSandbox.prototype.run = function(context, fn) {
+	let vm = new NodeVM({
+		require: false,
+		requireExternal: false,
+		sandbox: {
+			context: {
+				args: context,
+				processors: this.processors.slice(),
+				postprocessors: [],
+				processorsTimeout: 60000,
+				systemEntities,
+				constants,
+				entityRepo: this.entityRepo,
+				async,
+				debug,
+				uuid
+			}
+		}
+	});
+	let handle = vm.run(sandboxCode);
+	handle.getResult(fn);
+};
+module.exports = DynamoSandbox;
 </code></pre>
         </article>
     </section>

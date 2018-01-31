@@ -48,6 +48,10 @@ function createConstants() {
 		IMAGETYPE: new Constant("REL", "DATA", "URL"),
 		UIDS: {
 			LIB: new Constant(
+				["CREATE_MIN_LENGTH_VALIDATOR", "createMinLengthValidator"],
+				["CREATE_MAX_LENGTH_VALIDATOR", "createMaxLengthValidator"],
+				["CREATE_REGEX_VALIDATOR", "createRegexValidator"],
+				["CREATE_REQUIRED_VALIDATOR", "createRequiredValidator"],
 				["CONVERT_FILTER", "convertFilter"],
 				["CREATE_ID", "createId"],
 				["CHECK_USER_PASSWORD_AND_PRIVILEDGE", "isAuthorized"],
@@ -72,6 +76,7 @@ function createConstants() {
 				"LIST_PROCESSORS",
 				"LIST_INPUT_TYPES",
 				"LIST_ELEMENT_TYPES",
+				"LIST_STEPS",
 				"FETCH_PROCESS",
 				"CREATE_PROCESS",
 				"CREATE_LIB",

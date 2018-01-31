@@ -16,7 +16,8 @@ module.exports = function(constants, systemEntities) {
 		this.processors[uid] = {
 			title: title,
 			code: code,
-			uid: uid
+			uid: uid,
+			requiresIdentity:true
 		};
 		return this;
 	}
@@ -459,6 +460,12 @@ module.exports = function(constants, systemEntities) {
 				.replace("$label", ".uid"),
 			constants.UIDS.PROCESSOR.LIST_LIBS
 		)
+		.createProcessor("List steps",
+			listEntityTemplate	.replace("$entity", `'${systemEntities.lib}'`)
+				.replace("$get", "getStep")
+				.replace("$parameters", "query")
+				.replace("$label", ".description"),
+				constants.UIDS.PROCESSOR.LIST_STEPS)
 		.createProcessor(
 			"Lists input types",
 			"var self=this;callback(null,Object.keys(this.constants.INPUTTYPE).map(function(x){return {_id:self.constants.INPUTTYPE[x],displayLabel:self.constants.INPUTTYPE[x]}; }));",

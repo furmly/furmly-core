@@ -1,4 +1,32 @@
-const assert = require("assert"),
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: process.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: process.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const assert = require("assert"),
 	debug = require("debug")("process"),
 	misc = require("./misc"),
 	async = require("async"),
@@ -21,13 +49,13 @@ function DynamoProcess(opts) {
 
 	if (!opts.title) throw new Error("Process must have a title");
 
-	if (!opts.store && opts.steps.length > 1)
+	if (!opts.store &amp;&amp; opts.steps.length > 1)
 		throw new Error("Process with more than one step requires a store");
 
 	if (!opts.save)
 		throw new Error("Process needs save service for persistence");
 
-	if (opts.fetchProcessor && !opts.entityRepo)
+	if (opts.fetchProcessor &amp;&amp; !opts.entityRepo)
 		throw new Error("Fetch Processor needs the entityRepo to function");
 
 	var currentStep = null;
@@ -65,6 +93,7 @@ function DynamoProcess(opts) {
 			}
 		}
 	});
+
 }
 
 /**
@@ -86,7 +115,7 @@ DynamoProcess.prototype.updateProps = function(opts) {
 		delete opts.steps;
 
 		steps.forEach((x, index) => {
-			if (this.steps.length < index)
+			if (this.steps.length &lt; index)
 				this.steps[index].updateProps(steps[index]);
 			else this.steps.push(steps[index]);
 		});
@@ -100,28 +129,16 @@ DynamoProcess.prototype.updateProps = function(opts) {
 	 * @return {Any}           result passed from processor chain.
 	 */
 DynamoProcess.prototype.run = function(context, fn) {
-	var self = this,
-		that = self;
+	var self = this;
 	this.validate(fn);
 
 	function processStep(args) {
+		debugger;
 		var index = self.currentStepIndex || 0,
 			step = self.steps[index],
 			nextStep = self.steps[index + 1];
 		assert.equal(step instanceof DynamoStep, true);
 		let _continue = () => {
-			Object.defineProperties(context, {
-				$process: {
-					enumerable: false,
-					get: function() {
-						debug(
-							"fetching process context for running processor..."
-						);
-						debug(that);
-						return that;
-					}
-				}
-			});
 			step.run(context, function(er, message) {
 				if (er) return fn(er);
 
@@ -141,10 +158,8 @@ DynamoProcess.prototype.run = function(context, fn) {
 				if (self.steps.length > self.currentStepIndex) {
 					result.status = constants.PROCESSSTATUS.RUNNING;
 					if (context.$uiOnDemand) {
-						let stepDescription = context.$nextStep;
-						debug(stepDescription);
 						result.$nextStep = JSON.parse(
-							JSON.stringify(stepDescription)
+							JSON.stringify(context.$nextStep)
 						);
 					}
 					self.store.update(
@@ -168,25 +183,14 @@ DynamoProcess.prototype.run = function(context, fn) {
 				fn(null, result);
 			});
 		};
-		if (context.$uiOnDemand && nextStep) {
+		if (context.$uiOnDemand &amp;&amp; nextStep) {
 			return nextStep.describe((er, description) => {
 				if (er) return fn(er);
 				if (!description)
 					return fn(
 						new Error("System could not describe the next step")
 					);
-				Object.defineProperties(context, {
-					$nextStep: {
-						enumerable: false,
-						get: function() {
-							return description;
-						},
-						set: function(value) {
-							description = value;
-						}
-					}
-				});
-				//context.$nextStep = description;
+				context.$nextStep = description;
 				_continue();
 			});
 		}
@@ -196,7 +200,7 @@ DynamoProcess.prototype.run = function(context, fn) {
 		this.store.get(context.instanceId || "", function(er, currentStep) {
 			if (er) return fn(er);
 
-			if (context.instanceId && !currentStep) {
+			if (context.instanceId &amp;&amp; !currentStep) {
 				return fn(
 					new Error(
 						"We are sorry but we no longer have the previous information you' submitted. Please restart the process..."
@@ -249,12 +253,11 @@ DynamoProcess.prototype.save = function(fn) {
 					title: self.title,
 					description: self.description,
 					uid: self.uid,
-					steps: mergedIds,
-					requiresIdentity: self.requiresIdentity
+					steps: mergedIds
 				});
 			},
 			(model, callback) => {
-				if (self.fetchProcessor && _.isObject(self.fetchProcessor)) {
+				if (self.fetchProcessor &amp;&amp; _.isObject(self.fetchProcessor)) {
 					self.fetchProcessor.save(function(er, obj) {
 						if (er) return fn(er);
 						model.fetchProcessor = obj._id;
@@ -293,12 +296,12 @@ DynamoProcess.prototype.describe = function(context, fn) {
 
 		if (
 			self.steps.length == _allSteps.length ||
-			(context && context.$uiOnDemand === "true")
+			(context &amp;&amp; context.$uiOnDemand === "true")
 		) {
 			proc.steps = _allSteps;
 			//fetch data if context and fetch processor are defined.
 
-			if (self.fetchProcessor && context) {
+			if (self.fetchProcessor &amp;&amp; context) {
 				context.$description = proc;
 				new DynamoSandbox(
 					self.fetchProcessor,
@@ -328,3 +331,26 @@ DynamoProcess.prototype.describe = function(context, fn) {
 };
 
 module.exports = DynamoProcess;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dynamo.html">Dynamo</a></li><li><a href="module-misc.html">misc</a></li></ul><h3>Classes</h3><ul><li><a href="module-Dynamo.DynamoAsyncValidator.html">DynamoAsyncValidator</a></li><li><a href="module-Dynamo.DynamoElement.html">DynamoElement</a></li><li><a href="module-Dynamo.DynamoEngine.html">DynamoEngine</a></li><li><a href="module-Dynamo.DynamoForm.html">DynamoForm</a></li><li><a href="module-Dynamo.DynamoLib.html">DynamoLib</a></li><li><a href="module-Dynamo.DynamoProcess.html">DynamoProcess</a></li><li><a href="module-Dynamo.DynamoProcessor.html">DynamoProcessor</a></li><li><a href="module-Dynamo.DynamoSandbox.html">DynamoSandbox</a></li><li><a href="module-Dynamo.DynamoStep.html">DynamoStep</a></li><li><a href="module-Dynamo.DynamoStep-Client.html">Client</a></li><li><a href="module-Dynamo.EntityRepo.html">EntityRepo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#blockSystemEntities">blockSystemEntities</a></li><li><a href="global.html#init">init</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed Jan 24 2018 14:21:35 GMT+0100 (W. Central Africa Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

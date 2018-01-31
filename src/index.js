@@ -1,6 +1,6 @@
 const debug = require("debug")("init");
 /**
- * Startup script
+ * Startup initialization
  * @param  {Object} config Configuration
  * @return {Object}        Dynamo classes and constants.
  */

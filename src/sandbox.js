@@ -11,7 +11,8 @@ const { NodeVM } = require("vm2"),
 	uuid = require("uuid");
 
 /**
-	 * Inner class used for running processors that are not part of a steps chain of processors
+	 * Class used for running processors that are not part of a steps chain of processors
+	 * @class
 	 * @memberOf module:Dynamo
 	 * @param {Object} opts Class constructor options , including entityRepo and processors.
 	 */
@@ -31,32 +32,36 @@ function DynamoSandbox(opts) {
 	)
 		throw new Error("EntityRepo is required by all processors");
 
-	var processors = opts instanceof DynamoProcessor ? [opts] : opts,
-		entityRepo =
-			opts instanceof DynamoProcessor ? args[1] : opts.entityRepo;
-
-	this.run = function(context, fn) {
-		let vm = new NodeVM({
-			require: false,
-			requireExternal: false,
-			sandbox: {
-				context: {
-					args: context,
-					processors,
-					postprocessors: [],
-					processorsTimeout: 60000,
-					systemEntities,
-					constants,
-					entityRepo: entityRepo,
-					async,
-					debug,
-					uuid
-				}
-			}
-		});
-		let handle = vm.run(sandboxCode);
-		handle.getResult(fn);
-	};
+	(this.processors = opts instanceof DynamoProcessor ? [opts] : opts),
+		(this.entityRepo =
+			opts instanceof DynamoProcessor ? args[1] : opts.entityRepo);
 }
-
+/**
+ * Run processor(s) created in constructor
+ * @param  {Object}   context Processor context
+ * @param  {Function} fn      Callback
+ * @return {Object}           Result of operation
+ */
+DynamoSandbox.prototype.run = function(context, fn) {
+	let vm = new NodeVM({
+		require: false,
+		requireExternal: false,
+		sandbox: {
+			context: {
+				args: context,
+				processors: this.processors.slice(),
+				postprocessors: [],
+				processorsTimeout: 60000,
+				systemEntities,
+				constants,
+				entityRepo: this.entityRepo,
+				async,
+				debug,
+				uuid
+			}
+		}
+	});
+	let handle = vm.run(sandboxCode);
+	handle.getResult(fn);
+};
 module.exports = DynamoSandbox;

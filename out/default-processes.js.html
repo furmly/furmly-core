@@ -1,4 +1,32 @@
-module.exports = function(constants, systemEntities) {
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: default-processes.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: default-processes.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>module.exports = function(constants, systemEntities) {
 	const _ = require("lodash"),
 		misc = require("./misc");
 	/**
@@ -152,32 +180,11 @@ module.exports = function(constants, systemEntities) {
 											step: {
 												path: "steps",
 												hasSelect: false
-											},
-											'existing-step':{
-												path:"steps"
 											}
 										}
 									}
 								},
 								elements: {
-									'existing-step':{
-										relationships:{},
-										elements:[createElement("_id","Step","",constants.ELEMENTTYPE.SELECT,{
-											type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																config: {
-																	value: opts[constants.UIDS.PROCESSOR.LIST_STEPS]
-																}
-										})]
-									},
-									'existing-processor':{
-										relationships:{},
-										elements:[createElement("_id","Step","",constants.ELEMENTTYPE.SELECT,{
-											type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																config: {
-																	value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
-																}
-										})]
-									},
 									step: {
 										elements: [
 											createId(),
@@ -191,12 +198,11 @@ module.exports = function(constants, systemEntities) {
 												}]
 											}),
 											createElement(
-												"info",
+												"description",
 												"",
 												"A step is a single form in a process. Processes can have any number of steps.",
 												constants.ELEMENTTYPE.LABEL
 											),
-											createElement("description","Description of Step","",constants.ELEMENTTYPE.INPUT),
 											createElement("stepType", "Type of Step", "Type of Step.", constants.ELEMENTTYPE.INPUT, {
 												disabled: true,
 												default: constants.STEPTYPE.CLIENT
@@ -207,8 +213,7 @@ module.exports = function(constants, systemEntities) {
 												form: "form"
 											},
 											hasMany: {
-												processor: "processors",
-												'existing-processor':"processors"
+												processor: "processors"
 											}
 										}
 									},
@@ -269,13 +274,6 @@ module.exports = function(constants, systemEntities) {
 															createElement("min", "Minimum", "", constants.ELEMENTTYPE.INPUT, {
 																type: constants.INPUTTYPE.NUMBER
 															})
-														]
-													},
-													{
-														id: constants.VALIDATORTYPE.REGEX,
-														displayLabel: "Regular Expression",
-														elements: [
-															createElement("exp", "Expression", "", constants.ELEMENTTYPE.INPUT)
 														]
 													}]
 												})
@@ -433,8 +431,7 @@ module.exports = function(constants, systemEntities) {
 																		})
 																	]
 																}]
-															}),
-															createElement("params","Params (pipe delimited strings, e.g name=chidi|number=8|height=23) ","",constants.ELEMENTTYPE.INPUT)
+															})
 														]
 													}, {
 														id: constants.ELEMENTTYPE.FILEUPLOAD,
@@ -1094,4 +1091,26 @@ module.exports = function(constants, systemEntities) {
 		[constants.UIDS.PROCESS.MANAGE_LIBS]: manageLibsDefinition,
 		[constants.UIDS.PROCESS.MANAGE_ENTITY_SCHEMA]: manageEntitiesDefinition
 	};
-};
+};</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dynamo.html">Dynamo</a></li><li><a href="module-misc.html">misc</a></li></ul><h3>Classes</h3><ul><li><a href="module-Dynamo.DynamoAsyncValidator.html">DynamoAsyncValidator</a></li><li><a href="module-Dynamo.DynamoElement.html">DynamoElement</a></li><li><a href="module-Dynamo.DynamoEngine.html">DynamoEngine</a></li><li><a href="module-Dynamo.DynamoForm.html">DynamoForm</a></li><li><a href="module-Dynamo.DynamoLib.html">DynamoLib</a></li><li><a href="module-Dynamo.DynamoProcess.html">DynamoProcess</a></li><li><a href="module-Dynamo.DynamoProcessor.html">DynamoProcessor</a></li><li><a href="module-Dynamo.DynamoSandbox.html">DynamoSandbox</a></li><li><a href="module-Dynamo.DynamoStep.html">DynamoStep</a></li><li><a href="module-Dynamo.DynamoStep-Client.html">Client</a></li><li><a href="module-Dynamo.EntityRepo.html">EntityRepo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#blockSystemEntities">blockSystemEntities</a></li><li><a href="global.html#init">init</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed Jan 24 2018 14:21:35 GMT+0100 (W. Central Africa Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

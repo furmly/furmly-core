@@ -1,0 +1,63 @@
+{
+  "!name": "dynamo",
+  "entRepo": {
+    "createSchema": {
+      "!type": "fn(name: ?, config: ?, fn: +Function)",
+      "!doc":
+        "Creates an Entity Schema.\n@param  {some}   name   Config Name\n@param  {Object}   config Object schema\n@param  {Function} fn     Callback"
+    },
+    "getConfig": {
+      "!type": "fn(name: string, fn: +Function)",
+      "!doc":
+        "Get Schema Configuration\n@param  {String}   name Name of Collection/Table\n@param  {Function} fn   Callback"
+    },
+    "getConfigNames": {
+      "!type": "fn(fn: +Function)",
+      "!doc": "Get Schema Configuration Names\n@param  {Function} fn Callback"
+    },
+    "createId": {
+      "!type": "fn(string: ?)"
+    },
+    "get": {
+      "!type":
+        "fn(name: string, filter: ?, options: ?, fn: ?|fn(er: ?, fp: ?|?))",
+      "!doc":
+        "Find entity  of type {name} using {filter}\n@param  {String}   name    Name of Collection/Table\n@param  {Object}   filter  Query filter\n@param  {Object}   options sorting,populating extra values etc [optional]\n@param  {Function} fn      Callback"
+    },
+    "update": {
+      "!type": "fn(name: string, data: ?, fn: +Function)",
+      "!doc":
+        "Update an entity\n@param  {String}   name Name of the collection/table entity is located in\n@param  {Object}   data Update data\n@param  {Function} fn   Callback"
+    },
+    "create": {
+      "!type":
+        "fn(name: string, data: ?, fn: fn(er: +Error, result: EntityRepo.prototype.createEntity.!2.!1))",
+      "!doc":
+        "Create an entity\n@param  {String}   name Name of the collection/table entity is located in\n@param  {Object}   data Update data\n@param  {function} fn   Callback"
+    },
+    "aggregate": {
+      "!type": "fn(name: string,query: array,fn: ?|fn(er: ?, fp: ?|?))",
+      "!doc":
+        "Function that runs aggregation query on persistance object.\n@param  {String}    name Name of collection/table to run aggregation on\n@param  {...Object} rest Other Args including aggregation query and callback"
+    },
+    "count": {
+      "!type": "fn(name: string, filter: ?, fn: +Function)",
+      "!span": "23177[881:21]-23188[881:32]",
+      "!doc":
+        "Count number of entities that match the filter supplied\n@param  {String}   name   Name of Collection/Table\n@param  {Object}   filter Query\n@param  {Function} fn     Callback"
+    },
+    "getCollectionName": {
+      "!type": "fn(name: string) -> !this.models.<i>",
+      "!doc":
+        "Normalizes mongoose collection names to actual mongodb  collection names\n@param  {String} name Name of Collection/Table\n@return {String}      Correct collection name."
+    },
+    "delete": {
+      "!type": "fn(name: string, id: string, fn: +Function)",
+      "!doc":
+        "Delete an entity with the supplied id\n@param  {String}   name Name of Collection/Table\n@param  {String}   id   Id of object to delete\n@param  {Function} fn   Callback"
+    },
+    "!type": "fn(opts: ?)",
+    "!doc":
+      "This class contains the persistence logic for all entities.\n@class\n\n@memberOf module:Dynamo\n@param {Object} opts Class constructor parameters , includes ext,folder,delimiter,store...etc"
+  }
+}
