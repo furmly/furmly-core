@@ -498,6 +498,7 @@ describe("Entity spec", function() {
 		var //repo = new app.EntityRepo(this.opts),
 			fixtures = this,
 			spy = sinon.spy(function(er, r) {
+				debugger;
 				assert.isUndefined(er);
 				assert.deepEqual(readFile(fixtures.modelPath), fixtures.model);
 				assert.isDefined(repo.refs[fixtures.modelName]);

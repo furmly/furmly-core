@@ -201,6 +201,8 @@ function EntityRepo(opts) {
 					if (item.steps.length > 1) {
 						item.store = self.store;
 					}
+					//add entityRepo to process to allow fetch processor have an entityRepo while executing.
+					//execute.
 					if (item.fetchProcessor) {
 						item.entityRepo = self.processorEntityRepo;
 					}
@@ -742,6 +744,7 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 	}
 
 	if (!this.models[name]) {
+		debugger;
 		return setImmediate(fn, new Error("Model does not exist"));
 	}
 	var query = this.models[name].find(filter);
@@ -946,10 +949,28 @@ EntityRepo.prototype.createSchemas = function(fn) {
 			return !!sandbox.result;
 		};
 	}
-
+	function containsSchema(string) {
+		let exp = /"schema"\\s*\:\\s*"(\w+)"/gi,
+			match,
+			result = [];
+		while ((match = exp.exec(string))) {
+			result.push(match[0]);
+		}
+		return (
+			!!result.length &&
+			result &&
+			result.reduce((sum, x) => {
+				return (sum[x] = 1), sum;
+			}, {})
+		);
+	}
 	function assignModel(callback) {
-		var that = this;
+		var that = this,
+			dependencies = {};
 		try {
+			if ((dependencies = containsSchema(that.item)) && !this.resolved) {
+				return callback(undefined, dependencies);
+			}
 			var existing = self.models[this.prop] || mongoose.model(this.prop);
 			var newSchema = JSON.parse(this.item);
 			var diff = _.omitBy(newSchema, function(v, k) {
@@ -1053,10 +1074,12 @@ EntityRepo.prototype.createSchemas = function(fn) {
 
 	function parseEntities(files, fn) {
 		var tasks = [
-			function(callback) {
-				return callback(null);
-			}
-		];
+				function(callback) {
+					return callback(null);
+				}
+			],
+			deffered = [],
+			assigned = {};
 
 		for (var prop in files) {
 			if (files.hasOwnProperty(prop)) {
@@ -1074,21 +1097,53 @@ EntityRepo.prototype.createSchemas = function(fn) {
 				}
 
 				// Generate the Schema object.
-				tasks.push(
-					assignModel.bind({
-						item: item,
-						prop: prop
-					})
-				);
+				tasks.push(_fn => {
+					assignModel.call(
+						{
+							item: item,
+							prop: prop
+						},
+						(er, schema) => {
+							//debugger;
+							if (typeof schema === "object") {
+								deffered.push(schema);
+							}
+							assigned[prop] = 1;
+							//find out if some models have met their conditions required to
+							if (deffered.length) {
+								let resolve = [
+									function(cb) {
+										setImmediate(cb);
+									}
+								];
+								deffered.forEach(x => {
+									if (_.match(x.conditions, assigned)) {
+										resolve.push(
+											assignModel.bind({
+												item,
+												prop,
+												resolved: true
+											})
+										);
+									}
+								});
+								if (resolve.length)
+									return async.parallel(resolve, _fn);
+							}
+							_fn(er);
+						}
+					);
+				});
 
 				self[prop] = item;
 				//this more or less caches the expansion
 				files[prop] = item;
 			}
 		}
-		async.waterfall(tasks, function(er, result) {
+		async.parallel(tasks, function(er, result) {
 			debug(self.refs);
-			fn(er);
+
+			(!!er && fn(er)) || fn();
 		});
 	}
 
