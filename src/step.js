@@ -130,10 +130,10 @@ function DynamoStep(opts) {
 		}
 
 		/**
- * Called by Step when it is being saved.
- * @param  {Function} fn callback
- * @return {Object}      form object.
- */
+		 * Called by Step when it is being saved.
+		 * @param  {Function} fn callback
+		 * @return {Object}      form object.
+		 */
 		this.save = function(fn) {
 			this.form.save(function(er, form) {
 				if (er) return fn(er);

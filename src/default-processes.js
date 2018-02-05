@@ -146,7 +146,8 @@ module.exports = function(constants, systemEntities) {
 									],
 									relationships: {
 										has: {
-											processor: "fetchProcessor"
+											processor: "fetchProcessor",
+											"existing-processor":"fetchProcessor"
 										},
 										hasMany: {
 											step: {

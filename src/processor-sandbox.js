@@ -47,6 +47,7 @@ module.exports = {
 				return async.timeout((result, cb) => {
 					if (
 						!module_context.skip[list[i]._id] &&
+						!module_context.skip.$all &&
 						!module_context.completed
 					) {
 						list[i].process.call(module_context, result, cb);

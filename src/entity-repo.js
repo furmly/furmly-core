@@ -19,6 +19,7 @@ const constants = require("./constants"),
 	mongoose = require("mongoose");
 
 mongoose.Promise = global.Promise;
+//debugger;
 /**
  * @typedef {ProcessorContext}
  * @property {module:Dynamo.EntityRepo#queryEntity} get retrieves entities

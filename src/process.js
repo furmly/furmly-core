@@ -142,7 +142,7 @@ DynamoProcess.prototype.run = function(context, fn) {
 					result.status = constants.PROCESSSTATUS.RUNNING;
 					if (context.$uiOnDemand) {
 						let stepDescription = context.$nextStep;
-						debug(stepDescription);
+						//debug(stepDescription);
 						result.$nextStep = JSON.parse(
 							JSON.stringify(stepDescription)
 						);
@@ -299,7 +299,15 @@ DynamoProcess.prototype.describe = function(context, fn) {
 			//fetch data if context and fetch processor are defined.
 
 			if (self.fetchProcessor && context) {
-				context.$description = proc;
+				Object.defineProperties(context, {
+					$description: {
+						enumerable: false,
+						get: function() {
+							return proc;
+						}
+					}
+				});
+				//	context.$description = proc;
 				new DynamoSandbox(
 					self.fetchProcessor,
 					self.entityRepo
