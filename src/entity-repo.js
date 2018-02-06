@@ -745,6 +745,7 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 
 	if (!this.models[name]) {
 		debugger;
+		debug(`cannot find any model by that name ${name}`);
 		return setImmediate(fn, new Error("Model does not exist"));
 	}
 	var query = this.models[name].find(filter);
@@ -937,7 +938,7 @@ EntityRepo.prototype.deleteEntity = function(name, id, fn) {
 };
 EntityRepo.prototype.createSchemas = function(fn) {
 	var self = this;
-
+	debugger;
 	function createRunContext(code) {
 		return function(value) {
 			var sandbox = {
@@ -950,27 +951,23 @@ EntityRepo.prototype.createSchemas = function(fn) {
 		};
 	}
 	function containsSchema(string) {
-		let exp = /"schema"\\s*\:\\s*"(\w+)"/gi,
+		let exp = /"schema"\s*\:\s*"(\w+)"/gi,
 			match,
 			result = [];
+
 		while ((match = exp.exec(string))) {
-			result.push(match[0]);
+			result.push(match[1]);
 		}
-		return (
+		let r =
 			!!result.length &&
-			result &&
 			result.reduce((sum, x) => {
 				return (sum[x] = 1), sum;
-			}, {})
-		);
+			}, {});
+		return r;
 	}
 	function assignModel(callback) {
-		var that = this,
-			dependencies = {};
+		var that = this;
 		try {
-			if ((dependencies = containsSchema(that.item)) && !this.resolved) {
-				return callback(undefined, dependencies);
-			}
 			var existing = self.models[this.prop] || mongoose.model(this.prop);
 			var newSchema = JSON.parse(this.item);
 			var diff = _.omitBy(newSchema, function(v, k) {
@@ -980,7 +977,8 @@ EntityRepo.prototype.createSchemas = function(fn) {
 			var indexes = removeCompoundIndexes(diff);
 			var change = Object.keys(diff);
 			if (diff && change.length) {
-				existing.schema.add(generator.convert(diff));
+				debugger;
+				existing.schema.add(generator.convert(diff, mongoose));
 				removeCompoundIndexes(newSchema);
 				self.models[this.prop] = existing;
 				self.schemas[this.prop] = newSchema;
@@ -997,7 +995,7 @@ EntityRepo.prototype.createSchemas = function(fn) {
 				self.schemas[that.prop] = _schema;
 				self.refs[that.prop] = getRefs(self.schemas[that.prop]);
 				var schema = new mongoose.Schema(
-					generator.convert(self.schemas[that.prop]),
+					generator.convert(self.schemas[that.prop], mongoose),
 					{ autoIndex: false }
 				);
 				self.models[that.prop] = mongoose.model(that.prop, schema);
@@ -1006,7 +1004,7 @@ EntityRepo.prototype.createSchemas = function(fn) {
 				}
 			} else return callback(e);
 		}
-
+		debug(`assigned model ${this.prop}`);
 		callback();
 	}
 	function setupCompoundIndexes(schema, indexes) {
@@ -1046,7 +1044,14 @@ EntityRepo.prototype.createSchemas = function(fn) {
 					if (typeof obj[0] == "object") obj = obj[0];
 					else return;
 				}
-				refs = refs.concat(getRefs(obj, key + prop + "."));
+				refs = refs.concat(
+					getRefs(
+						obj,
+						prop == "extend" && file.schema
+							? key
+							: key + prop + "."
+					)
+				);
 				return;
 			}
 		});
@@ -1081,11 +1086,11 @@ EntityRepo.prototype.createSchemas = function(fn) {
 			deffered = [],
 			assigned = {};
 
-		for (var prop in files) {
+		for (let prop in files) {
 			if (files.hasOwnProperty(prop)) {
-				var item = parse(files[prop], files);
+				let item = parse(files[prop], files);
 
-				var validate_exp = /"validate"\\s*\:\\s*"(\w+)"/gi;
+				var validate_exp = /"validate"\s*\:\s*"(\w+)"/gi;
 				var match = validate_exp.exec(item);
 				while (match) {
 					tasks.push(
@@ -1097,43 +1102,89 @@ EntityRepo.prototype.createSchemas = function(fn) {
 				}
 
 				// Generate the Schema object.
-				tasks.push(_fn => {
-					assignModel.call(
-						{
-							item: item,
-							prop: prop
-						},
-						(er, schema) => {
-							//debugger;
-							if (typeof schema === "object") {
-								deffered.push(schema);
-							}
-							assigned[prop] = 1;
-							//find out if some models have met their conditions required to
-							if (deffered.length) {
-								let resolve = [
-									function(cb) {
-										setImmediate(cb);
-									}
-								];
-								deffered.forEach(x => {
-									if (_.match(x.conditions, assigned)) {
-										resolve.push(
-											assignModel.bind({
-												item,
-												prop,
-												resolved: true
-											})
+				tasks.push(
+					async.timeout(_fn => {
+						let dependencies,
+							_continue = function(callback, prop, er) {
+								if (er) return callback(er);
+								//debugger;
+								assigned[prop] = 1;
+
+								//find out if some models have met their conditions required to resolve
+								if (deffered.length) {
+									let resolve = [],
+										tobeRemoved = [];
+									deffered.forEach((x, index) => {
+										if (_.isMatch(assigned, x)) {
+											tobeRemoved.push(x);
+											resolve.push(cb => {
+												assignModel.call(
+													{
+														item: x.description,
+														prop: x.name
+													},
+													_continue.bind(
+														this,
+														cb,
+														x.name
+													)
+												);
+											});
+										}
+									});
+									if (resolve.length) {
+										//remove all the deferred guys about to be executed.
+										tobeRemoved.forEach(x => {
+											//debugger;
+											deffered.splice(
+												deffered.indexOf(x),
+												1
+											);
+										});
+										return async.parallel(
+											resolve,
+											(er, items) => {
+												return (
+													(er && callback(er)) ||
+													callback()
+												);
+											}
 										);
 									}
-								});
-								if (resolve.length)
-									return async.parallel(resolve, _fn);
-							}
-							_fn(er);
+								}
+								callback();
+							};
+						if (
+							(dependencies = containsSchema(item)) &&
+							!_.isMatch(assigned, dependencies)
+						) {
+							Object.defineProperties(dependencies, {
+								name: {
+									enumerable: false,
+									get: function() {
+										return prop;
+									}
+								},
+								description: {
+									enumerable: false,
+									get: function() {
+										return item;
+									}
+								}
+							});
+							return (
+								deffered.push(dependencies), setImmediate(_fn)
+							);
 						}
-					);
-				});
+						assignModel.call(
+							{
+								item: item,
+								prop: prop
+							},
+							_continue.bind(this, _fn, prop)
+						);
+					}, 1500)
+				);
 
 				self[prop] = item;
 				//this more or less caches the expansion

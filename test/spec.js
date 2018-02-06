@@ -41,10 +41,10 @@ function clearCollection(name, fn) {
 
 function wipeMongoSchemas(done) {
 	//mongoose.disconnect().then(() => {
-		_debug("schemas wiped");
-		mongoose.modelSchemas = {};
-		mongoose.models = {};
-		done();
+	_debug("schemas wiped");
+	mongoose.modelSchemas = {};
+	mongoose.models = {};
+	done();
 	//});
 }
 
@@ -372,7 +372,7 @@ describe("Processor spec", function() {
 			function() {
 				new app.Processor({
 					_id: "fake",
-					code: "console.log('great!!')"
+					code: "this.debug('great!!')"
 				});
 			},
 			Error,
@@ -382,7 +382,7 @@ describe("Processor spec", function() {
 			function() {
 				new app.Processor({
 					_id: "fake",
-					code: "console.log('great!!')",
+					code: "this.debug('great!!')",
 					title: "Creates a new User"
 				});
 			},
@@ -472,6 +472,15 @@ describe("Entity spec", function() {
 				ref: this.modelName
 			}
 		};
+		this.extraModelName = "Colleague";
+		this.extraModel = {
+			firstName: {
+				type: "String"
+			},
+			colleague: {
+				schema: this.modelName
+			}
+		};
 		this.instance = {
 			firstName: "Chidi",
 			lastName: "Onuekwusi",
@@ -485,8 +494,12 @@ describe("Entity spec", function() {
 		clearCollection(this.modelName, er => {
 			if (er) throw er;
 
+			clearCollection(this.extraModelName, er => {
+				if (er) return done(er);
+				_debug("collection cleared" + this.extraModelName);
+				wipeMongoSchemas(done);
+			});
 			_debug("collection cleared" + this.modelName);
-			wipeMongoSchemas(done);
 		});
 	});
 
@@ -498,7 +511,7 @@ describe("Entity spec", function() {
 		var //repo = new app.EntityRepo(this.opts),
 			fixtures = this,
 			spy = sinon.spy(function(er, r) {
-				debugger;
+				//debugger;
 				assert.isUndefined(er);
 				assert.deepEqual(readFile(fixtures.modelPath), fixtures.model);
 				assert.isDefined(repo.refs[fixtures.modelName]);
@@ -516,6 +529,21 @@ describe("Entity spec", function() {
 				assert.isNull(er);
 				assert.deepEqual(readFile(fixtures.modelPath), model);
 				done();
+			});
+		});
+	});
+	it("can embed schemas", function(done) {
+		repo.createConfig(this.modelName, this.model, er => {
+			//debugger;
+			assert.isUndefined(er);
+			_debug("created user schema");
+			repo.createConfig(this.extraModelName, this.extraModel, er => {
+				assert.isUndefined(er);
+				_debug("created extra model");
+				repo.getConfig(this.extraModelName, (er, model) => {
+					assert.isNull(er);
+					done();
+				});
 			});
 		});
 	});
@@ -808,12 +836,12 @@ describe("Integration", function() {
 				processors: [
 					{
 						code:
-							"console.log('\tRunning Task in sand-box,processed the special task'); callback(null);",
+							"this.debug('\tRunning Task in sand-box,processed the special task'); callback(null);",
 						title: "Process special task"
 					},
 					{
 						code:
-							"console.log('\tEmailed result of special task'); callback(null,{});",
+							"this.debug('\tEmailed result of special task'); callback(null,{});",
 						title: "Email result"
 					}
 				],
@@ -830,7 +858,7 @@ describe("Integration", function() {
 								{
 									title: "must be ibo",
 									code:
-										"console.log('kedu'); callback(null,true)"
+										"this.debug('kedu'); callback(null,true)"
 								}
 							],
 							//save: this.elementSaveService,
@@ -842,6 +870,7 @@ describe("Integration", function() {
 				}
 			};
 			wipeMongoSchemas(() => {
+				//debugger;
 				this.engine.init(done);
 			});
 		});
@@ -953,9 +982,9 @@ describe("Integration", function() {
 			fixture.processInstance.steps.push(fixture.stepInstance);
 			var diffStep = _.cloneDeep(fixture.stepInstance);
 			diffStep.processors[0].code =
-				"console.log('\tExecuted first processor in second step'); callback(null);";
+				"this.debug('\tExecuted first processor in second step'); callback(null);";
 			diffStep.processors[1].code =
-				"console.log('\tExecuted second processor in second step'); callback(null,{message:'wonderful'});";
+				"this.debug('\tExecuted second processor in second step'); callback(null,{message:'wonderful'});";
 			fixture.processInstance.steps.push(diffStep);
 			_async.waterfall(
 				[
@@ -996,10 +1025,10 @@ describe("Integration", function() {
 			);
 		});
 
-		it("can retrieve 1000 processes in less than 4 secs", function(done) {
+		it("can retrieve 1000 processes in less than 5 secs", function(done) {
 			var fixture = this,
 				copies = [];
-			this.timeout(4000);
+			this.timeout(5000);
 			fixture.processInstance.steps.push(fixture.stepInstance);
 			for (var i = 0; i < 1000; i++) {
 				copies.push(
@@ -1042,7 +1071,7 @@ describe("Integration", function() {
 				title = "New title",
 				elementName = "NewName",
 				code =
-					"console.log('Changed the processor'); callback(null,{});";
+					"this.debug('Changed the processor'); callback(null,{});";
 
 			fixture.processInstance.steps.push(fixture.stepInstance);
 			_async.waterfall(
@@ -1095,7 +1124,7 @@ describe("Integration", function() {
 			fixture.processInstance.fetchProcessor = {
 				title: "Fetch Noodles",
 				code:
-					'console.log("\tfetching noodles "+this.args.message); callback(null,' +
+					'this.debug("\tfetching noodles "+this.args.message); callback(null,' +
 					d +
 					");"
 			};
@@ -1128,7 +1157,7 @@ describe("Integration", function() {
 				{
 					title: "Test Sample",
 					code:
-						" console.log('\tentityRepo is defined '+(typeof this.entityRepo.get)); console.log('\tran standalone processor!!!!'); callback(null,{test:true});"
+						" this.debug('\tentityRepo is defined '+(typeof this.entityRepo.get)); this.debug('\tran standalone processor!!!!'); callback(null,{test:true});"
 				},
 				{
 					retrieve: true
@@ -1352,7 +1381,7 @@ describe("Integration", function() {
 		it("processor can create an entity", function(done) {
 			var fixture = this;
 			fixture.stepInstance.processors[0].code =
-				"console.log('\tCreating new user...'); this.entityRepo.create('User',{firstName:'Chidi'},function(er,r){if(!er)console.log('\tuser created'); callback(er);});";
+				"this.debug('\tCreating new user...'); this.entityRepo.create('User',{firstName:'Chidi'},(er,r)=>{if(!er)this.debug('\tuser created'); callback(er);});";
 			fixture.processInstance.steps.push(fixture.stepInstance);
 			_async.waterfall(
 				[
