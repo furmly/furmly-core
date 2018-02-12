@@ -513,7 +513,7 @@ EntityRepo.prototype.init = function(callback) {
 				fs.writeFile.bind(
 					this,
 					self.getPath(systemEntities.processor),
-					'{"requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'
+					'{"standalone":{"type":"Boolean","default":true}, "requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'
 				),
 				fs.writeFile.bind(
 					this,

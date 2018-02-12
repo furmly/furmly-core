@@ -28,15 +28,16 @@ function DynamoProcessor(opts) {
 	this.title = opts.title;
 	this.uid = opts.uid;
 	this.requiresIdentity = opts.requiresIdentity;
+	this.standalone = opts.standalone;
 
-	Object.defineProperties(this,{
-		_save:{
-			enumerable:false,
-			get:function(){
+	Object.defineProperties(this, {
+		_save: {
+			enumerable: false,
+			get: function() {
 				return opts.save;
 			}
 		}
-	})
+	});
 
 	/**
 		 *  User customisable code ran in sandbox.
@@ -100,7 +101,8 @@ DynamoProcessor.prototype.save = function(fn) {
 		_id: this._id,
 		code: this.code,
 		title: this.title,
-		requiresIdentity:this.requiresIdentity,
+		requiresIdentity: this.requiresIdentity,
+		standalone: this.standalone
 	};
 	if (this.uid) {
 		model.uid = this.uid;
