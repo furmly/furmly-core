@@ -141,7 +141,8 @@ function EntityRepo(opts) {
 		},
 		getIDOnly = function(item) {
 			return (
-				((typeof item == "string" || item instanceof ObjectID) &&
+				((typeof item == "string" ||
+					ObjectID.prototype.isPrototypeOf(item)) &&
 					item) ||
 				item._id
 			);
