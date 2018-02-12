@@ -135,7 +135,7 @@ function EntityRepo(opts) {
 	const isIDOnly = function(item) {
 			return (
 				typeof item == "string" ||
-				item instanceof ObjectID ||
+				ObjectID.prototype.isPrototypeOf(item) ||
 				(item && Object.keys(item).length == 1 && item._id)
 			);
 		},
@@ -1047,9 +1047,7 @@ EntityRepo.prototype.createSchemas = function(fn) {
 				refs = refs.concat(
 					getRefs(
 						obj,
-						prop == "extend" && file.schema
-							? key
-							: key + prop + "."
+						prop == "extend" && file.schema ? key : key + prop + "."
 					)
 				);
 				return;
