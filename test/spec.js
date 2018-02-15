@@ -330,7 +330,7 @@ describe("Form spec", function() {
 });
 
 describe("Processor spec", function() {
-	var Sandbox = require("Sandboxed-module");
+	var Sandbox = require("sandboxed-module");
 	beforeEach(function() {
 		var fixtures = this;
 		var save = function(fn) {

@@ -176,13 +176,13 @@ function EntityRepo(opts) {
 	this.transformers[systemEntities.process] = function(item, fn) {
 		if (!(item instanceof DynamoProcess)) {
 			var tasks = [];
-			if (typeof item == "string" || item instanceof ObjectID) {
+			if (isIDOnly(item)) {
 				tasks.push(
 					self.queryEntity.bind(
 						self,
 						systemEntities.process,
 						{
-							_id: item
+							_id: getIDOnly(item)
 						},
 						{
 							full: true,
@@ -937,6 +937,11 @@ EntityRepo.prototype.deleteEntity = function(name, id, fn) {
 
 	this.models[name].remove(query, fn);
 };
+/**
+ * Create all the system schemas
+ * @param  {Function} fn callback
+ * @return {void}      
+ */
 EntityRepo.prototype.createSchemas = function(fn) {
 	var self = this;
 	debugger;
