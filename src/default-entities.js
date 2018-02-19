@@ -1,6 +1,8 @@
+let constants = require("./constants"),
+	systemEntities = constants.systemEntities;
 module.exports = [
 	{
-		name: "_0AsyncValidator",
+		name: systemEntities.asyncValidator,
 		schema: {
 			requiresIdentity: { type: "Boolean", default: "requiresIdentity" },
 			uid: { type: "String", unique: true, sparse: true },
@@ -9,25 +11,25 @@ module.exports = [
 		}
 	},
 	{
-		name: "_0Lib",
+		name: systemEntities.lib,
 		schema: {
 			uid: { type: "String", unique: true, required: true },
 			code: { type: "String", required: true }
 		}
 	},
 	{
-		name: "_0Process",
+		name: systemEntities.process,
 		schema: {
 			requiresIdentity: { type: "Boolean", default: "requiresIdentity" },
-			fetchProcessor: { type: "ObjectId", ref: "_0Processor" },
+			fetchProcessor: { type: "ObjectId", ref: systemEntities.processor },
 			uid: { type: "String", unique: true, sparse: true },
 			title: { type: "String", required: true },
 			description: { type: "String", required: true },
-			steps: [{ type: "ObjectId", ref: "_0Step" }]
+			steps: [{ type: "ObjectId", ref: systemEntities.step }]
 		}
 	},
 	{
-		name: "_0Processor",
+		name: systemEntities.processor,
 		schema: {
 			standalone: { type: "Boolean", default: true },
 			requiresIdentity: { type: "Boolean", default: "requiresIdentity" },
@@ -37,12 +39,14 @@ module.exports = [
 		}
 	},
 	{
-		name: "_0Step",
+		name: systemEntities.step,
 		schema: {
 			description: { type: "String" },
 			mode: { type: "String" },
-			processors: [{ type: "ObjectId", ref: "_0Processor" }],
-			postprocessors: [{ type: "ObjectId", ref: "_0Processor" }],
+			processors: [{ type: "ObjectId", ref: systemEntities.processor }],
+			postprocessors: [
+				{ type: "ObjectId", ref: systemEntities.processor }
+			],
 			stepType: { type: "String", required: true },
 			form: {
 				elements: [
@@ -55,45 +59,20 @@ module.exports = [
 						description: { type: "String" },
 						elementType: {
 							type: "String",
-							enum: [
-								"INPUT",
-								"SCRIPT",
-								"DESIGNER",
-								"HIDDEN",
-								"GRID",
-								"NAV",
-								"FILEUPLOAD",
-								"DOWNLOAD",
-								"SELECTSET",
-								"LABEL",
-								"LARGEINPUT",
-								"COMMAND",
-								"SECTION",
-								"TABS",
-								"SELECT",
-								"LIST",
-								"IMAGE",
-								"ACTIONVIEW",
-								"HTMLVIEW",
-								"WEBVIEW",
-								"MESSENGER",
-								"PARTIAL"
-							],
+							enum: Object.keys(constants.ELEMENTTYPE),
 							required: true
 						},
 						asyncValidators: [
-							{ type: "ObjectId", ref: "_0AsyncValidator" }
+							{
+								type: "ObjectId",
+								ref: systemEntities.asyncValidator
+							}
 						],
 						validators: [
 							{
 								validatorType: {
 									type: "String",
-									enum: [
-										"REQUIRED",
-										"MAXLENGTH",
-										"MINLENGTH",
-										"REGEX"
-									],
+									enum: Object.keys(constants.VALIDATORTYPE),
 									required: true
 								},
 								args: { type: "Mixed" }

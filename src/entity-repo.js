@@ -480,21 +480,7 @@ EntityRepo.prototype.init = function(callback) {
 
 		this.$schemas = mongoose.connection.db.collection("schemas");
 
-		// let element =
-		// 	'{"component_uid":{"type":"String"}, "order":{"type":"Number"}, "uid":{"type":"String"},"name":{"type":"String","required":true},"label":{"type":"String"},"description":{"type":"String"},"elementType":{"type":"String","enum":[' +
-		// 	_.map(Object.keys(constants.ELEMENTTYPE), function(x) {
-		// 		return '"' + x + '"';
-		// 	}).join(",") +
-		// 	'],"required":true},"asyncValidators":[{"type":"ObjectId","ref":"' +
-		// 	systemEntities.asyncValidator +
-		// 	'"}],"validators":[{"validatorType":{"type":"String","enum":[' +
-		// 	_.map(Object.keys(constants.VALIDATORTYPE), function(x) {
-		// 		return '"' + x + '"';
-		// 	}).join(",") +
-		// 	'],"required":true},"args":{"type":"Mixed"}}],"args":{"type":"Mixed"}}';
-
 		async.parallel(
-			//[
 			entities.map(x =>
 				this.$schemas.update.bind(
 					this.$schemas,
@@ -503,42 +489,6 @@ EntityRepo.prototype.init = function(callback) {
 					{ upsert: true }
 				)
 			),
-			// fs.writeFile.bind(
-			// 	this,
-			// 	self.getPath(systemEntities.process),
-			// 	'{"requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"fetchProcessor":{"type":"ObjectId","ref":"' +
-			// 		systemEntities.processor +
-			// 		'"},"uid":{"type":"String","unique":true,"sparse":true},"title":{"type":"String","required":true},"description":{"type":"String","required":true},"steps":[{"type":"ObjectId","ref":"' +
-			// 		systemEntities.step +
-			// 		'"}]}'
-			// ),
-			// fs.writeFile.bind(
-			// 	this,
-			// 	self.getPath(systemEntities.step),
-			// 	'{"description":{"type":"String"},"mode":{"type":"String"},"processors":[{"type":"ObjectId","ref":"' +
-			// 		systemEntities.processor +
-			// 		'"}],"postprocessors":[{"type":"ObjectId","ref":"' +
-			// 		systemEntities.processor +
-			// 		'"}],"stepType":{"type":"String","required":true},"form":{"elements":[' +
-			// 		element +
-			// 		"]}}"
-			// ),
-			// fs.writeFile.bind(
-			// 	this,
-			// 	self.getPath(systemEntities.processor),
-			// 	'{"standalone":{"type":"Boolean","default":true}, "requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'
-			// ),
-			// fs.writeFile.bind(
-			// 	this,
-			// 	self.getPath(systemEntities.lib),
-			// 	'{"uid":{"type":"String","unique":true,"required":true},"code":{"type":"String","required":true}}'
-			// ),
-			// fs.writeFile.bind(
-			// 	this,
-			// 	self.getPath(systemEntities.asyncValidator),
-			// 	'{"requiresIdentity":{"type":"Boolean","default":"requiresIdentity"},"uid":{"type":"String","unique":true,"sparse":true},"code":{"type":"String","required":true},"title":{"type":"String", "required":true}}'
-			// )
-			//]
 			function(er) {
 				if (er) return callback(er);
 				self.createSchemas(callback);
@@ -603,14 +553,6 @@ EntityRepo.prototype.createConfig = function(name, config, fn) {
 			return fn((er && er) || null);
 		});
 	});
-	// var self = this;
-
-	// fs.writeFile(this.getPath(name), JSON.stringify(config), "utf8", function(
-	// 	er
-	// ) {
-	// 	if (er) return fn(er);
-	// 	self.createSchemas(fn);
-	// });
 };
 
 EntityRepo.prototype.getPath = function(name) {
@@ -631,20 +573,6 @@ EntityRepo.prototype.getConfig = function(name, fn) {
 
 		return fn(null, schema.schema);
 	});
-	// fs.readFile(
-	// 	this.getPath(name),
-	// 	{
-	// 		encoding: "utf8"
-	// 	},
-	// 	function(er, data) {
-	// 		try {
-	// 			data = JSON.parse(data);
-	// 		} catch (e) {
-	// 			return fn(new Error("Failed to parse config file"));
-	// 		}
-	// 		fn(er, data);
-	// 	}
-	// );
 };
 /**
  * Get Schema Configuration Names
@@ -657,14 +585,6 @@ EntityRepo.prototype.getConfigNames = function(fn) {
 
 		return fn(null, schemas.map(x => x.name));
 	});
-	// fn(
-	// 	null,
-	// 	Object.keys(this.models).filter(
-	// 		function(x) {
-	// 			return this._systemEntities.indexOf(x) == -1;
-	// 		}.bind(this)
-	// 	)
-	// );
 };
 EntityRepo.prototype.isValidID = function(id) {
 	return mongoose.Types.ObjectId.isValid(id);
@@ -676,20 +596,6 @@ EntityRepo.prototype.getAllConfiguration = function(fn) {
 
 		return fn(null, schemas.map(x => x.schema));
 	});
-	// getDirectories(this.entityFolder, function(er, ents) {
-	// 	var tasks = [];
-	// 	ents.forEach(function(file) {
-	// 		if (file.indexOf(self.del) === -1) {
-	// 			tasks.push(
-	// 				self.getConfig.bind(
-	// 					self,
-	// 					path.basename(file, path.extname(file))
-	// 				)
-	// 			);
-	// 		}
-	// 	});
-	// 	async.parallel(tasks, fn);
-	// });
 };
 
 EntityRepo.prototype.createId = function(string) {
