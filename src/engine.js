@@ -297,6 +297,14 @@ DynamoEngine.prototype.updateEntityConfiguration = function(name, config, fn) {
 };
 
 /**
+ * Returns all the names of the entities in the system
+ * @param  {Function} fn Callback
+ * @return {Array}      List of entity name
+ */
+DynamoEngine.prototype.allEntityConfigurations = function(fn) {
+	this.entitiesRepository.getConfigNames(fn);
+};
+/**
 	 * Updates an instance of an Entity Schema  
 	 * @param  {String}   name   Name of Schema Config
 	 * @param  {String}   data instance
@@ -370,9 +378,9 @@ Object.keys(systemEntities).forEach(function(key) {
 						);
 						return;
 					}
-					if(typeof fn!=='function'){
+					if (typeof fn !== "function") {
 						console.log(fn);
-						console.log('fn is not a function');
+						console.log("fn is not a function");
 						console.log(data);
 						console.log(options);
 					}

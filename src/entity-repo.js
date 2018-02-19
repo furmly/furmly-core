@@ -19,7 +19,7 @@ const constants = require("./constants"),
 	mongoose = require("mongoose");
 
 mongoose.Promise = global.Promise;
-//debugger;
+
 /**
  * @typedef {ProcessorContext}
  * @property {module:Dynamo.EntityRepo#queryEntity} get retrieves entities
@@ -545,14 +545,20 @@ EntityRepo.prototype.getSaveService = function(entName) {
 EntityRepo.prototype.createConfig = function(name, config, fn) {
 	if (this._systemEntities.indexOf(this.name) !== -1)
 		throw new Error("Cannot Create Entity with that name.");
-
-	this.$schemas.insertOne({ name, schema: config }, er => {
-		if (er) return fn(er);
-
-		this.createSchemas(er => {
-			return fn((er && er) || null);
-		});
+	Object.assign(config, {
+		created: { type: "Date" },
+		updated: { type: "Date" }
 	});
+	this.$schemas.insertOne(
+		{ name, schema: config, updated: new Date() },
+		er => {
+			if (er) return fn(er);
+
+			this.createSchemas(er => {
+				return fn((er && er) || null);
+			});
+		}
+	);
 };
 
 EntityRepo.prototype.getPath = function(name) {
@@ -606,9 +612,13 @@ EntityRepo.prototype.updateConfig = function(name, config, fn) {
 	if (this._systemEntities.indexOf(this.name) !== -1)
 		throw new Error("Cannot Update Entity with that name.");
 
+	Object.assign(config, {
+		created: { type: "Date" },
+		updated: { type: "Date" }
+	});
 	this.$schemas.findOneAndUpdate(
 		{ name },
-		{ $set: { schema: config } },
+		{ $set: { schema: config, updated: new Date() } },
 		er => {
 			if (er) return fn(er);
 
@@ -617,9 +627,6 @@ EntityRepo.prototype.updateConfig = function(name, config, fn) {
 			});
 		}
 	);
-	// fs.truncate(this.getPath(name), function() {
-	// 	self.createConfig(name, config, fn);
-	// });
 };
 
 /**
@@ -774,6 +781,7 @@ EntityRepo.prototype.updateEntity = function(name, data, fn) {
 	if (!this.models[name]) {
 		return setImmediate(fn, new Error("Model does not exist"));
 	}
+	Object.assign(data, { updated: new Date() });
 	if (this._changeDetection[name]) {
 		this.models[name].findOne(
 			{
@@ -781,7 +789,7 @@ EntityRepo.prototype.updateEntity = function(name, data, fn) {
 			},
 			function(er, e) {
 				if (er) return fn(er);
-				if (!e) return fn(new Error("that entity does not exist"));
+				if (!e) return fn(new Error("That entity does not exist"));
 				var merged = _.assign(e, data);
 				debug(merged);
 				self._changeDetection[name].forEach(function(field) {
@@ -819,7 +827,10 @@ EntityRepo.prototype.createEntity = function(name, data, fn) {
 	if (!this.models[name]) {
 		return setImmediate(fn, new Error("Model does not exist"));
 	}
-	var item = new this.models[name](data);
+	let now = new Date();
+	var item = new this.models[name](
+		Object.assign(data, { created: now, updated: now })
+	);
 	item.save(fn);
 };
 /**
@@ -830,6 +841,8 @@ EntityRepo.prototype.createEntity = function(name, data, fn) {
  */
 EntityRepo.prototype.aggregateEntity = function(name, ...rest) {
 	let model = this.models[name];
+	//look for any prop with $objectID and transform it an object id.
+	//its ok cause the filter object is never too large.
 	misc.runThroughObj(
 		[
 			(key, data, result, parent, parentKey, index) => {
@@ -1178,24 +1191,16 @@ EntityRepo.prototype.createSchemas = function(fn) {
 					return callback(
 						null,
 						schemas.reduce((sum, x) => {
-							return (sum[x.name] = x.schema), sum;
+							return (
+								(sum[x.name] = Object(x.schema, {
+									created: { type: "Date" },
+									updated: { type: "Date" }
+								})),
+								sum
+							);
 						}, {})
 					);
 				});
-				// misc.getDirectories(self.entityFolder, function(er, response) {
-				// 	if (er) {
-				// 		return callback(er);
-				// 	}
-				// 	var allFiles = {};
-
-				// 	response.forEach(function(filePath) {
-				// 		var data = fs.readFileSync(filePath, {
-				// 			encoding: "utf8"
-				// 		});
-				// 		allFiles[path.basename(filePath, ".json")] = data;
-				// 	});
-				// 	callback(null, allFiles);
-				// });
 			},
 			parseEntities
 		],

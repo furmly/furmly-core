@@ -511,17 +511,10 @@ describe("Entity spec", function() {
 	}
 
 	it("entity configurations can be created", function(done) {
-		var //repo = new app.EntityRepo(this.opts),
-			fixtures = this,
+		var fixtures = this,
 			spy = sinon.spy(function(er, r) {
-				//debugger;
 				debugger;
 				assert.isNull(er);
-				// assert.deepEqual(
-				// 	{ name: fixtures.modelName, schema: fixtures.model },
-				// 	fixtures.model
-				// );
-				//assert.deepEqual(readFile(fixtures.modelPath), fixtures.model);
 				assert.isDefined(repo.refs[fixtures.modelName]);
 				assert.equal(repo.refs[fixtures.modelName].length, 1);
 				done();
@@ -530,16 +523,11 @@ describe("Entity spec", function() {
 	});
 
 	it("entity configurations can be retrieved", function(done) {
-		var //repo = new app.EntityRepo(),
-		fixtures = this;
+		var fixtures = this;
 		repo.createConfig(this.modelName, this.model, function() {
 			repo.getConfig(fixtures.modelName, function(er, model) {
 				assert.isNull(er);
-				//assert.deepEqual(readFile(fixtures.modelPath), model);
-				// assert.deepEqual(
-				// 	{ name: fixtures.modelName, schema: fixtures.model },
-				// 	fixtures.model
-				// );
+				assert.deepEqual(fixtures.model, model);
 				done();
 			});
 		});
@@ -561,8 +549,7 @@ describe("Entity spec", function() {
 	});
 
 	it("can create entity instances", function(done) {
-		var //repo = new app.EntityRepo(),
-		fixture = this;
+		var fixture = this;
 		repo.createConfig(this.modelName, this.model, function() {
 			repo.createEntity(fixture.modelName, fixture.instance, function(
 				er
@@ -582,8 +569,7 @@ describe("Entity spec", function() {
 	});
 
 	it("can count entity instances", function(done) {
-		var //repo = new app.EntityRepo(),
-		fixture = this;
+		var fixture = this;
 		repo.createConfig(this.modelName, this.model, function() {
 			repo.createEntity(fixture.modelName, fixture.instance, function(
 				er
@@ -599,8 +585,7 @@ describe("Entity spec", function() {
 	});
 
 	it("can query existing instances", function(done) {
-		var //repo = new app.EntityRepo(),
-		fixture = this;
+		var fixture = this;
 		repo.createConfig(this.modelName, this.model, function() {
 			repo.createEntity(fixture.modelName, fixture.instance, function(
 				er,
@@ -644,8 +629,7 @@ describe("Entity spec", function() {
 	});
 
 	it("can modify existing schema", function(done) {
-		var //repo = new app.EntityRepo(),
-		fixtures = this;
+		var fixtures = this;
 		//create new config
 		repo.createConfig(this.modelName, this.model, function(er) {
 			assert.isNull(er);
@@ -676,8 +660,7 @@ describe("Entity spec", function() {
 	});
 
 	it("can modify/save entity instances and schemas", function(done) {
-		var //repo = new app.EntityRepo(),
-		fixture = this;
+		var fixture = this;
 		repo.createConfig(this.modelName, this.model, function() {
 			repo.createEntity(fixture.modelName, fixture.instance, function(
 				er
@@ -1034,45 +1017,6 @@ describe("Integration", function() {
 						message: "wonderful"
 					});
 					done();
-				}
-			);
-		});
-
-		it("can retrieve 1000 processes in less than 5 secs", function(done) {
-			var fixture = this,
-				copies = [];
-			this.timeout(5000);
-			fixture.processInstance.steps.push(fixture.stepInstance);
-			for (var i = 0; i < 1000; i++) {
-				copies.push(
-					fixture.engine.saveProcess.bind(
-						fixture.engine,
-						_.cloneDeep(fixture.processInstance)
-					)
-				);
-			}
-			_async.waterfall(
-				[
-					//		fixture.engine.init.bind(fixture.engine),
-					_async.parallel.bind(_async, copies)
-				],
-				function(er, result) {
-					assert.isNull(er);
-					var start = new Date().getTime(),
-						end;
-					fixture.engine.query(
-						app.systemEntities.process,
-						{},
-						{
-							full: true
-						},
-						function(er, processes) {
-							end = new Date().getTime();
-							assert.isNull(er);
-							assert.isTrue(end - start <= 2000);
-							done();
-						}
-					);
 				}
 			);
 		});
