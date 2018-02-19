@@ -18,24 +18,27 @@ function deleteFile(path) {
 }
 
 function clearCollection(name, fn) {
-	deleteFile("./src/entities/{0}.json".replace("{0}", name));
-	delete mongoose.connection.models[name];
-	delete mongoose.modelSchemas[name];
-	delete mongoose.models[name];
-	_debug(name);
-	mongoose.connection.db.dropCollection(name.toLowerCase() + "s", function(
-		er
-	) {
-		if (er) {
-			mongoose.connection.db.dropCollection(
-				name.toLowerCase() + "es",
-				function() {
-					fn();
+	mongoose.connection.db.collection("schemas").deleteMany({ name }, er => {
+		if (er) fn(er);
+		delete mongoose.connection.models[name];
+		delete mongoose.modelSchemas[name];
+		delete mongoose.models[name];
+		//_debug(name);
+		mongoose.connection.db.dropCollection(
+			name.toLowerCase() + "s",
+			function(er) {
+				if (er) {
+					mongoose.connection.db.dropCollection(
+						name.toLowerCase() + "es",
+						function() {
+							fn();
+						}
+					);
+					return;
 				}
-			);
-			return;
-		}
-		fn();
+				fn();
+			}
+		);
 	});
 }
 
@@ -512,8 +515,13 @@ describe("Entity spec", function() {
 			fixtures = this,
 			spy = sinon.spy(function(er, r) {
 				//debugger;
-				assert.isUndefined(er);
-				assert.deepEqual(readFile(fixtures.modelPath), fixtures.model);
+				debugger;
+				assert.isNull(er);
+				// assert.deepEqual(
+				// 	{ name: fixtures.modelName, schema: fixtures.model },
+				// 	fixtures.model
+				// );
+				//assert.deepEqual(readFile(fixtures.modelPath), fixtures.model);
 				assert.isDefined(repo.refs[fixtures.modelName]);
 				assert.equal(repo.refs[fixtures.modelName].length, 1);
 				done();
@@ -527,7 +535,11 @@ describe("Entity spec", function() {
 		repo.createConfig(this.modelName, this.model, function() {
 			repo.getConfig(fixtures.modelName, function(er, model) {
 				assert.isNull(er);
-				assert.deepEqual(readFile(fixtures.modelPath), model);
+				//assert.deepEqual(readFile(fixtures.modelPath), model);
+				// assert.deepEqual(
+				// 	{ name: fixtures.modelName, schema: fixtures.model },
+				// 	fixtures.model
+				// );
 				done();
 			});
 		});
@@ -535,10 +547,10 @@ describe("Entity spec", function() {
 	it("can embed schemas", function(done) {
 		repo.createConfig(this.modelName, this.model, er => {
 			//debugger;
-			assert.isUndefined(er);
+			assert.isNull(er);
 			_debug("created user schema");
 			repo.createConfig(this.extraModelName, this.extraModel, er => {
-				assert.isUndefined(er);
+				assert.isNull(er);
 				_debug("created extra model");
 				repo.getConfig(this.extraModelName, (er, model) => {
 					assert.isNull(er);
@@ -636,18 +648,19 @@ describe("Entity spec", function() {
 		fixtures = this;
 		//create new config
 		repo.createConfig(this.modelName, this.model, function(er) {
-			assert.isUndefined(er);
+			assert.isNull(er);
 			fixtures.model.address = {
 				type: "String",
 				required: true
 			};
 			//update it
+			debugger;
 			repo.updateConfig(fixtures.modelName, fixtures.model, function(er) {
-				assert.isUndefined(er);
+				assert.isNull(er);
 				//retrieve it
 				repo.getConfig(fixtures.modelName, function(er, model) {
 					assert.isNull(er);
-					assert.deepEqual(readFile(fixtures.modelPath), model);
+					assert.deepEqual(fixtures.model, model);
 					repo.createEntity(
 						fixtures.modelName,
 						fixtures.instance,
@@ -712,7 +725,7 @@ describe("Entity spec", function() {
 											fixture.modelName,
 											fixture.model,
 											function(er) {
-												assert.isUndefined(er);
+												assert.isNull(er);
 												var address =
 													"No 9 mercy eneli street";
 												inst.address = address;
