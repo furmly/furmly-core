@@ -159,6 +159,7 @@ function EntityRepo(opts) {
 		create: blockSystemEntities.bind(self, self.createEntity),
 		createSchema: self.createConfig.bind(self),
 		updateSchema: self.updateConfig.bind(self),
+		countSchemas: self.countConfig.bind(self),
 		getSchema: self.getConfig.bind(self),
 		getSchemas: self.getConfigNames.bind(self),
 		createId: self.createId.bind(null),
@@ -479,6 +480,13 @@ EntityRepo.prototype.init = function(callback) {
 			entities = require("./default-entities");
 
 		this.$schemas = mongoose.connection.db.collection("schemas");
+		this.$_schema_Schema = {
+			name: "Schema",
+			schema: {
+				name: { type: "String" },
+				schema: { type: "Mixed" }
+			}
+		};
 
 		async.parallel(
 			entities.map(x =>
@@ -585,12 +593,54 @@ EntityRepo.prototype.getConfig = function(name, fn) {
  * @param  {Function} fn Callback
  * 
  */
-EntityRepo.prototype.getConfigNames = function(fn) {
-	this.$schemas.find({}, { name: 1 }).toArray((er, schemas) => {
-		if (er) return fn(er);
+EntityRepo.prototype.getConfigNames = function(
+	includeSchema,
+	includeInternalSchema,
+	query,
+	options,
+	fn
+) {
+	let argsLength = Array.prototype.slice.call(arguments).length,
+		fields = { name: 1 };
+	if (argsLength == 1) {
+		fn = includeSchema;
+		includeSchema = false;
+	}
+	if (argsLength == 2) {
+		fn = includeInternalSchema;
+		includeInternalSchema = false;
+	}
+	if (argsLength == 3) {
+		fn = query;
+		query = null;
+	}
+	if (argsLength == 4) {
+		fn = options;
+		options = null;
+	}
+	if (!!includeSchema) {
+		fields.schema = 1;
+	}
+	debug(options);
+	debug(query);
+	this.$schemas
+		.find(
+			query || {},
+			Object.assign(options || {}, {
+				fields
+			})
+		)
+		.toArray((er, schemas) => {
+			if (er) return fn(er);
 
-		return fn(null, schemas.map(x => x.name));
-	});
+			if (includeInternalSchema) {
+				schemas.push(this.$_schema_Schema);
+			}
+			return fn(
+				null,
+				(!includeSchema && schemas.map(x => x.name)) || schemas
+			);
+		});
 };
 EntityRepo.prototype.isValidID = function(id) {
 	return mongoose.Types.ObjectId.isValid(id);
@@ -602,6 +652,9 @@ EntityRepo.prototype.getAllConfiguration = function(fn) {
 
 		return fn(null, schemas.map(x => x.schema));
 	});
+};
+EntityRepo.prototype.countConfig = function(query = {}, fn) {
+	this.$schemas.count(query, fn);
 };
 
 EntityRepo.prototype.createId = function(string) {

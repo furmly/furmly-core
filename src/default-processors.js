@@ -276,12 +276,12 @@ module.exports = function(constants, systemEntities) {
 		}).getFunctionBody(),
 		fetchSchemaCode = (() => {
 			var self = this;
-			this.entityRepo.getSchema(this.args._id, function(er, code) {
+			this.entityRepo.getSchema(this.args.name, function(er, code) {
 				if (er) return callback(er);
 
 				var result = {
 					choice: "Code",
-					name: self.args._id,
+					name: self.args.name,
 					template: {
 						value: JSON.stringify(code, null, " ")
 					}
@@ -290,40 +290,65 @@ module.exports = function(constants, systemEntities) {
 			});
 		}).getFunctionBody(),
 		listEntitySchemaCode = (() => {
-			var self = this;
-			this.entityRepo.getSchemas(
-				function(er, types) {
-					if (er) return callback(er);
-					if (this.args.query && this.args.query.name) {
-						let exp = new RegExp(this.args.query.name, "i");
-						types = types.filter(x => exp.test(x));
+			var options,
+				query = {},
+				self = this,
+				args = this.args;
+			if (this.args && this.args.count) {
+				options = {
+					limit: this.args.count,
+					sort: this.args.sort || {
+						_id: -1
+					}
+				};
+				if (this.args._id)
+					if (this.args.prev) {
+						query._id = {
+							$gt: this.entityRepo.createId(this.args._id)
+						};
+						options.sort._id = 1;
+					} else {
+						query._id = {
+							$lt: this.entityRepo.createId(this.args._id)
+						};
 					}
 
-					var every = this.libs.convertToSelectableList(types);
-					var total = every.length;
-					if (self.args.count) {
-						every = every.sort((x, y) => {
-							return x._id - y._id;
+				if (this.args.query)
+					Object.assign(
+						query,
+						this.libs.convertFilter(this.args.query)
+					);
+			}
+
+			this.debug(query);
+			this.entityRepo.getSchemas(
+				args.full,
+				false,
+				query,
+				options,
+				function(er, x) {
+					if (er) return callback(er);
+					var result = !args.full
+						? x.map(function(z) {
+								return {
+									_id: z,
+									displayLabel: z
+								};
+							})
+						: x;
+					if (!args.count) callback(null, result);
+					else {
+						if (query._id) delete query._id;
+						self.entityRepo.countSchemas(query, function(
+							er,
+							count
+						) {
+							callback(er, {
+								items: result,
+								total: count
+							});
 						});
-						var index = self.args._id
-							? every.indexOf(
-									every.filter(x => x._id == self.args._id)[0]
-								)
-							: 0;
-						index = index > 0 ? index + 1 : 0;
-						every = every.slice(
-							index,
-							index + self.args.count > every.length
-								? index + (every.length - index)
-								: index + self.args.count
-						);
-						callback(null, {
-							items: every,
-							total: total
-						});
-						return;
 					}
-					callback(null, every);
 				}.bind(this)
 			);
 		}).getFunctionBody(),

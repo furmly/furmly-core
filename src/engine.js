@@ -301,8 +301,12 @@ DynamoEngine.prototype.updateEntityConfiguration = function(name, config, fn) {
  * @param  {Function} fn Callback
  * @return {Array}      List of entity name
  */
-DynamoEngine.prototype.allEntityConfigurations = function(fn) {
-	this.entitiesRepository.getConfigNames(fn);
+DynamoEngine.prototype.allEntityConfigurations = function(...args) {
+	this.entitiesRepository.getConfigNames.apply(this.entitiesRepository, args);
+};
+
+DynamoEngine.prototype.countConfigurations = function(...args) {
+	this.entitiesRepository.countConfig.apply(this.entitiesRepository, args);
 };
 /**
 	 * Updates an instance of an Entity Schema  
@@ -340,6 +344,15 @@ DynamoEngine.prototype.query = function(name, filter, options, fn) {
 		options = null;
 	}
 	this.entitiesRepository.queryEntity(name, filter, options, fn);
+};
+
+DynamoEngine.prototype.count = function(name, filter, fn) {
+	return this.entitiesRepository.countEntity(name, filter, fn);
+	// body...
+};
+
+DynamoEngine.prototype.createId = function(...args) {
+	return this.entitiesRepository.createId.apply(null, args);
 };
 
 //---------------------------------------------------------------------------
