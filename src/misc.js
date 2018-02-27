@@ -7,6 +7,16 @@ Function.prototype.getFunctionBody = function() {
 	return entire.substring(entire.indexOf("{") + 1, entire.lastIndexOf("}"));
 };
 
+let toCamelCase = function(str) {
+	return str
+		.replace(/\s(.)/g, function($1) {
+			return $1.toUpperCase();
+		})
+		.replace(/\s/g, "")
+		.replace(/^(.)/, function($1) {
+			return $1.toLowerCase();
+		});
+};
 /**
  * Used to create elements
  * @memberOf module:misc
@@ -270,5 +280,6 @@ module.exports = {
 	createRegexValidator,
 	createRequiredValidator,
 	createMaxLengthValidator,
-	createMinLengthValidator
+	createMinLengthValidator,
+	toCamelCase
 };

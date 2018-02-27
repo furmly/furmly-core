@@ -570,7 +570,7 @@ module.exports = function(constants) {
 														claims: [result._id],
 														type: "DYNAMO",
 														value: proc._id,
-														activated:true,
+														activated: true,
 														category:
 															menuCategory ||
 															"MAINMENU",
@@ -601,6 +601,10 @@ module.exports = function(constants) {
 				exports = create;
 			}).getFunctionBody(),
 			constants.UIDS.LIB.CREATE_CRUD_PROCESS
+		)
+		.createLib(
+			`exports=${misc.toCamelCase.toString()}`,
+			constants.UIDS.LIB.TO_CAMEL_CASE
 		)
 		.createLib(
 			`exports= ${misc.createElement.toString()}`,

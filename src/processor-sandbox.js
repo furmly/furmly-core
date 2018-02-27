@@ -86,7 +86,7 @@ module.exports = {
 							)
 						);
 
-					async.waterfall(tasks, (er, result) => {
+					async.waterfall(postTasks, (er, result) => {
 						if (er) {
 							//write to some error log somewhere.
 							debug(
