@@ -818,6 +818,9 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 		if (options.fields) {
 			query.select(options.fields);
 		}
+		if (options.skip) {
+			query.skip(options.skip);
+		}
 	}
 
 	query.lean().exec(transformResult);
