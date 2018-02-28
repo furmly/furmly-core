@@ -55,7 +55,8 @@ DynamoElement.prototype.updateArgsComponentUID = function() {
 		misc.runThroughObj(
 			[
 				(key, data) => {
-					if (key == "elementType" && !data[key].component_uid) {
+					if (key == "elementType" && !data.component_uid) {
+						debugger;
 						data.component_uid = uuid();
 					}
 				}

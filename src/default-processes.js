@@ -799,7 +799,8 @@ module.exports = function(constants, systemEntities) {
 													"",
 													constants.ELEMENTTYPE.INPUT
 												),
-												createElement("description", "Description", "Explanation of elements purpose", constants.ELEMENTTYPE.INPUT)
+												createElement("description", "Description", "Explanation of elements purpose", constants.ELEMENTTYPE.INPUT),
+											    createElement("component_uid","Component_uid","",constants.ELEMENTTYPE.HIDDEN)
 											],
 											elementTag
 										),
