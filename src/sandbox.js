@@ -42,7 +42,11 @@ function DynamoSandbox(opts) {
  * @param  {Function} fn      Callback
  * @return {Object}           Result of operation
  */
-DynamoSandbox.prototype.run = function(context, fn) {
+DynamoSandbox.prototype.run = function (context, ttl, fn) {
+	if (Array.prototype.slice(arguments).length == 2) {
+		fn = ttl;
+		ttl = null;
+	}
 	let vm = new NodeVM({
 		require: false,
 		requireExternal: false,
@@ -51,7 +55,7 @@ DynamoSandbox.prototype.run = function(context, fn) {
 				args: context,
 				processors: this.processors.slice(),
 				postprocessors: [],
-				processorsTimeout: 60000,
+				processorsTimeout: ttl || 60000,
 				systemEntities,
 				constants,
 				entityRepo: this.entityRepo,
