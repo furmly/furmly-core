@@ -43,7 +43,7 @@ function DynamoSandbox(opts) {
  * @return {Object}           Result of operation
  */
 DynamoSandbox.prototype.run = function (context, ttl, fn) {
-	if (Array.prototype.slice(arguments).length == 2) {
+	if (Array.prototype.slice.call(arguments).length == 2) {
 		fn = ttl;
 		ttl = null;
 	}
