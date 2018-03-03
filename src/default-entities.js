@@ -16,8 +16,7 @@ module.exports = [
 		schema: {
 			uid: { type: "String", unique: true, required: true },
 			code: { type: "String", required: true }
-		}
-		,
+		},
 		updated: "Date"
 	},
 	{
@@ -28,7 +27,8 @@ module.exports = [
 			uid: { type: "String", unique: true, sparse: true },
 			title: { type: "String", required: true },
 			description: { type: "String", required: true },
-			steps: [{ type: "ObjectId", ref: systemEntities.step }]
+			steps: [{ type: "ObjectId", ref: systemEntities.step }],
+			config: { type: "Mixed" }
 		},
 		updated: "Date"
 	},

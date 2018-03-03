@@ -13,6 +13,11 @@ function createConstants() {
 			this[array[i][0]] = array[i][1];
 		}
 	}
+	Constant.prototype.toString = function() {
+		return Object.keys(this).reduce((sum, x) => {
+			return (sum += this[x] + ",");
+		}, "");
+	};
 	Constant.prototype.in = function(val) {
 		for (var i in this) {
 			if (this.hasOwnProperty(i) && this[i] == val) return true;
@@ -61,7 +66,7 @@ function createConstants() {
 				["FIND_ELEMENT_BY_NAME", "findElementByName"],
 				["CONVERT_TO_SELECTABLE_LIST", "convertToSelectableList"],
 				["CONVERT_AND_SAVE_FILE", "convertFileAndSave"],
-				["TO_CAMEL_CASE","toCamelCase"]
+				["TO_CAMEL_CASE", "toCamelCase"]
 			),
 			PROCESSOR: new Constant(
 				"GET_DOMAINS",

@@ -445,8 +445,13 @@ function EntityRepo(opts) {
 			}
 
 			if (!item.save) item.save = self.getSaveService(entName);
+			let i;
 
-			let i = new clazz(item);
+			try {
+				i = new clazz(item);
+			} catch (e) {
+				return fn(e);
+			}
 			return fn(null, i);
 		}
 
@@ -733,7 +738,7 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 				}),
 				function(er, transformed) {
 					if (!fn) {
-						debugger;
+						//debugger;;
 						debug("no callback");
 					}
 					if (er) return fn(er);
@@ -748,7 +753,7 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 			return;
 		}
 		if (!fn) {
-			debugger;
+			//debugger;;
 			debug("no callback");
 		}
 		fn(
@@ -758,7 +763,7 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 	}
 
 	if (!this.models[name]) {
-		debugger;
+		//debugger;;
 		debug(`cannot find any model by that name ${name}`);
 		return setImmediate(fn, new Error("Model does not exist"));
 	}
@@ -966,7 +971,7 @@ EntityRepo.prototype.deleteEntity = function(name, id, fn) {
  */
 EntityRepo.prototype.createSchemas = function(fn) {
 	var self = this;
-	//debugger;
+	////debugger;;
 	function createRunContext(code) {
 		return function(value) {
 			var sandbox = {
@@ -999,7 +1004,7 @@ EntityRepo.prototype.createSchemas = function(fn) {
 			var existing = self.models[this.prop] || mongoose.model(this.prop);
 			var newSchema = this.item;
 			//JSON.parse(this.item);
-			debugger;
+			//debugger;;
 			var diff = _.omitBy(newSchema, function(v, k) {
 				return _.isEqual(self.schemas[that.prop][k], v);
 			});
@@ -1007,7 +1012,7 @@ EntityRepo.prototype.createSchemas = function(fn) {
 			var indexes = removeCompoundIndexes(diff);
 			var change = Object.keys(diff);
 			if (diff && change.length) {
-				debugger;
+				//debugger;;
 				existing.schema.add(generator.convert(diff, mongoose));
 				removeCompoundIndexes(newSchema);
 				self.models[this.prop] = existing;
@@ -1136,7 +1141,7 @@ EntityRepo.prototype.createSchemas = function(fn) {
 						let dependencies,
 							_continue = function(callback, prop, er) {
 								if (er) return callback(er);
-								//debugger;
+								////debugger;;
 								assigned[prop] = 1;
 
 								//find out if some models have met their conditions required to resolve
@@ -1164,7 +1169,7 @@ EntityRepo.prototype.createSchemas = function(fn) {
 									if (resolve.length) {
 										//remove all the deferred guys about to be executed.
 										tobeRemoved.forEach(x => {
-											//debugger;
+											////debugger;;
 											deffered.splice(
 												deffered.indexOf(x),
 												1

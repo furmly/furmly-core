@@ -1,6 +1,9 @@
 const misc = require("./misc"),
 	_ = require("lodash"),
-	async=require('async'),
+	constants = require("./constants"),
+	async = require("async"),
+	debug = require("debug")("element"),
+	warn = misc.warn(debug),
 	uuid = require("uuid");
 
 /**
@@ -17,6 +20,12 @@ function DynamoElement(opts) {
 	if (!opts.elementType) throw new Error("element type must be valid");
 
 	if (!opts.save) throw new Error("element must have persistence service");
+
+	if (!constants.ELEMENTTYPE.in(opts.elementType))
+		throw new Error("Unknown element type " + opts.elementType);
+
+	if (this.elementInvariants[opts.elementType])
+		this.elementInvariants[opts.elementType].call(this, opts);
 
 	this._id = opts._id;
 	this._save = opts.save;
@@ -56,7 +65,6 @@ DynamoElement.prototype.updateArgsComponentUID = function() {
 			[
 				(key, data) => {
 					if (key == "elementType" && !data.component_uid) {
-						debugger;
 						data.component_uid = uuid();
 					}
 				}
@@ -65,6 +73,10 @@ DynamoElement.prototype.updateArgsComponentUID = function() {
 		);
 	}
 };
+
+//will finish this when i have more time.
+DynamoElement.prototype.elementInvariants = misc.elementInvariants;
+
 /**
 	 * uses save service to save/update any async validators.
 	 * @param  {Function} fn callback

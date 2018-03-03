@@ -607,7 +607,9 @@ module.exports = function(constants) {
 			constants.UIDS.LIB.TO_CAMEL_CASE
 		)
 		.createLib(
-			`exports= ${misc.createElement.toString()}`,
+			`exports= ${misc.createElement
+				.toString()
+				.replace(/\$invariants/, misc.elementInvariants().toString())}`,
 			constants.UIDS.LIB.CREATE_ELEMENT
 		)
 		.createLib(

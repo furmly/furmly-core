@@ -18,7 +18,14 @@ if (typeof context.systemEntities !== "undefined")
 	addGetProp("systemEntities", lib_context, systemEntities);
 
 if (typeof async !== "undefined") addGetProp("async", lib_context, async);
-if (typeof debug !== "undefined") addGetProp("debug", lib_context, debug);
+if (typeof debug !== "undefined") {
+	let warn = function(message) {
+		debug(`warn:${message}`);
+	};
+	addGetProp("debug", lib_context, debug);
+	addGetProp("warn", lib_context, warn);
+	module_context.warn = warn;
+}
 if (typeof context.uuid !== "undefined")
 	addGetProp("uuid", lib_context, context.uuid);
 
