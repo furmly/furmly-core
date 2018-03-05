@@ -1020,9 +1020,10 @@ EntityRepo.prototype.createSchemas = function(fn) {
 				self._changeDetection[this.prop] = change;
 				self.refs[that.prop] = getRefs(newSchema);
 			}
-			debug(indexes);
-			if (indexes.length)
+			if (indexes.length) {
+				debug(`model has indexes:${indexes}`);
 				setupCompoundIndexes(self.models[this.prop].schema, indexes);
+			}
 		} catch (e) {
 			if (e.name == "MissingSchemaError") {
 				var _schema = that.item;
@@ -1080,12 +1081,16 @@ EntityRepo.prototype.createSchemas = function(fn) {
 					if (typeof obj[0] == "object") obj = obj[0];
 					else return;
 				}
-				refs = refs.concat(
-					getRefs(
-						obj,
-						prop == "extend" && file.schema ? key : key + prop + "."
-					)
-				);
+				if (obj.schema && self.schemas[obj.schema]) {
+					debugger;
+					obj = Object.assign(
+						{},
+						self.schemas[obj.schema],
+						obj.extend || {}
+					);
+					//debug(obj);
+				}
+				refs = refs.concat(getRefs(obj, key + prop + "."));
 				return;
 			}
 		});

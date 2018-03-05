@@ -74,7 +74,6 @@ DynamoElement.prototype.updateArgsComponentUID = function() {
 	}
 };
 
-//will finish this when i have more time.
 DynamoElement.prototype.elementInvariants = misc.elementInvariants;
 
 /**

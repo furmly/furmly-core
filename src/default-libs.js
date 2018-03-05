@@ -657,13 +657,6 @@ module.exports = function(constants) {
 							data,
 							name
 						) {
-							// debug(
-							// 	`converter called with arguments ${JSON.stringify(
-							// 		arguments,
-							// 		null,
-							// 		" "
-							// 	)}`
-							// );
 							return this.libs.createElement(
 								name,
 								this.firstWord(name),
@@ -678,13 +671,6 @@ module.exports = function(constants) {
 							data,
 							name
 						) {
-							// debug(
-							// 	`converter called with arguments ${JSON.stringify(
-							// 		arguments,
-							// 		null,
-							// 		" "
-							// 	)}`
-							// );
 							return this.libs.createElement(
 								name,
 								this.firstWord(name),
@@ -699,13 +685,6 @@ module.exports = function(constants) {
 							data,
 							name
 						) {
-							// debug(
-							// 	`converter called with arguments ${JSON.stringify(
-							// 		arguments,
-							// 		null,
-							// 		" "
-							// 	)}`
-							// );
 							return this.libs.createElement(
 								name,
 								this.firstWord(name),
@@ -717,13 +696,6 @@ module.exports = function(constants) {
 							);
 						},
 						[this.constants.ENTITYTYPE.DATE]: function(data, name) {
-							// debug(
-							// 	`converter called with arguments ${JSON.stringify(
-							// 		arguments,
-							// 		null,
-							// 		" "
-							// 	)}`
-							// );
 							return this.libs.createElement(
 								name,
 								this.firstWord(name),
@@ -738,13 +710,6 @@ module.exports = function(constants) {
 							data,
 							name
 						) {
-							// debug(
-							// 	`converter called with arguments ${JSON.stringify(
-							// 		arguments,
-							// 		null,
-							// 		" "
-							// 	)}`
-							// );
 							return this.libs.createElement(
 								name,
 								this.firstWord(name),
@@ -759,13 +724,6 @@ module.exports = function(constants) {
 							data,
 							name
 						) {
-							// debug(
-							// 	`converter called with arguments ${JSON.stringify(
-							// 		arguments,
-							// 		null,
-							// 		" "
-							// 	)}`
-							// );
 							return this.libs.createElement(
 								name,
 								this.firstWord(name),
@@ -780,13 +738,6 @@ module.exports = function(constants) {
 							data,
 							name
 						) {
-							// debug(
-							// 	`reference converter called with arguments ${JSON.stringify(
-							// 		arguments,
-							// 		null,
-							// 		" "
-							// 	)}`
-							// );
 							return this.libs.createElement(
 								name,
 								this.firstWord(name),
@@ -811,76 +762,38 @@ module.exports = function(constants) {
 					let elements = [],
 						keys = Object.keys(x),
 						self = this;
-					// debug("converting---x");
-					// debug(x);
-					// debug("------x");
-					// debug("number of properties " + keys.length);
-					// debug(keys);
 
 					for (var i = 0; i < keys.length; i++) {
 						let result,
 							y = keys[i];
 
 						if (Array.prototype.isPrototypeOf(x[y])) {
-							// debug(
-							// 	`converting property ${y} which is an array ${JSON.stringify(
-							// 		x[y],
-							// 		null,
-							// 		" "
-							// 	)} `
-							// );
+
 							result = self.map[
 								this.constants.ENTITYTYPE.ARRAY
 							].call(self, x[y], y);
-							// debug("array result-----x");
-							// debug(result);
-							// debug("------x");
 						}
 						if (typeof x[y] == "string" && self.map[x[y]]) {
 							//this should only happen if entity is a reference in an array.
-							// debug(`converting property ${y} string ${x[y]}`);
 							if (x[y] !== this.constants.ENTITYTYPE.REFERENCE)
 								throw new Error("Must be a Reference");
 
 							result = self.map[x[y]].call(self, x, y);
-							// debug("result-----x");
-							// debug(result);
-							// debug("------x");
 							elements.push(result);
 							break;
 						}
 
 						if (!result && typeof x[y] == "object") {
-							// debug(
-							// 	`converting property ${y} which is an object ${JSON.stringify(
-							// 		x[y],
-							// 		null,
-							// 		" "
-							// 	)} `
-							// );
 							if (self.map[x[y].type]) {
-								// debug(
-								// 	"type is known calling the appropriate type"
-								// );
 								result = self.map[x[y].type].call(
 									self,
 									x[y],
 									y
 								);
-								// debug("result-----x");
-								// debug(result);
-								// debug("-------x");
 							} else {
-								//it doesnt have a type therefore treat it like an object.
-								// debug(
-								// 	"type is unknown so treating it like an object..."
-								// );
 								result = self.map[
 									`${this.constants.ENTITYTYPE.OBJECT}`
 								].call(self, x[y], y);
-								// debug("result-----x");
-								// debug(result);
-								// debug("-------x");
 							}
 						}
 						if (!result)
@@ -888,13 +801,6 @@ module.exports = function(constants) {
 
 						elements.push(result);
 					}
-					// debug(
-					// 	`elements---------x\n ${JSON.stringify(
-					// 		elements,
-					// 		null,
-					// 		" "
-					// 	)}\n-------x`
-					// );
 
 					return elements;
 				};
