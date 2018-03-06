@@ -137,8 +137,8 @@ const elementInvariants = function() {
 					!item.args.processor &&
 					(!item.args.items || !item.args.items.length)
 				)
-					throw new Error(
-						"All selectsets/option groups must either have a processor or atleast one element in its items"
+					_warn(
+						"All selectsets/option groups must either have a processor or atleast one element in its items.PLEASE NOTE: This will result in exception in production"
 					);
 
 				if (item.args.items)

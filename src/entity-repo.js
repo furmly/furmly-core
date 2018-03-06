@@ -987,8 +987,7 @@ EntityRepo.prototype.createSchemas = function(fn) {
 		let exp = /"schema"\s*\:\s*"(\w+)"/gi,
 			match,
 			result = [];
-
-		while ((match = exp.exec(string))) {
+		while ((match = exp.exec(JSON.stringify(string)))) {
 			result.push(match[1]);
 		}
 		let r =
@@ -996,6 +995,8 @@ EntityRepo.prototype.createSchemas = function(fn) {
 			result.reduce((sum, x) => {
 				return (sum[x] = 1), sum;
 			}, {});
+
+		debug(r);
 		return r;
 	}
 	function assignModel(callback) {
@@ -1195,6 +1196,7 @@ EntityRepo.prototype.createSchemas = function(fn) {
 							};
 						if (
 							(dependencies = containsSchema(item)) &&
+							!debug(dependencies) &&
 							!_.isMatch(assigned, dependencies)
 						) {
 							Object.defineProperties(dependencies, {
