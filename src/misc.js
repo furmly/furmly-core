@@ -118,17 +118,17 @@ const elementInvariants = function() {
 
 				if (
 					item.args.config &&
-					item.args.config.processorArgs &&
-					typeof item.args.config.processorArgs !== "string"
+					item.args.config.customArgs &&
+					typeof item.args.config.customArgs !== "string"
 				)
 					throw new Error("Illegal Processor Arguments");
 
 				if (
 					item.args.config &&
-					item.args.config.processorArgs &&
-					typeof item.args.config.processorArgs == "string"
+					item.args.config.customArgs &&
+					typeof item.args.config.customArgs == "string"
 				) {
-					this._ensureValidJSONString(item.args.config.processorArgs);
+					this._ensureValidJSONString(item.args.config.customArgs);
 				}
 			},
 			[_constants.ELEMENTTYPE.SELECTSET]: function(item) {
