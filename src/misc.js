@@ -423,6 +423,7 @@ let createMaxLengthValidator = function(max, error) {
 	};
 };
 function findElementByName(arr, name) {
+	debugger;
 	let _constants =
 		typeof this.constants == "undefined" ? constants : this.constants;
 	//this.debug(constants);
@@ -431,7 +432,7 @@ function findElementByName(arr, name) {
 		default: (...args) => {
 			return findElementByName.apply(this, args);
 		},
-		[_constants.GRID]: (grid, name) => {
+		[_constants.ELEMENTTYPE.GRID]: (grid, name) => {
 			let item = null;
 			if (
 				(item = findElementByName.call(
@@ -444,7 +445,7 @@ function findElementByName(arr, name) {
 
 			return item;
 		},
-		[_constants.SELECTSET]: (set, name) => {
+		[_constants.ELEMENTTYPE.SELECTSET]: (set, name) => {
 			let item = null;
 			if (
 				(item = findElementByName.call(
@@ -458,7 +459,7 @@ function findElementByName(arr, name) {
 
 			return item;
 		},
-		[_constants.LIST]: (list, name) => {
+		[_constants.ELEMENTTYPE.LIST]: (list, name) => {
 			let item = null;
 			if (
 				(item = findElementByName.call(
@@ -473,21 +474,25 @@ function findElementByName(arr, name) {
 			return item;
 		}
 	};
+	if (arr && !Array.prototype.isPrototypeOf(arr)) {
+		arr = [arr];
+	}
 	if (!arr || !arr.length) return null;
 	let item = null;
 	for (var i = arr.length - 1; i >= 0; i--) {
-		item = arr[i];
-		if (item.name == name) {
-			return item;
+		curr = arr[i];
+		if (curr.name == name) {
+			return curr;
 		}
+
 		if (
-			(_internalSearches[item.elementType] &&
-				(item = _internalSearches[item.elementType](item, name))) ||
-			(item.args &&
-				item.args.elements &&
-				(item = _internalSearches.default(item.args.elements, name))) ||
-			(item.elements &&
-				(item = _internalSearches.default(item.elements, name)))
+			(_internalSearches[curr.elementType] &&
+				(item = _internalSearches[curr.elementType](curr, name))) ||
+			(curr.args &&
+				curr.args.elements &&
+				(item = _internalSearches.default(curr.args.elements, name))) ||
+			(curr.elements &&
+				(item = _internalSearches.default(curr.elements, name)))
 		) {
 			return item;
 		}

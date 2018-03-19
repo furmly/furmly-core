@@ -533,7 +533,63 @@ module.exports = function(constants, systemEntities) {
 		)
 		.createProcessor(
 			"Lists input types",
-			"var self=this;callback(null,Object.keys(this.constants.INPUTTYPE).map(function(x){return {_id:self.constants.INPUTTYPE[x],displayLabel:self.constants.INPUTTYPE[x]}; }));",
+			(() => {
+				const getElementsFor = elementType => {
+					const getDateUI = name => {
+						return this.libs.createElement(
+							name,
+							`${name}`,
+							"",
+							this.constants.ELEMENTTYPE.SELECTSET,
+							{
+								path: `${name}Config`,
+								items: [
+									{
+										id: "DATE",
+										displayLabel: "date",
+										elements: [
+											this.libs.createElement(
+												"date",
+												"Date",
+												"",
+												this.constants.ELEMENTTYPE
+													.INPUT,
+												{
+													type: this.constants
+														.INPUTTYPE.DATE
+												}
+											)
+										]
+									},
+									{
+										id: this.constants.DATE.TODAY,
+										displayLabel: "today",
+										elements: []
+									}
+								]
+							}
+						);
+					};
+					switch (elementType) {
+						case this.constants.INPUTTYPE.DATE:
+							return [getDateUI("min"), getDateUI("max")];
+						default:
+							return [];
+					}
+				};
+				callback(
+					null,
+					Object.keys(this.constants.INPUTTYPE).map(x => {
+						let id = this.constants.INPUTTYPE[x];
+						return {
+							id,
+							displayLabel: id,
+							elements: getElementsFor(id)
+						};
+					})
+				);
+			}).getFunctionBody(),
+			//	"var self=this;callback(null,Object.keys(this.constants.INPUTTYPE).map(function(x){return {_id:self.constants.INPUTTYPE[x],displayLabel:self.constants.INPUTTYPE[x]}; }));",
 			constants.UIDS.PROCESSOR.LIST_INPUT_TYPES
 		)
 		.createProcessor(

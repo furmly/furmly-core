@@ -42,6 +42,7 @@ function createConstants() {
 			"MINLENGTH",
 			"REGEX"
 		),
+		DATE: new Constant("TODAY"),
 		INPUTTYPE: new Constant(
 			["TEXT", "text"],
 			["NUMBER", "number"],

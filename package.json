@@ -27,7 +27,7 @@
     "async": "^2.4.1",
     "debug": "^3.0.0",
     "glob": "^7.1.2",
-    "mongoose": "^4.10.2",
+    "mongoose": "^4.13.12",
     "mongoose-gen": "git+https://github.com/chidionuekwusi/mongoose-gen.git",
     "uuid": "^3.1.0",
     "vm2": "^3.4.6"
