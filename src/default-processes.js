@@ -607,11 +607,8 @@ module.exports = function(constants, systemEntities) {
 																"Type of Input",
 																"The user interface uses this value to determine what type of input",
 																constants.ELEMENTTYPE.SELECTSET, {
+																	path:"config",
 																	processor:opts[constants.UIDS.PROCESSOR.LIST_INPUT_TYPES]
-																	// type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																	// config: {
-																	// 	value: 
-																	// }
 																}
 															)
 														]
