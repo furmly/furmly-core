@@ -23,6 +23,9 @@ let toCamelCase = function(str) {
 			return $1.toLowerCase();
 		});
 };
+const freeze = function(obj) {
+	Object.keys(obj).forEach(Object.freeze);
+};
 /**
  * Used to create elements
  * @memberOf module:misc
@@ -619,5 +622,6 @@ module.exports = {
 	createMaxLengthValidator,
 	createMinLengthValidator,
 	toCamelCase,
-	warn
+	warn,
+	freeze
 };

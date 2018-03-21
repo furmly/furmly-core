@@ -589,7 +589,6 @@ module.exports = function(constants, systemEntities) {
 					})
 				);
 			}).getFunctionBody(),
-			//	"var self=this;callback(null,Object.keys(this.constants.INPUTTYPE).map(function(x){return {_id:self.constants.INPUTTYPE[x],displayLabel:self.constants.INPUTTYPE[x]}; }));",
 			constants.UIDS.PROCESSOR.LIST_INPUT_TYPES
 		)
 		.createProcessor(

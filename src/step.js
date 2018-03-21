@@ -24,7 +24,7 @@ function DynamoStep(opts) {
 	this.stepType = opts.stepType;
 	this._save = opts.save;
 	this.mode = opts.mode;
-	this.description=opts.description;
+	this.description = opts.description;
 	var postprocessors = opts.postprocessors || [];
 	var _state = getState.call(this, opts);
 
@@ -170,14 +170,16 @@ function DynamoStep(opts) {
 				require: false,
 				requireExternal: false,
 				sandbox: {
-					context: Object.assign(_context, {
-						systemEntities,
-						constants,
-						entityRepo: this.entityRepo,
-						async,
-						debug,
-						uuid
-					})
+					context: 
+						Object.assign(_context, {
+							systemEntities,
+							constants,
+							entityRepo: this.entityRepo,
+							async,
+							debug,
+							uuid
+						})
+					
 				}
 			});
 			var handle = vm.run(sandboxCode);
@@ -256,7 +258,7 @@ DynamoStep.prototype.save = function(fn) {
 								processors: processorIds,
 								postprocessors: postprocessorIds,
 								stepType: self.stepType,
-								description:self.description,
+								description: self.description,
 								mode: self.mode
 							},
 							state || {}
