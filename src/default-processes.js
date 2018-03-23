@@ -143,6 +143,7 @@ module.exports = function(constants, systemEntities) {
 										createElement('requiresIdentity', 'Requires Identity', '', constants.ELEMENTTYPE.INPUT, {
 											type: constants.INPUTTYPE.CHECKBOX
 										}),
+										createElement('disableBackwardNavigation','disables backward navigation','',constants.ELEMENTTYPE.INPUT,{type:constants.INPUTTYPE.CHECKBOX}),
 										createElement('config', 'Additional Information', '', constants.ELEMENTTYPE.SCRIPT,{type:"JSON"})
 									],
 									relationships: {

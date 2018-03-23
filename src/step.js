@@ -170,16 +170,14 @@ function DynamoStep(opts) {
 				require: false,
 				requireExternal: false,
 				sandbox: {
-					context: 
-						Object.assign(_context, {
-							systemEntities,
-							constants,
-							entityRepo: this.entityRepo,
-							async,
-							debug,
-							uuid
-						})
-					
+					context: Object.assign(_context, {
+						systemEntities,
+						constants,
+						entityRepo: this.entityRepo,
+						async,
+						debug,
+						uuid
+					})
 				}
 			});
 			var handle = vm.run(sandboxCode);

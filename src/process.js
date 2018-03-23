@@ -35,6 +35,7 @@ function DynamoProcess(opts) {
 	this.title = opts.title;
 	this.version = opts.version;
 	this.requiresIdentity = opts.requiresIdentity;
+	this.disableBackwardNavigation = opts.disableBackwardNavigation;
 	//this.fetchProcessor = opts.fetchProcessor;
 	this._save = opts.save;
 	if (opts.uid) this.uid = opts.uid;
@@ -213,7 +214,17 @@ DynamoProcess.prototype.run = function(context, fn) {
 			}
 
 			if (currentStep) {
+
 				self.currentStepIndex = currentStep.value;
+				//if backward navigation is allowed , get the current step passed to be processed and make sure
+				//current step passed by client is less than what has been stored.
+				if (
+					self.disableBackwardNavigation &&
+					typeof context.$currentStep == "number" &&
+					context.$currentStep < currentStep.value
+				)
+					self.currentStepIndex = context.$currentStep;
+
 				processStep.call(self, {
 					instanceId: context.instanceId
 				});
@@ -232,6 +243,11 @@ DynamoProcess.prototype.run = function(context, fn) {
 	processStep();
 };
 
+DynamoProcess.prototype.goBack = function(context, fn) {
+	if (context.instanceId) {
+		this.store.get(context.instanceId, (er, info) => {});
+	}
+};
 /**
 	 * saves the process/children using persistence service.
 	 * @param  {Function} fn callback
@@ -259,7 +275,8 @@ DynamoProcess.prototype.save = function(fn) {
 					uid: self.uid,
 					steps: mergedIds,
 					config: self.config,
-					requiresIdentity: self.requiresIdentity
+					requiresIdentity: self.requiresIdentity,
+					disableBackwardNavigation: self.disableBackwardNavigation
 				});
 			},
 			(model, callback) => {

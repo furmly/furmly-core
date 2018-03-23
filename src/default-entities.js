@@ -23,6 +23,7 @@ module.exports = [
 		name: systemEntities.process,
 		schema: {
 			requiresIdentity: { type: "Boolean", default: "requiresIdentity" },
+			disableBackwardNavigation: { type: "Boolean"},
 			fetchProcessor: { type: "ObjectId", ref: systemEntities.processor },
 			uid: { type: "String", unique: true, sparse: true },
 			title: { type: "String", required: true },
