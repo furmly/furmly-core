@@ -219,7 +219,7 @@ DynamoProcess.prototype.run = function(context, fn) {
 				//if backward navigation is allowed , get the current step passed to be processed and make sure
 				//current step passed by client is less than what has been stored.
 				if (
-					self.disableBackwardNavigation &&
+					!self.disableBackwardNavigation &&
 					typeof context.$currentStep == "number" &&
 					context.$currentStep < currentStep.value
 				)
