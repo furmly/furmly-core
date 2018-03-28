@@ -113,6 +113,27 @@ DynamoProcess.prototype.run = function(context, fn) {
 		that = self;
 	this.validate(fn);
 
+	//adjust context
+	if (context)
+		if (context.$form) {
+			context = Object.assign(
+				context.$form,
+				context.$processParams || {}
+			);
+		} else {
+			let contextParamExp = /^\$/;
+			Object.keys(context).reduce((sum, x) => {
+				if (contextParamExp.test(x)) {
+					let value = context[x];
+					Object.defineProperties(sum, {
+						[x]: { enumerable: false, get: () => value }
+					});
+				}
+
+				return sum;
+			}, context);
+		}
+
 	function processStep(args) {
 		var index = self.currentStepIndex || 0,
 			step = self.steps[index],
@@ -134,17 +155,14 @@ DynamoProcess.prototype.run = function(context, fn) {
 			step.run(context, function(er, message) {
 				if (er) return fn(er);
 
-				self.currentStepIndex =
-					index +
-					//self.steps.indexOf(step)
-					1;
+				self.currentStepIndex = index + 1;
 
 				var result = _.assign(
 					{
 						message: message,
 						status: constants.PROCESSSTATUS.COMPLETED
 					},
-					args || {}
+					(args && { $instanceId: args.instanceId }) || {}
 				);
 
 				if (self.steps.length > self.currentStepIndex) {
@@ -157,7 +175,7 @@ DynamoProcess.prototype.run = function(context, fn) {
 						);
 					}
 					self.store.update(
-						args.instanceId || context.instanceId,
+						args.instanceId || context.$instanceId,
 						self.currentStepIndex,
 						function(er) {
 							fn(er, result);
@@ -166,8 +184,8 @@ DynamoProcess.prototype.run = function(context, fn) {
 					return;
 				}
 
-				if (context.instanceId) {
-					self.store.remove(context.instanceId, function(er) {
+				if (context.$instanceId) {
+					self.store.remove(context.$instanceId, function(er) {
 						if (er) return fn(er);
 						fn(null, result);
 					});
@@ -202,10 +220,10 @@ DynamoProcess.prototype.run = function(context, fn) {
 		_continue();
 	}
 	if (this.steps.length > 1) {
-		this.store.get(context.instanceId || "", function(er, currentStep) {
+		this.store.get(context.$instanceId || "", function(er, currentStep) {
 			if (er) return fn(er);
 
-			if (context.instanceId && !currentStep) {
+			if (context.$instanceId && !currentStep) {
 				return fn(
 					new Error(
 						"We are sorry but we no longer have the previous information you' submitted. Please restart the process..."
@@ -214,7 +232,6 @@ DynamoProcess.prototype.run = function(context, fn) {
 			}
 
 			if (currentStep) {
-
 				self.currentStepIndex = currentStep.value;
 				//if backward navigation is allowed , get the current step passed to be processed and make sure
 				//current step passed by client is less than what has been stored.
@@ -226,7 +243,7 @@ DynamoProcess.prototype.run = function(context, fn) {
 					self.currentStepIndex = context.$currentStep;
 
 				processStep.call(self, {
-					instanceId: context.instanceId
+					instanceId: context.$instanceId
 				});
 			} else {
 				self.store.keep(self.currentStepIndex || 0, function(er, data) {
@@ -244,8 +261,8 @@ DynamoProcess.prototype.run = function(context, fn) {
 };
 
 DynamoProcess.prototype.goBack = function(context, fn) {
-	if (context.instanceId) {
-		this.store.get(context.instanceId, (er, info) => {});
+	if (context.$instanceId) {
+		this.store.get(context.$instanceId, (er, info) => {});
 	}
 };
 /**
