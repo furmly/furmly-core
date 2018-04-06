@@ -47,7 +47,7 @@ function DynamoProcess(opts) {
 			}
 		},
 		config: {
-			enumerable: true,
+			enumerable: false,
 			get: function() {
 				if (typeof opts.config == "string")
 					opts.config = JSON.parse(opts.config);
