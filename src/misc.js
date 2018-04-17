@@ -92,6 +92,57 @@ let createElement = function(
 
 	return element;
 };
+/**
+ * convention for inner element lists in compound elements.
+ * @type {Array}
+ */
+const knownElementsLocations = [
+	"elements",
+	"args.elements",
+	"args.items",
+	"args.itemTemplate",
+	"args.extra.createTemplate",
+	"args.extra.editTemplate",
+	"args.filter"
+];
+/**
+ * search for a property path in the supplied item and run function on every item in the found list.
+ * @param  {Object} item  Object to search
+ * @param  {Array} locs  Array of locations to look for
+ * @param  {Function} match Predicate function to determine if the right array has been located
+ * @param  {Function} run   Action to execute on every item in found list.
+ * @return {Void}       Returns nothing.
+ */
+function searchForList(item, locs, match, run) {
+	debugger;
+	match = match || (curr => typeof curr[0].elementType == "undefined");
+	locs.forEach(loc => {
+		let curr = item,
+			list = loc.split(".");
+
+		for (var i = 0; i <= list.length - 1; i++) {
+			if (typeof curr[list[i]] == "undefined") break;
+
+			curr = curr[list[i]];
+
+			if (
+				i == list.length - 1 &&
+				Array.prototype.isPrototypeOf(curr) &&
+				curr.length
+			) {
+				if (!match(curr)) {
+					curr.forEach(x => {
+						searchForList(x, locs, run);
+					});
+				} else
+					curr.forEach(x => {
+						searchForList(x, locs, run);
+						run(x);
+					});
+			}
+		}
+	});
+}
 const elementInvariants = function() {
 		let _constants =
 				typeof this.constants == "undefined"
@@ -623,5 +674,7 @@ module.exports = {
 	createMinLengthValidator,
 	toCamelCase,
 	warn,
-	freeze
+	freeze,
+	knownElementsLocations,
+	searchForList
 };

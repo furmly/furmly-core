@@ -6,6 +6,10 @@ const misc = require("./misc"),
 	warn = misc.warn(debug),
 	uuid = require("uuid");
 
+const ex = /^\$/;
+const isLibValue = value => {
+	return ex.test(value);
+};
 /**
 	 * Class representing DynamoElement
 	 * @constructor
@@ -19,7 +23,10 @@ function DynamoElement(opts) {
 
 	if (!opts.elementType) throw new Error("element type must be valid");
 
-	if (!opts.save) throw new Error("element must have persistence service");
+	if (!opts.getLibValue)
+		throw new Error(
+			"element must have a means of retrieving library values"
+		);
 
 	if (!constants.ELEMENTTYPE.in(opts.elementType))
 		throw new Error("Unknown element type " + opts.elementType);
@@ -28,7 +35,6 @@ function DynamoElement(opts) {
 		this.elementInvariants[opts.elementType].call(this, opts);
 
 	this._id = opts._id;
-	this._save = opts.save;
 	this.name = opts.name;
 	this.elementType = opts.elementType;
 	this.label = opts.label;
@@ -39,25 +45,42 @@ function DynamoElement(opts) {
 	this.uid = opts.uid;
 	this.order = opts.order;
 	this.component_uid = opts.component_uid || uuid();
+	this.getLibValue = opts.getLibValue;
 }
+
+DynamoElement.prototype.getValue = function(value, fn) {
+	if (isLibValue(value)) return this.getLibValue(value, fn);
+	return setImmediate(fn, null, value);
+};
 /**
 	 * Creates a description of an element  a client can consume
 	 * @param  {Function} fn callback
 	 * @return {Object}      object representing the element.
 	 */
 DynamoElement.prototype.describe = function(fn) {
-	fn(null, {
-		name: this.name,
-		label: this.label,
-		elementType: this.elementType,
-		args: this.args,
-		description: this.description,
-		validators: this.validators,
-		uid: this.uid,
-		order: this.order,
-		component_uid: this.component_uid,
-		asyncValidators: _.map(this.asyncValidators, "_id")
-	});
+	let label = this.label,
+		description = this.description;
+	async.parallel(
+		[
+			this.getValue.bind(this, label),
+			this.getValue.bind(this, description)
+		],
+		(er, values) => {
+			if (er) return fn(er);
+			fn(null, {
+				name: this.name,
+				label: values[0],
+				elementType: this.elementType,
+				args: this.args,
+				description: values[1],
+				validators: this.validators,
+				uid: this.uid,
+				order: this.order,
+				component_uid: this.component_uid,
+				asyncValidators: _.map(this.asyncValidators, "_id")
+			});
+		}
+	);
 };
 DynamoElement.prototype.updateArgsComponentUID = function() {
 	if (this.args) {

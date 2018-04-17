@@ -16,7 +16,8 @@ const constants = require("./constants"),
 	DynamoForm = require("./form"),
 	DynamoLib = require("./lib"),
 	DynamoAsyncValidator = require("./async-validator"),
-	mongoose = require("mongoose");
+	mongoose = require("mongoose"),
+	DynamoSandbox = require("./sandbox");
 
 mongoose.Promise = global.Promise;
 
@@ -368,8 +369,11 @@ function EntityRepo(opts) {
 				);
 			}
 
+			if (!item.getLibValue) item.getLibValue = self.getLibValue;
 			if (!item.save)
 				item.save = self.getSaveService(systemEntities.element);
+
+			if (!item.getLibs) item.getLibs = self.getLibsForElement;
 
 			async.parallel(
 				_.map(item.asyncValidators, function(x) {
@@ -465,6 +469,39 @@ function EntityRepo(opts) {
  */
 EntityRepo.prototype.setInfrastructure = function(manager) {
 	this.infrastructure = manager;
+};
+
+const extractValueFromLib = function() {
+	if (this.args.params) {
+		let [uid, ...params] = this.args.params.split("|");
+		if (typeof this.libs[uid] == "undefined") {
+			callback(new Error("Undefined lib reference"));
+		} else {
+			if (Function.prototype.isPrototypeOf(this.libs[uid])) {
+				this.libs[uid].apply(this, params, callback);
+			} else
+				callback(
+					null,
+					params.reduce((item, x) => {
+						if (item[x]) return item[x];
+						return item;
+					}, this.libs[uid])
+				);
+		}
+	} else callback();
+}.getFunctionBody();
+
+/**
+ * Used by elements/validators when describing themselves to resolve library values.
+ * @param  {[type]}   params [description]
+ * @param  {Function} fn     [description]
+ * @return {[type]}          [description]
+ */
+EntityRepo.prototype.getLibValue = function(params, fn) {
+	new DynamoSandbox({
+		processors: [new DynamoProcessor({ code: extractValueFromLib })],
+		entityRepo: this.processorEntityRepo
+	}).run({ params }, fn);
 };
 
 /**
