@@ -12,6 +12,7 @@ const constants = require("./constants"),
 	DynamoProcess = require("./process"),
 	DynamoStep = require("./step"),
 	DynamoProcessor = require("./processor"),
+	ElementFactory = require("./element-factory"),
 	DynamoElement = require("./element"),
 	DynamoForm = require("./form"),
 	DynamoLib = require("./lib"),
@@ -20,6 +21,7 @@ const constants = require("./constants"),
 	DynamoSandbox = require("./sandbox");
 
 mongoose.Promise = global.Promise;
+_elementFactory = new ElementFactory();
 
 /**
  * @typedef {ProcessorContext}
@@ -148,6 +150,7 @@ function EntityRepo(opts) {
 				item._id
 			);
 		};
+	this.getLibValue = this.getLibValue.bind(this);
 	/**
 	 * @type {module:Dynamo~ProcessorContext}
 	 * @property {module:Dynamo.EntityRepo#queryEntity} get function for querying objects
@@ -373,8 +376,6 @@ function EntityRepo(opts) {
 			if (!item.save)
 				item.save = self.getSaveService(systemEntities.element);
 
-			if (!item.getLibs) item.getLibs = self.getLibsForElement;
-
 			async.parallel(
 				_.map(item.asyncValidators, function(x) {
 					return self.transformers[
@@ -386,7 +387,7 @@ function EntityRepo(opts) {
 					item.asyncValidators = asyncValidators;
 					let _element;
 					try {
-						_element = new DynamoElement(item);
+						_element = _elementFactory.get(item);
 					} catch (e) {
 						return fn(e);
 					}
@@ -472,8 +473,11 @@ EntityRepo.prototype.setInfrastructure = function(manager) {
 };
 
 const extractValueFromLib = function() {
+	debugger;
 	if (this.args.params) {
+		this.debug(this.args.params);
 		let [uid, ...params] = this.args.params.split("|");
+		uid = uid && uid.replace("$", "");
 		if (typeof this.libs[uid] == "undefined") {
 			callback(new Error("Undefined lib reference"));
 		} else {
@@ -499,7 +503,14 @@ const extractValueFromLib = function() {
  */
 EntityRepo.prototype.getLibValue = function(params, fn) {
 	new DynamoSandbox({
-		processors: [new DynamoProcessor({ code: extractValueFromLib })],
+		processors: [
+			new DynamoProcessor({
+				title: "dynamic processor",
+				code: extractValueFromLib,
+				_id: "dynamic",
+				save: () => {}
+			})
+		],
 		entityRepo: this.processorEntityRepo
 	}).run({ params }, fn);
 };

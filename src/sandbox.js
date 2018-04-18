@@ -8,6 +8,7 @@ const { NodeVM } = require("vm2"),
 	sandboxCode = require("fs").readFileSync(
 		__dirname + path.sep + "processor-sandbox.js"
 	),
+	elementFactory = new (require("./element-factory"))(),
 	uuid = require("uuid");
 
 /**
@@ -32,7 +33,7 @@ function DynamoSandbox(opts) {
 	)
 		throw new Error("EntityRepo is required by all processors");
 
-	(this.processors = opts instanceof DynamoProcessor ? [opts] : opts),
+	(this.processors = opts instanceof DynamoProcessor ? [opts] : opts.processors),
 		(this.entityRepo =
 			opts instanceof DynamoProcessor ? args[1] : opts.entityRepo);
 }
@@ -42,7 +43,7 @@ function DynamoSandbox(opts) {
  * @param  {Function} fn      Callback
  * @return {Object}           Result of operation
  */
-DynamoSandbox.prototype.run = function (context, ttl, fn) {
+DynamoSandbox.prototype.run = function(context, ttl, fn) {
 	if (Array.prototype.slice.call(arguments).length == 2) {
 		fn = ttl;
 		ttl = null;
@@ -61,6 +62,7 @@ DynamoSandbox.prototype.run = function (context, ttl, fn) {
 				entityRepo: this.entityRepo,
 				async,
 				debug,
+				elementFactory,
 				uuid
 			}
 		}

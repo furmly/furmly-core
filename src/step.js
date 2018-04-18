@@ -8,6 +8,7 @@ const constants = require("./constants"),
 	uuid = require("uuid"),
 	assert = require("assert"),
 	_ = require("lodash"),
+	elementFactory = new (require("./element-factory"))(),
 	sandboxCode = fs.readFileSync(
 		__dirname + path.sep + "processor-sandbox.js"
 	),
@@ -176,7 +177,8 @@ function DynamoStep(opts) {
 						entityRepo: this.entityRepo,
 						async,
 						debug,
-						uuid
+						uuid,
+						elementFactory
 					})
 				}
 			});

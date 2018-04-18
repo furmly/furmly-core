@@ -11,6 +11,17 @@ let module_context = context,
 module_context.skip = {};
 module_context.SANDBOX_CONTEXT = true;
 
+function addGetProp(name, obj, result) {
+	Object.defineProperties(obj, {
+		[name]: {
+			enumerable: false,
+			get: function() {
+				return result;
+			}
+		}
+	});
+}
+
 if (typeof context.constants !== "undefined")
 	addGetProp("constants", lib_context, constants);
 
@@ -29,16 +40,10 @@ if (typeof debug !== "undefined") {
 if (typeof context.uuid !== "undefined")
 	addGetProp("uuid", lib_context, context.uuid);
 
-function addGetProp(name, obj, result) {
-	Object.defineProperties(obj, {
-		[name]: {
-			enumerable: false,
-			get: function() {
-				return result;
-			}
-		}
-	});
-}
+if (typeof elementFactory !== undefined)
+	addGetProp("elementFactory", lib_context, context.elementFactory);
+
+
 module.exports = {
 	getResult: fn => {
 		const run = () => {

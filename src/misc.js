@@ -1,6 +1,6 @@
 let uuid = require("uuid/v4"),
 	constants = require("./constants"),
-	// debug = require("debug")("misc"),
+	elementFactory = new (require("./element-factory"))(),
 	glob = require("glob");
 
 Function.prototype.getFunctionBody = function() {
@@ -47,50 +47,20 @@ let createElement = function(
 	validators,
 	asyncVals
 ) {
-	if (
-		typeof invariants == "undefined" &&
-		!arguments.callee.elementInvariants
-	) {
-		let _constants =
-				typeof this.constants == "undefined"
-					? constants
-					: this.constants,
-			_warn =
-				typeof this.warn == "undefined" ? warn(this.debug) : this.warn;
-		arguments.callee.elementInvariants = $invariants;
-	}
-
-	uuid = typeof uuid !== "undefined" ? uuid : this.uuid;
-	let element = {
-		elementType: type,
-		label: label,
-		name: name,
-		args: args,
-		asyncValidators: asyncVals || [],
-		description: description,
-		validators: validators || [],
-		component_uid: uuid()
-	};
-	let _invariants =
-		(typeof invariants !== "undefined" && invariants) ||
-		arguments.callee.elementInvariants;
-
-	if (typeof _invariants._ensureElement !== "function") {
-		debugger;
-		console.log("something light");
-	}
-	_invariants._ensureElement(element);
-	if (_invariants[type]) {
-		try {
-			_invariants[type](element);
-		} catch (e) {
-			throw new Error(
-				`An error occurred while creating element {${name}} type {${type}} error:{${e}} `
-			);
-		}
-	}
-
-	return element;
+	let _elementFactory =
+		typeof elementFactory !== "undefined"
+			? elementFactory
+			: this.elementFactory;
+	return _elementFactory
+		.get({
+			name,
+			label,
+			elementType: type,
+			args,
+			validators,
+			asyncValidators: asyncVals
+		})
+		.describeSync();
 };
 /**
  * convention for inner element lists in compound elements.
@@ -143,273 +113,6 @@ function searchForList(item, locs, match, run) {
 		}
 	});
 }
-const elementInvariants = function() {
-		let _constants =
-				typeof this.constants == "undefined"
-					? constants
-					: this.constants,
-			_warn = typeof this.warn == "undefined" ? warn() : this.warn;
-		return {
-			[_constants.ELEMENTTYPE.INPUT]: function(item) {
-				if (typeof item.args === "undefined")
-					_warn("element has no args");
-			},
-			[_constants.ELEMENTTYPE.SELECT]: function(item) {
-				this._ensureArgs(item);
-				if (!_constants.ELEMENT_SELECT_SOURCETYPE.in(item.args.type)) {
-					throw new Error(
-						"all select elements must have a valid type i.e " +
-							_constants.ELEMENT_SELECT_SOURCETYPE.toString()
-					);
-				}
-				if (
-					item.args.type === _constants.ELEMENT_SELECT_SOURCETYPE &&
-					!item.args.config
-				)
-					throw new Error(
-						"all select elements must have a processor if they are in processor mode"
-					);
-
-				if (
-					item.args.config &&
-					item.args.config.customArgs &&
-					typeof item.args.config.customArgs !== "string"
-				)
-					throw new Error("Illegal Processor Arguments");
-
-				if (
-					item.args.config &&
-					item.args.config.customArgs &&
-					typeof item.args.config.customArgs == "string"
-				) {
-					this._ensureValidJSONString(item.args.config.customArgs);
-				}
-			},
-			[_constants.ELEMENTTYPE.SELECTSET]: function(item) {
-				this._ensureArgs(item);
-				if (
-					!item.args.processor &&
-					(!item.args.items || !item.args.items.length)
-				)
-					_warn(
-						"All selectsets/option groups must either have a processor or atleast one element in its items.PLEASE NOTE: This will result in exception in production"
-					);
-
-				if (item.args.items)
-					for (var i = item.args.items.length - 1; i >= 0; i--) {
-						let curr = item.args.items[i];
-						if (typeof curr.id === "undefined")
-							throw new Error(
-								"All selectset options must have a valid id"
-							);
-						if (curr.elements && curr.elements.length)
-							this._ensureElements(curr.elements);
-					}
-			},
-			[_constants.ELEMENTTYPE.NAV]: function(item) {
-				this._ensureArgs(item);
-				if (!item.args.type)
-					throw new Error(
-						"All navigation elements require a type i.e" +
-							_constants.NAVIGATIONTYPE.toString()
-					);
-				if (!_constants.NAVIGATIONTYPE.in(item.args.type))
-					throw new Error(
-						"Invalid navigation element type i.e " +
-							_constants.NAVIGATIONTYPE.toString()
-					);
-			},
-			[_constants.ELEMENTTYPE.LIST]: function(item) {
-				this._ensureArgs(item);
-				if (
-					item.args.itemTemplate &&
-					Array.prototype.isPrototypeOf(item.args.itemTemplate)
-				)
-					this._ensureElements(item.args.itemTemplate);
-
-				if (
-					item.args.itemTemplate &&
-					!Array.prototype.isPrototypeOf(item.args.itemTemplate) &&
-					(!item.args.itemTemplate.dynamo_ref ||
-						!item.args.template_ref)
-				)
-					_warn(
-						"itemTemplate does not contain dynamo_ref but its template is not directly an array"
-					);
-
-				if (
-					item.args.behavior &&
-					item.args.behavior.extension &&
-					!Array.prototype.isPrototypeOf(item.args.behavior.extension)
-				)
-					throw new Error("All template extensions must be arrays");
-
-				if (item.args.behavior && item.args.behavior.extension)
-					this._ensureElements(item.args.behavior.extension);
-			},
-			[_constants.ELEMENTTYPE.IMAGE]: function(item) {
-				this._ensureArgs(item);
-				if (!item.args.type)
-					throw new Error(
-						"All Images require a valid type i.e " +
-							_constants.IMAGETYPE.toString()
-					);
-				if (!_constants.IMAGETYPE.in(item.args.type))
-					throw new Error(
-						"Invalid image type , i.e " +
-							_constants.IMAGETYPE.toString()
-					);
-
-				if (!item.args.config || !item.args.config.data)
-					throw new Error("All images require config.data");
-			},
-			[_constants.ELEMENTTYPE.HTMLVIEW]: function(item) {
-				this._ensureArgs(item);
-
-				if (item.args.html && typeof item.args.html !== "string")
-					throw new Error(
-						"HtmlView args.html property must be a string"
-					);
-			},
-			[_constants.ELEMENTTYPE.ACTIONVIEW]: function(item) {
-				this._ensureArgs(item);
-				if (!item.args.elements || !item.args.elements.length)
-					throw new Error(
-						"All action views must contain atleast one element"
-					);
-
-				if (!item.args.commandText) _warn("commandText is blank");
-				if (
-					item.args.commandText &&
-					typeof item.args.commandText !== "string"
-				)
-					throw new Error(
-						"commandText of actionview must be a string"
-					);
-
-				if (item.args.elements)
-					this._ensureElements(item.args.elements);
-			},
-			[_constants.ELEMENTTYPE.GRID]: function(item) {
-				this._ensureArgs(item);
-				this._ensureArray(item.args.commands);
-				this._ensureArray(item.args.filter);
-				if (!item.args.source)
-					throw new Error("All grids must have a args.source ");
-				if (item.args.mode && !_constants.GRIDMODE.in(item.args.mode))
-					throw new Error(
-						"Invalid grid mode , i.e " +
-							_constants.GRIDMODE.toString()
-					);
-				if (
-					((item.args.mode &&
-						item.args.mode == _constants.GRIDMODE.CRUD) ||
-						!item.args.mode) &&
-					(!item.args.extra ||
-						!item.args.extra.createTemplate ||
-						!item.args.extra.createTemplate.length ||
-						!item.args.extra.createProcessor)
-				)
-					throw new Error(
-						"all CRUD grids require a createTemplate and a createProcessor"
-					);
-				if (
-					item.args.mode &&
-					item.args.mode == _constants.GRIDMODE.EDITONLY &&
-					(!item.args.extra ||
-						!item.args.extra.editTemplate ||
-						!item.args.extra.editTemplate.length ||
-						!item.args.extra.editProcessor)
-				)
-					throw new Error(
-						"all CRUD grids require a createTemplate and a createProcessor"
-					);
-
-				if (item.args.filter && item.args.filterProcessor)
-					_warn(
-						"both filter and filter processor are set. Filter processor will take precidence"
-					);
-			},
-			[_constants.ELEMENTTYPE.COMMAND]: function(item) {
-				this._ensureArgs(item);
-				const isDefault = () =>
-					!item.args.commandType ||
-					item.args.commandType == _constants.COMMANDTYPE.DEFAULT;
-				if (isDefault() && !item.args.commandProcessor)
-					throw new Error(
-						"All default command elements require a processor"
-					);
-
-				if (isDefault() && item.args.commandProcessorArgs) {
-					this._ensureValidJSONString(item.args.commandProcessorArgs);
-				}
-
-				if (
-					item.args.commandType &&
-					!_constants.COMMANDTYPE.in(item.args.commandType)
-				)
-					throw new Error(
-						"Invalid command type i.e " +
-							_constants.COMMANDTYPE.toString()
-					);
-			},
-			[_constants.ELEMENTTYPE.FILEUPLOAD]: function(item) {
-				this._ensureArgs(item);
-				if (!item.args.fileType)
-					throw new Error("All file uploads require a args.fileType");
-			},
-			_ensureArgs: function(item) {
-				if (!item.args) throw new Error("element must contain args");
-			},
-			_ensureArray: function(item) {
-				if (item && !Array.prototype.isPrototypeOf(item))
-					throw new Error(
-						"Expected an Array , got a :" + typeof item
-					);
-			},
-			_ensureValidJSONString: function(string) {
-				try {
-					JSON.parse(string);
-				} catch (e) {
-					throw new Error("Invalid json string");
-				}
-			},
-			_ensureElement: function(item) {
-				if (!item) {
-					debugger;
-					throw new Error(
-						"undefined/null is not a valid value for an element"
-					);
-				}
-				if (
-					typeof item.name !== "string" ||
-					typeof item.label !== "string" ||
-					(item.description &&
-						typeof item.description !== "string") ||
-					typeof item.elementType !== "string" ||
-					(item.args && typeof item.args !== "object")
-				) {
-					this.debug && this.debug(arguments);
-					throw new Error(
-						"illegal argument(s) passed to createElement"
-					);
-				}
-			},
-			_ensureElements: function(arr) {
-				this._ensureArray(arr);
-				for (var i = arr.length - 1; i >= 0; i--) {
-					this._ensureElement(arr[i]);
-					if (this[arr[i].elementType])
-						this[arr[i].elementType](arr[i]);
-				}
-			},
-			toString: function() {
-				return convertObjectToString(this);
-			}
-			//need to add more for each of the implemented elements.
-		};
-	},
-	invariants = elementInvariants();
 
 let convertObjectToString = function(obj) {
 	let str = "{";
@@ -656,10 +359,10 @@ function capitalizeText(txt) {
  * Returns an initialization function for dynamo
  * @module misc
  */
+
 module.exports = {
 	createElement,
 	findElementByName,
-	elementInvariants,
 	getDirectories,
 	getOne,
 	capitalizeText,

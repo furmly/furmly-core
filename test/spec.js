@@ -821,6 +821,7 @@ describe("Integration", function() {
 			});
 		});
 		beforeEach(function(done) {
+			_debug("before each hook running");
 			this.processInstance = {
 				title: "Special Task",
 				description: "Students are mandated to complete it",
@@ -943,6 +944,7 @@ describe("Integration", function() {
 		it("a process can describe itself", function(done) {
 			var fixture = this;
 			fixture.processInstance.steps.push(fixture.stepInstance);
+			_debug(fixture.processInstance);
 			fixture.engine.saveProcess(
 				fixture.processInstance,
 				{
@@ -1378,6 +1380,61 @@ describe("Integration", function() {
 					assert.isNotNull(result);
 					assert.equal(result[0].firstName, "Chidi");
 					done();
+				}
+			);
+		});
+		it("a process can have dynamic values in its form elements", function(
+			done
+		) {
+			var fixture = this,
+				label = "Something light",
+				description = "Yes thats right , something light",
+				max = 450,
+				error = "you should reconsider";
+			fixture.processInstance.steps.push(fixture.stepInstance);
+			fixture.stepInstance.form.elements[0].label = "$test_lib|label";
+			fixture.stepInstance.form.elements[0].description =
+				"$test_lib|description";
+			fixture.stepInstance.form.elements[0].validators = [
+				{
+					validatorType: "REGEX",
+					error: "$test_lib|regex_message",
+					args: { exp: "\\d+" }
+				},
+				{
+					validatorType: "MAXLENGTH",
+					args: { max: "$test_lib|max" }
+				}
+			];
+			fixture.engine.saveProcess(
+				fixture.processInstance,
+				{
+					retrieve: true
+				},
+				function(er, proc) {
+					assert.isNull(er);
+					fixture.engine.saveLib(
+						{
+							uid: "test_lib",
+							code: `exports={label:'${label}',description:'${description}',regex_message:'${error}',max:${max}};`
+						},
+						er => {
+							assert.isNull(er);
+							proc.describe(function(er, x) {
+								assert.isNull(er);
+								assert.equal(
+									x.steps[0].form.elements[0].label,
+									label
+								);
+								assert.equal(
+									x.steps[0].form.elements[0].description,
+									description
+								);
+								_debug(JSON.stringify(x, null, " "));
+								done();
+							});
+						}
+					);
 				}
 			);
 		});

@@ -1,15 +1,11 @@
-const misc = require("./misc"),
-	_ = require("lodash"),
+const _ = require("lodash"),
 	constants = require("./constants"),
 	async = require("async"),
 	debug = require("debug")("element"),
-	warn = misc.warn(debug),
 	uuid = require("uuid");
 
 const ex = /^\$/;
-const isLibValue = value => {
-	return ex.test(value);
-};
+
 /**
 	 * Class representing DynamoElement
 	 * @constructor
@@ -23,16 +19,8 @@ function DynamoElement(opts) {
 
 	if (!opts.elementType) throw new Error("element type must be valid");
 
-	if (!opts.getLibValue)
-		throw new Error(
-			"element must have a means of retrieving library values"
-		);
-
 	if (!constants.ELEMENTTYPE.in(opts.elementType))
 		throw new Error("Unknown element type " + opts.elementType);
-
-	if (this.elementInvariants[opts.elementType])
-		this.elementInvariants[opts.elementType].call(this, opts);
 
 	this._id = opts._id;
 	this.name = opts.name;
@@ -46,11 +34,72 @@ function DynamoElement(opts) {
 	this.order = opts.order;
 	this.component_uid = opts.component_uid || uuid();
 	this.getLibValue = opts.getLibValue;
+	this.dynamicFields = [
+		"label",
+		"description",
+		"validators.error",
+		"validators.args.exp",
+		"validators.args.min",
+		"validators.args.max"
+	];
 }
 
 DynamoElement.prototype.getValue = function(value, fn) {
-	if (isLibValue(value)) return this.getLibValue(value, fn);
+	if (this.isLibValue(value)) {
+		if (!this.getLibValue)
+			throw new Error(
+				"element must have a means of retrieving library values"
+			);
+		return this.getLibValue(value, fn);
+	}
 	return setImmediate(fn, null, value);
+};
+
+DynamoElement.prototype.setValue = function(description, path, fn) {
+	let curr = description,
+		tasks = [],
+		list = path.split("."),
+		set = (context, path, cb) => {
+			this.getValue(context[path], (er, value) => {
+				if (er) return cb(er);
+				context[path] = value;
+				return cb();
+			});
+		};
+
+	for (var i = 0; i <= list.length - 1; i++) {
+		if (Array.prototype.isPrototypeOf(curr)) {
+			if (i == list.length - 1) {
+				//ive reached the end.
+				curr.forEach(x => {
+					if (x[list[i]]) tasks.push(set.bind(this, x, list[i]));
+				});
+			} else
+				curr = curr.reduce((sum, x) => {
+					if (x[list[i]]) sum.push(x[list[i]]);
+					return sum;
+				}, []);
+
+			if (!curr.length) break;
+
+			continue;
+		}
+		if (curr[list[i]]) {
+			if (i == list.length - 1)
+				//i have reached the end.
+				tasks.push(set.bind(this, curr, list[i]));
+			else curr = curr[list[i]];
+		} else {
+			break;
+		}
+	}
+	if (tasks.length)
+		return async.parallel(tasks, er => {
+			if (er) return fn(er);
+			return fn(null, description);
+		});
+
+	return fn(null, description);
 };
 /**
 	 * Creates a description of an element  a client can consume
@@ -58,46 +107,49 @@ DynamoElement.prototype.getValue = function(value, fn) {
 	 * @return {Object}      object representing the element.
 	 */
 DynamoElement.prototype.describe = function(fn) {
-	let label = this.label,
-		description = this.description;
-	async.parallel(
-		[
-			this.getValue.bind(this, label),
-			this.getValue.bind(this, description)
-		],
-		(er, values) => {
-			if (er) return fn(er);
-			fn(null, {
-				name: this.name,
-				label: values[0],
-				elementType: this.elementType,
-				args: this.args,
-				description: values[1],
-				validators: this.validators,
-				uid: this.uid,
-				order: this.order,
-				component_uid: this.component_uid,
-				asyncValidators: _.map(this.asyncValidators, "_id")
-			});
-		}
+	let element = {
+		name: this.name,
+		label: this.label,
+		elementType: this.elementType,
+		args: _.cloneDeep(this.args),
+		description: this.description,
+		validators: this.validators,
+		uid: this.uid,
+		order: this.order,
+		component_uid: this.component_uid,
+		asyncValidators: _.map(this.asyncValidators, "_id")
+	};
+	let tasks = this.dynamicFields.map(x =>
+		this.setValue.bind(this, element, x)
 	);
+	async.parallel(tasks, (er, values) => {
+		if (er) return fn(er);
+		fn(null, element);
+	});
 };
-DynamoElement.prototype.updateArgsComponentUID = function() {
-	if (this.args) {
-		misc.runThroughObj(
-			[
-				(key, data) => {
-					if (key == "elementType" && !data.component_uid) {
-						data.component_uid = uuid();
-					}
-				}
-			],
-			this.args
-		);
-	}
+/**
+ * Sync description of an element. Note no dynamic value resolution is possible with this method.
+ * @return {Object} Object representation of element.
+ */
+DynamoElement.prototype.describeSync = function() {
+	return {
+		name: this.name,
+		label: this.label,
+		elementType: this.elementType,
+		args: this.args,
+		description: this.description,
+		validators: this.validators,
+		uid: this.uid,
+		order: this.order,
+		component_uid: this.component_uid,
+		asyncValidators: _.map(this.asyncValidators, "_id")
+	};
+};
+DynamoElement.prototype.isLibValue = function(value) {
+	return ex.test(value);
 };
 
-DynamoElement.prototype.elementInvariants = misc.elementInvariants;
+//DynamoElement.prototype.elementInvariants = misc.elementInvariants;
 
 /**
 	 * uses save service to save/update any async validators.
@@ -107,7 +159,7 @@ DynamoElement.prototype.elementInvariants = misc.elementInvariants;
 DynamoElement.prototype.save = function(fn) {
 	var self = this;
 
-	this.updateArgsComponentUID();
+	//this.updateArgsComponentUID();
 
 	async.parallel(
 		_.map(this.asyncValidators, function(x) {
