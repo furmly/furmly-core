@@ -2,6 +2,7 @@ const DynamoElement = require("../element"),
 	_constants = require("../constants"),
 	misc = require("../element-utils"),
 	async = require("async"),
+	_ = require("lodash"),
 	_warn = misc.warn(require("debug")("element:grid")),
 	elementInvariants = misc.elementInvariants;
 
@@ -13,6 +14,15 @@ class Grid extends DynamoElement {
 		misc.convert(factory, this.args, "filter");
 		misc.convert(factory, this.args.extra, "createTemplate");
 		misc.convert(factory, this.args.extra, "editTemplate");
+	}
+	describeSync() {
+		let element = super.describeSync(),
+			args = _.cloneDeep(element.args);
+		misc.describeAllSync(args, "filter");
+		misc.describeAllSync(args.extra, "createTemplate");
+		misc.describeAllSync(args.extra, "editTemplate");
+		element.args = args;
+		return element;
 	}
 	describe(fn) {
 		super.describe((er, description) => {

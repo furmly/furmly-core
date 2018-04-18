@@ -1,6 +1,7 @@
 const DynamoElement = require("../element"),
 	misc = require("../element-utils"),
 	async = require("async"),
+	_ = require("lodash"),
 	_warn = misc.warn(require("debug")("element:list")),
 	elementInvariants = misc.elementInvariants;
 
@@ -15,6 +16,19 @@ class List extends DynamoElement {
 			misc.convert(factory, this.args.itemTemplate, "template");
 		if (this.hasBehaviourExtension())
 			misc.convert(factory, this.args.behavior, "extension");
+	}
+	describeSync() {
+		let element = super.describeSync(),
+			args = _.cloneDeep(element.args);
+		if (this.hasDirectItemTemplate())
+			misc.describeAllSync(args, "itemTemplate");
+		if (this.hasIndirectItemTemplate())
+			misc.describeAllSync(args.itemTemplate, "template");
+
+		if (this.hasBehaviourExtension())
+			misc.describeAllSync(args.behavior, "extension");
+		element.args = args;
+		return element;
 	}
 	describe(fn) {
 		super.describe((er, description) => {

@@ -1,5 +1,6 @@
 const DynamoElement = require("../element"),
 	misc = require("../element-utils"),
+	_ = require("lodash"),
 	async = require("async"),
 	_warn = misc.warn(require("debug")("element:selectset"));
 elementInvariants = misc.elementInvariants;
@@ -34,6 +35,18 @@ class Selectset extends DynamoElement {
 
 			return fn(null, description);
 		});
+	}
+	describeSync() {
+
+		let element = super.describeSync(),
+			args = _.clone(element.args);
+		if (args.items && args.items.length) {
+			args.items.forEach((x, index) => {
+				misc.describeAllSync(x, "elements");
+			});
+		}
+		element.args = args;
+		return element;
 	}
 	invariants() {
 		//checkout everything is fine

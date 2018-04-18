@@ -10,6 +10,16 @@ module.exports = {
 			parent[name] = factory.getAll(factory, parent[name]);
 		}
 	},
+	describeAllSync: function(parent, name) {
+		if (parent && parent[name]) {
+			parent[name] = parent[name].map(x => {
+				if (typeof x.describeSync !== "function") {
+					return x;
+				}
+				return x.describeSync();
+			});
+		}
+	},
 	describeAll: function(parent, propertyName, cb) {
 		if (!parent || !parent[propertyName] || !parent[propertyName].length)
 			return setImmediate(cb);

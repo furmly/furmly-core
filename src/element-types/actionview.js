@@ -1,6 +1,7 @@
 const DynamoElement = require("../element"),
 	misc = require("../element-utils"),
-	async=require("async"),
+	async = require("async"),
+	_ = require("lodash"),
 	elementInvariants = misc.elementInvariants;
 
 class ActionView extends DynamoElement {
@@ -26,6 +27,13 @@ class ActionView extends DynamoElement {
 				return fn(null, description);
 			}
 		);
+	}
+	describeSync() {
+		let element = super.describeSync(),
+			args = _.cloneDeep(element.args);
+		misc.describeAllSync(args, "elements");
+		element.args = args;
+		return element;
 	}
 	invariants() {
 		//checkout everything is fine

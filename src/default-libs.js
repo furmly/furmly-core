@@ -97,10 +97,10 @@ module.exports = function(constants) {
 					fn
 				) {
 					function getDefaultChecks(_keys) {
-						return function(rows, cb) {
+						return (rows, cb) => {
 							let errors = [],
 								requiredKeys = _keys.sort();
-							console.log(`sorted keys ${requiredKeys}`);
+							this.debug(`sorted keys ${requiredKeys}`);
 							try {
 								for (var i = 0; i < rows.length; i++) {
 									let keys = Object.keys(rows[i]);
@@ -135,18 +135,44 @@ module.exports = function(constants) {
 											)}`
 										);
 								}
-								console.log(errors);
+								this.debug(errors);
 								if (errors.length) return cb(errors.join("|"));
 
 								cb(null, rows);
 							} catch (e) {
 								cb(e);
 							}
-						}
-							.toString()
-							.replace("_keys", JSON.stringify(_keys));
+						};
 					}
-
+					function process(data, cb) {
+						this.debug("its running at all");
+						if (!data.items.length)
+							return cb(new Error("file has no rows"));
+						let _innerChecks = !checks
+							? null
+							: Function.prototype.isPrototypeOf(checks)
+								? checks
+								: getDefaultChecks.call(this, checks);
+						try {
+							this.debug("converting items...");
+							let joined = data.items.map((x, ind) => {
+								return Object.assign({}, x, data.rest || {});
+							});
+							this.debug("conversion successful");
+							if (!_innerChecks) return cb(null, joined);
+							_innerChecks.call(this, joined, er => {
+								if (er) return cb(er);
+								cb(null, joined);
+							});
+						} catch (e) {
+							return cb(
+								new Error(
+									"error occurred processing file records"
+								)
+							);
+						}
+					}
+					debugger;
 					fileUpload.readFile(file, user, (er, data, description) => {
 						if (er)
 							return (
@@ -175,45 +201,15 @@ module.exports = function(constants) {
 									)
 								);
 
-							let process =
-								"    console.log('its running at all');" +
-								"    if(!data.items.length) return cb(new Error('file has no rows'));" +
-								"    let _innerChecks='{i}';" +
-								"    try{" +
-								"        console.log('converting items...');" +
-								"        let joined = data.items.map((x,ind)=>{" +
-								"           return Object.assign({},x,data.rest||{});" +
-								"        });" +
-								"        console.log('conversion successful');" +
-								"        if(!_innerChecks)return cb(null,joined);" +
-								"        _innerChecks(joined,(er)=>{" +
-								"            if(er) return cb(er);" +
-								"            cb(null,joined);" +
-								"        });" +
-								"    }catch(e){" +
-								"        return cb(new Error('error occurred processing file records'));" +
-								"    }";
-
 							this.debug(rows);
 
-							let _checks = !checks
-									? ""
-									: Function.prototype.isPrototypeOf(checks)
-										? checks.toString()
-										: getDefaultChecks(checks),
-								_process = new Function(
-									"data",
-									"cb",
-									process.replace("'{i}'", _checks)
-								);
-
-							threadPool.run(
+							process.call(
+								this,
 								{
 									items: rows,
 									rest: context
 								},
-								_process,
-								function(er, result) {
+								(er, result) => {
 									if (er)
 										return (
 											this.debug(
@@ -259,9 +255,7 @@ module.exports = function(constants) {
 										);
 										//this.debug(tasks);
 
-										this.async.parallel(tasks, function(
-											er
-										) {
+										this.async.parallel(tasks, er => {
 											if (er)
 												return (
 													this.debug(
@@ -607,8 +601,7 @@ module.exports = function(constants) {
 			constants.UIDS.LIB.TO_CAMEL_CASE
 		)
 		.createLib(
-			`exports=${misc.createElement
-				.toString()}`,
+			`exports=${misc.createElement.toString()}`,
 			constants.UIDS.LIB.CREATE_ELEMENT
 		)
 		.createLib(
@@ -767,7 +760,6 @@ module.exports = function(constants) {
 							y = keys[i];
 
 						if (Array.prototype.isPrototypeOf(x[y])) {
-
 							result = self.map[
 								this.constants.ENTITYTYPE.ARRAY
 							].call(self, x[y], y);

@@ -1,5 +1,6 @@
 const DynamoElement = require("../element"),
 	misc = require("../element-utils"),
+	_ = require("lodash"),
 	async = require("async"),
 	elementInvariants = misc.elementInvariants;
 
@@ -9,6 +10,14 @@ class Section extends DynamoElement {
 		//add invariants here.
 		this.invariants();
 		misc.convert(factory, this.args, "elements");
+	}
+
+	describeSync() {
+		let element = super.describeSync(),
+			args = _.cloneDeep(element.args);
+		misc.describeAllSync(args, "elements");
+		element.args = args;
+		return element;
 	}
 	describe(fn) {
 		async.waterfall(
@@ -23,7 +32,7 @@ class Section extends DynamoElement {
 			],
 			(er, description) => {
 				if (er) return fn(er);
-				return fn(null,description);
+				return fn(null, description);
 			}
 		);
 	}
