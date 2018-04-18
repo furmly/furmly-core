@@ -11,7 +11,8 @@ module.exports = {
 		}
 	},
 	describeAll: function(parent, propertyName, cb) {
-		if (!parent || !parent[propertyName].length) return setImmediate(cb);
+		if (!parent || !parent[propertyName] || !parent[propertyName].length)
+			return setImmediate(cb);
 		let arr = parent[propertyName];
 		async.parallel(arr.map(x => x.describe.bind(x)), (er, result) => {
 			if (er) return cb(er);
