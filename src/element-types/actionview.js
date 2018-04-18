@@ -1,5 +1,6 @@
 const DynamoElement = require("../element"),
 	misc = require("../element-utils"),
+	async=require("async"),
 	elementInvariants = misc.elementInvariants;
 
 class ActionView extends DynamoElement {

@@ -21,7 +21,10 @@ module.exports = {
 	},
 	elementInvariants: {
 		_ensureArgs: function(item) {
-			if (!item.args) throw new Error("element must contain args");
+			if (!item.args)
+				throw new Error(
+					`element ${JSON.stringify(item)} must contain args`
+				);
 		},
 		_ensureArray: function(item) {
 			if (item && !Array.prototype.isPrototypeOf(item))
@@ -34,31 +37,5 @@ module.exports = {
 				throw new Error("Invalid json string");
 			}
 		}
-		//,
-		// _ensureElement: function(item) {
-		// 	if (!item) {
-		// 		debugger;
-		// 		throw new Error(
-		// 			"undefined/null is not a valid value for an element"
-		// 		);
-		// 	}
-		// 	if (
-		// 		typeof item.name !== "string" ||
-		// 		typeof item.label !== "string" ||
-		// 		(item.description && typeof item.description !== "string") ||
-		// 		typeof item.elementType !== "string" ||
-		// 		(item.args && typeof item.args !== "object")
-		// 	) {
-		// 		throw new Error("illegal argument(s) passed to createElement");
-		// 	}
-		// },
-
-		// _ensureElements: function(arr, extend) {
-		// 	this._ensureArray(arr);
-		// 	for (var i = arr.length - 1; i >= 0; i--) {
-		// 		this._ensureElement(arr[i]);
-		// 		if (extend) arr[i] = extend(arr[i]);
-		// 	}
-		// }
 	}
 };

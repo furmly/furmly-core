@@ -9,9 +9,9 @@ class HtmlView extends DynamoElement {
 		this.dynamicFields.push("args.html")
 	}
 	invariants() {
-		elementInvariants._ensureArgs(this);
+	//	elementInvariants._ensureArgs(this);
 
-		if (this.args.html && typeof this.args.html !== "string")
+		if (this.args && this.args.html && typeof this.args.html !== "string")
 			throw new Error("HtmlView args.html property must be a string");
 	}
 }

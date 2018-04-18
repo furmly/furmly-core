@@ -19,7 +19,7 @@ class Selectset extends DynamoElement {
 	describe(fn) {
 		super.describe((er, description) => {
 			if (er) return fn(er);
-			tasks = [];
+			let tasks = [];
 
 			if (this.args.items && this.args.items.length) {
 				description.args.items.forEach(x => {
