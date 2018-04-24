@@ -119,6 +119,7 @@ DynamoElement.prototype.describe = function(fn) {
 		component_uid: this.component_uid,
 		asyncValidators: _.map(this.asyncValidators, "_id")
 	};
+
 	let tasks = this.dynamicFields.map(x =>
 		this.setValue.bind(this, element, x)
 	);
@@ -132,18 +133,21 @@ DynamoElement.prototype.describe = function(fn) {
  * @return {Object} Object representation of element.
  */
 DynamoElement.prototype.describeSync = function() {
-	return {
+	let element = {
 		name: this.name,
-		label: this.label,
 		elementType: this.elementType,
 		args: this.args,
-		description: this.description,
 		validators: this.validators,
-		uid: this.uid,
-		order: this.order,
 		component_uid: this.component_uid,
 		asyncValidators: _.map(this.asyncValidators, "_id")
 	};
+	//this was clobbering existing processors.
+	if (typeof this.label !== "undefined") element.label = this.label;
+	if (typeof this.description !== "undefined")
+		element.description = this.description;
+	if (typeof this.order !== "undefined") element.order = this.order;
+	if (typeof this.uid !== "undefined") element.uid = this.uid;
+	return element;
 };
 DynamoElement.prototype.isLibValue = function(value) {
 	return ex.test(value);

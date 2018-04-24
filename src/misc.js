@@ -58,6 +58,7 @@ let createElement = function(
 			elementType: type,
 			args,
 			validators,
+			description,
 			asyncValidators: asyncVals
 		})
 		.describeSync();

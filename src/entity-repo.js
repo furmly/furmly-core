@@ -196,6 +196,7 @@ function EntityRepo(opts) {
 					)
 				);
 			} else {
+				debug(`constructing a process ${item._id}`);
 				tasks.push(function(callback) {
 					if (!item.steps) {
 						return callback(

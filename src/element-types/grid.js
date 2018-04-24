@@ -54,7 +54,9 @@ class Grid extends DynamoElement {
 		elementInvariants._ensureArray(this.args.commands);
 		elementInvariants._ensureArray(this.args.filter);
 		if (!this.args.source)
-			throw new Error("All grids must have a args.source ");
+			throw new Error(
+				`All grids must have a args.source ${JSON.stringify(this)}`
+			);
 		if (this.args.mode && !_constants.GRIDMODE.in(this.args.mode))
 			throw new Error(
 				"Invalid grid mode , i.e " + _constants.GRIDMODE.toString()
@@ -65,10 +67,13 @@ class Grid extends DynamoElement {
 			(!this.args.extra ||
 				!this.args.extra.createTemplate ||
 				!this.args.extra.createTemplate.length ||
-				!this.args.extra.createProcessor)
+				!this.args.extra.createProcessor) &&
+			!this.args.extra.fetchTemplateProcessor
 		)
 			throw new Error(
-				"all CRUD grids require a createTemplate and a createProcessor"
+				`all CRUD grids require a createTemplate and a createProcessor ${JSON.stringify(
+					this
+				)}`
 			);
 		if (
 			this.args.mode &&
@@ -76,10 +81,13 @@ class Grid extends DynamoElement {
 			(!this.args.extra ||
 				!this.args.extra.editTemplate ||
 				!this.args.extra.editTemplate.length ||
-				!this.args.extra.editProcessor)
+				!this.args.extra.editProcessor) &&
+			!this.args.extra.fetchTemplateProcessor
 		)
 			throw new Error(
-				"all CRUD grids require a createTemplate and a createProcessor"
+				`all EDITONLY grids require a editTemplate and a editProcessor ${JSON.stringify(
+					this
+				)}`
 			);
 
 		if (this.args.filter && this.args.filterProcessor)
