@@ -892,37 +892,46 @@ EntityRepo.prototype.updateEntity = function(name, data, fn) {
 		return setImmediate(fn, new Error("Model does not exist"));
 	}
 	Object.assign(data, { updated: new Date() });
+
+	let isArray,
+		multi =
+			(isArray = Array.prototype.isPrototypeOf(data._id)) ||
+			(typeof data._id == "undefined" && data.$query && data.$update),
+		getData = () => {
+			return (multi && isArray) || !multi ? data : data.$update;
+		},
+		getQuery = () => {
+			return !multi
+				? {
+						_id: data._id
+					}
+				: (isArray && { _id: { $in: data._id } }) || data.$query;
+		};
 	if (this._changeDetection[name]) {
-		this.models[name].findOne(
-			{
-				_id: data._id
-			},
-			function(er, e) {
-				if (er) return fn(er);
-				if (!e) return fn(new Error("That entity does not exist"));
-				var merged = _.assign(e, data);
+		this.models[name].find(getQuery(), function(er, v) {
+			if (er) return fn(er);
+			if (!v.length) return fn(new Error("That entity does not exist"));
+
+			v.forEach(e => {
+				var merged = _.assign(e, getData());
 				debug(merged);
 				self._changeDetection[name].forEach(function(field) {
-					merged.set(field, data[field]);
+					merged.set(field, getData()[field]);
 				});
 				merged.save(fn);
-			}
-		);
+			});
+		});
 	} else {
-		this.models[name].update(
-			{
+		this.models[name].update(getQuery(), getData(), { multi }, function(
+			er,
+			stat
+		) {
+			if (er) return fn(er);
+			if (stat <= 0) return fn(new Error("that entity does not exist"));
+			fn(null, {
 				_id: data._id
-			},
-			data,
-			function(er, stat) {
-				if (er) return fn(er);
-				if (stat <= 0)
-					return fn(new Error("that entity does not exist"));
-				fn(null, {
-					_id: data._id
-				});
-			}
-		);
+			});
+		});
 	}
 };
 
