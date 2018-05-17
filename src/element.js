@@ -22,7 +22,7 @@ function DynamoElement(opts) {
 	if (!constants.ELEMENTTYPE.in(opts.elementType))
 		throw new Error("Unknown element type " + opts.elementType);
 
-	this._id = opts._id;
+	//this._id = opts._id;
 	this.name = opts.name;
 	this.elementType = opts.elementType;
 	this.label = opts.label;
@@ -33,15 +33,23 @@ function DynamoElement(opts) {
 	this.uid = opts.uid;
 	this.order = opts.order;
 	this.component_uid = opts.component_uid || uuid();
-	this.getLibValue = opts.getLibValue;
-	this.dynamicFields = [
-		"label",
-		"description",
-		"validators.error",
-		"validators.args.exp",
-		"validators.args.min",
-		"validators.args.max"
-	];
+	Object.defineProperties(this, {
+		getLibValue: {
+			enumerable: false,
+			value: opts.getLibValue
+		},
+		dynamicFields: {
+			enumerable: false,
+			value: [
+				"label",
+				"description",
+				"validators.error",
+				"validators.args.exp",
+				"validators.args.min",
+				"validators.args.max"
+			]
+		}
+	});
 }
 
 DynamoElement.prototype.getValue = function(value, fn) {
@@ -111,7 +119,7 @@ DynamoElement.prototype.describe = function(fn) {
 		name: this.name,
 		label: this.label,
 		elementType: this.elementType,
-		args: _.cloneDeep(this.args),
+		args: Object.assign({}, this.args),
 		description: this.description,
 		validators: this.validators,
 		uid: this.uid,
@@ -149,6 +157,7 @@ DynamoElement.prototype.describeSync = function() {
 	if (typeof this.uid !== "undefined") element.uid = this.uid;
 	return element;
 };
+
 DynamoElement.prototype.isLibValue = function(value) {
 	return ex.test(value);
 };
@@ -173,7 +182,7 @@ DynamoElement.prototype.save = function(fn) {
 			if (er) return fn(er);
 
 			fn(null, {
-				_id: self._id,
+				//_id: self._id,
 				name: self.name,
 				label: self.label,
 				elementType: self.elementType,

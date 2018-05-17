@@ -19,7 +19,7 @@ class List extends DynamoElement {
 	}
 	describeSync() {
 		let element = super.describeSync(),
-			args = _.cloneDeep(element.args);
+			args = element.args;
 		if (this.hasDirectItemTemplate())
 			misc.describeAllSync(args, "itemTemplate");
 		if (this.hasIndirectItemTemplate())

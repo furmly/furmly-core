@@ -30,9 +30,8 @@ class ActionView extends DynamoElement {
 	}
 	describeSync() {
 		let element = super.describeSync(),
-			args = _.cloneDeep(element.args);
+			args = element.args;
 		misc.describeAllSync(args, "elements");
-		element.args = args;
 		return element;
 	}
 	invariants() {

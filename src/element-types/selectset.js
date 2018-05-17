@@ -37,15 +37,13 @@ class Selectset extends DynamoElement {
 		});
 	}
 	describeSync() {
-
 		let element = super.describeSync(),
-			args = _.clone(element.args);
+			args = element.args;
 		if (args.items && args.items.length) {
 			args.items.forEach((x, index) => {
 				misc.describeAllSync(x, "elements");
 			});
 		}
-		element.args = args;
 		return element;
 	}
 	invariants() {

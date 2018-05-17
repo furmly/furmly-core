@@ -17,11 +17,10 @@ class Grid extends DynamoElement {
 	}
 	describeSync() {
 		let element = super.describeSync(),
-			args = _.cloneDeep(element.args);
+			args = element.args;
 		misc.describeAllSync(args, "filter");
 		misc.describeAllSync(args.extra, "createTemplate");
 		misc.describeAllSync(args.extra, "editTemplate");
-		element.args = args;
 		return element;
 	}
 	describe(fn) {
