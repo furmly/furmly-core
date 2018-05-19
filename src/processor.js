@@ -29,7 +29,9 @@ function DynamoProcessor(opts) {
 	this.uid = opts.uid;
 	this.requiresIdentity = opts.requiresIdentity;
 	this.standalone = opts.standalone;
-
+	this._code = opts._code;
+	this._references = opts._references;
+	this.codeGenerator = opts.codeGenerator;
 	Object.defineProperties(this, {
 		_save: {
 			enumerable: false,
@@ -52,12 +54,14 @@ function DynamoProcessor(opts) {
 			result = null;
 		}
 		try {
+			let code = self._code || self.code;
 			self.validate();
 			/* jshint ignore:start */
 			if (this.SANDBOX_CONTEXT) {
 				//added extra check to ensure this code never runs in engine context.
 				this.debug(`running processor '${self.title}' ${self._id} `);
-				eval(self.code);
+
+				eval(code);
 			}
 
 			/* jshint ignore:end */
@@ -107,7 +111,11 @@ DynamoProcessor.prototype.save = function(fn) {
 	if (this.uid) {
 		model.uid = this.uid;
 	}
-
+	if (this.codeGenerator) {
+		let { code, references = {} } = this.codeGenerator.optimize(model.code);
+		model._code = code;
+		model._references = Object.keys(references);
+	}
 	this._save(model, fn);
 };
 

@@ -16,6 +16,7 @@ const constants = require("./constants"),
 	DynamoElement = require("./element"),
 	DynamoForm = require("./form"),
 	DynamoLib = require("./lib"),
+	CodeGenerator = require("./code-gen"),
 	DynamoAsyncValidator = require("./async-validator"),
 	mongoose = require("mongoose"),
 	DynamoSandbox = require("./sandbox");
@@ -63,6 +64,7 @@ function EntityRepo(opts) {
 	this.entityExt = opts.ext || ".json";
 	this.entityFolder = opts.folder || "./src/entities/";
 	this.delimiter = opts.delimiter || /('|")\$\{(\w+)\}+('|")/i;
+	this.codeGenerator = new CodeGenerator(opts.config.codeGenerator);
 	this._systemEntities = _.map(systemEntities, function(x) {
 		return x;
 	});
@@ -150,6 +152,7 @@ function EntityRepo(opts) {
 				item._id
 			);
 		};
+
 	this.getLibValue = this.getLibValue.bind(this);
 	/**
 	 * @type {module:Dynamo~ProcessorContext}
@@ -353,6 +356,7 @@ function EntityRepo(opts) {
 		);
 	};
 	this.transformers[systemEntities.processor] = function(item, fn) {
+		item.codeGenerator = self.codeGenerator;
 		basicTransformer(item, DynamoProcessor, systemEntities.processor, fn);
 	};
 
@@ -558,7 +562,7 @@ EntityRepo.prototype.init = function(callback) {
 		);
 	};
 	mongoose
-		.connect(this.config.data.dynamo_url)
+		.connect(this.config.data.dynamo_url, { useMongoClient: true })
 		.then(_init)
 		.catch(e => {
 			if (e && e.message !== "Trying to open unclosed connection.")
@@ -1141,7 +1145,7 @@ EntityRepo.prototype.createSchemas = function(fn) {
 					else return;
 				}
 				if (obj.schema && self.schemas[obj.schema]) {
-					debugger;
+					//	debugger;
 					obj = Object.assign(
 						{},
 						self.schemas[obj.schema],

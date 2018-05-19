@@ -1129,6 +1129,36 @@ describe("Integration", function() {
 				}
 			);
 		});
+		it("processors can run optimizations on code", function(done) {
+			let repo = new app.EntityRepo({
+				config: Object.assign({}, config, {			
+					codeGenerator: {
+						defaultOptimizations: ["Try-catch-all-async-functions"]
+					}
+				})
+			});
+			let engine = new app.Engine({ entitiesRepository: repo });
+			engine.init(function(er) {
+				assert.isUndefined(er);
+
+				engine.saveProcessor(
+					{
+						code:
+							"const doSomething = () =>{ console.log('nothing is happening here'); callback(null,'does nothing'); }; doSomething();",
+						title: "fake processor"
+					},
+					{
+						retrieve: true
+					},
+					(er, processor) => {
+						assert.isNull(er);
+						assert.isNotNull(processor._code);
+						assert.isTrue(/try/.test(processor._code));
+						done();
+					}
+				);
+			});
+		});
 
 		it("processor sandbox context loads libs", function(done) {
 			var fixture = this;

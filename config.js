@@ -14,6 +14,7 @@ module.exports = {
 		data: {
 			dynamo_url: 'mongodb://localhost:27017/unit_test'
 		},
+		codeGenerator:{},
 		processors: {
 			ttl: 300000
 		},

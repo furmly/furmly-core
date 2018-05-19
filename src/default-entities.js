@@ -40,6 +40,8 @@ module.exports = [
 			requiresIdentity: { type: "Boolean", default: "requiresIdentity" },
 			uid: { type: "String", unique: true, sparse: true },
 			code: { type: "String", required: true },
+			_code: { type: "String" },
+			_references: [{ type: "String" }],
 			title: { type: "String", required: true }
 		},
 		updated: "Date"
