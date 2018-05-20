@@ -293,7 +293,7 @@ module.exports = function(constants) {
 					fn
 				) {
 					this.debug(`creating crud for entity ${entityName}`);
-
+                    debugger;
 					let constants = this.constants,
 						self = this,
 						title = `Manage ${entityName}`,

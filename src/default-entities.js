@@ -15,7 +15,9 @@ module.exports = [
 		name: systemEntities.lib,
 		schema: {
 			uid: { type: "String", unique: true, required: true },
-			code: { type: "String", required: true }
+			code: { type: "String", required: true },
+			_code: { type: "String" },
+			_references: [{ type: "String" }]
 		},
 		updated: "Date"
 	},

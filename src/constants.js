@@ -18,6 +18,9 @@ function createConstants() {
 			return (sum += this[x] + ",");
 		}, "");
 	};
+	Constant.prototype.values = function() {
+		return Object.keys(this).map(x => this[x]);
+	};
 	Constant.prototype.in = function(val) {
 		for (var i in this) {
 			if (this.hasOwnProperty(i) && this[i] == val) return true;

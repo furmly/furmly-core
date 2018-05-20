@@ -16,7 +16,10 @@ function DynamoLib(opts) {
 	this.code = opts.code;
 	this.uid = opts.uid;
 	this._save = opts.save;
+	this._code = opts._code;
+	this._references = opts._references;
 	Object.defineProperties(this, {
+		codeGenerator: { enumerable: false, value: opts.codeGenerator },
 		debug: {
 			enumerable: false,
 			get: function() {
@@ -31,7 +34,8 @@ function DynamoLib(opts) {
 	 * @return {Object}        holder object
 	 */
 DynamoLib.prototype.load = function(holder) {
-	var self = this;
+	var self = this,
+		code = this._code || this.code;
 	if (holder[this.key])
 		throw new Error("key  " + this.key + " already exists");
 
@@ -40,13 +44,19 @@ DynamoLib.prototype.load = function(holder) {
 		/* jshint ignore:start */
 		//added extra check to ensure this code never runs in engine context.
 		self.debug(`loading ${self._id}`);
-		eval(self.code);
+		eval(code);
 		/* jshint ignore:end */
 		return (holder[self.uid] = exports), holder;
 	})();
 };
 
 DynamoLib.prototype.save = function(fn) {
+	if (this.codeGenerator) {
+		//optimize code.
+		let { code, references = {} } = this.codeGenerator.optimize(this.code);
+		this._code = code;
+		this._references = Object.keys(references);
+	}
 	this._save(this, fn);
 };
 

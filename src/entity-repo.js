@@ -434,6 +434,7 @@ function EntityRepo(opts) {
 		return fn(null, item);
 	};
 	this.transformers[systemEntities.lib] = function(item, fn) {
+		item.codeGenerator = self.codeGenerator;
 		basicTransformer(item, DynamoLib, systemEntities.lib, fn);
 	};
 
@@ -478,7 +479,6 @@ EntityRepo.prototype.setInfrastructure = function(manager) {
 };
 
 const extractValueFromLib = function() {
-	debugger;
 	if (this.args.params) {
 		this.debug(this.args.params);
 		let [uid, ...params] = this.args.params.split("|");
@@ -513,6 +513,7 @@ EntityRepo.prototype.getLibValue = function(params, fn) {
 				title: "dynamic processor",
 				code: extractValueFromLib,
 				_id: "dynamic",
+				_references: [params.split("|")[0].replace("$", "")],
 				save: () => {}
 			})
 		],

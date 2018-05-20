@@ -1100,6 +1100,7 @@ describe("Integration", function() {
 							message: "shap shap"
 						},
 						function(er, description, data) {
+							_debug(er);
 							assert.isNull(er);
 							assert.isNotNull(description);
 							assert.deepEqual(data, JSON.parse(d));
@@ -1131,9 +1132,12 @@ describe("Integration", function() {
 		});
 		it("processors can run optimizations on code", function(done) {
 			let repo = new app.EntityRepo({
-				config: Object.assign({}, config, {			
+				config: Object.assign({}, config, {
 					codeGenerator: {
-						defaultOptimizations: ["Try-catch-all-async-functions"]
+						defaultOptimizations: [
+							"Try-catch-all-async-functions",
+							"Count-all-lib-references"
+						]
 					}
 				})
 			});
@@ -1180,6 +1184,7 @@ describe("Integration", function() {
 							retrieve: true
 						},
 						function(er, proc) {
+							_debug(proc);
 							fixture.engine.runProcessor({}, proc, function(
 								er,
 								ans
@@ -1329,6 +1334,9 @@ describe("Integration", function() {
 				},
 				function(er, proc) {
 					assert.isNull(er);
+					_debug("crud calling proc");
+					_debug(proc);
+					debugger;
 					fixture.engine.runProcessor(
 						{
 							name: "Customer",

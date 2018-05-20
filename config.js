@@ -14,7 +14,9 @@ module.exports = {
 		data: {
 			dynamo_url: 'mongodb://localhost:27017/unit_test'
 		},
-		codeGenerator:{},
+		codeGenerator:{
+			defaultOptimizations:["Count-all-lib-references"]
+		},
 		processors: {
 			ttl: 300000
 		},

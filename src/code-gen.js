@@ -1,7 +1,6 @@
 const parser = require("./parser");
 function CodeGenerator(opts) {
 	this.defaultOptimizations = [];
-	debugger;
 	if (opts) {
 		if (opts.defaultOptimizations && opts.defaultOptimizations.length) {
 			opts.defaultOptimizations.forEach(x =>
@@ -17,9 +16,6 @@ function CodeGenerator(opts) {
 CodeGenerator.prototype.optimize = function(source, opts) {
 	let optz = this.defaultOptimizations.slice();
 
-	if (optz.length) {
-		debugger;
-	}
 
 	if (opts && Array.prototype.isPrototypeOf(opts)) {
 		optz = optz.concat(opts);
@@ -38,7 +34,7 @@ CodeGenerator.prototype.optimize = function(source, opts) {
 CodeGenerator.prototype.optimizations = {
 	"Try-catch-all-async-functions": function(context, node) {
 		if (node.type == "ArrowFunctionExpression") {
-			debugger;
+		//	debugger;
 			let body = node.body,
 				exceptionHandler =
 					"//an unexpected error has just occurred. \n callback(e);";

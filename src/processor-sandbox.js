@@ -7,6 +7,7 @@ let module_context = context,
 	debug = context.debug,
 	systemEntities = context.systemEntities,
 	constants = context.constants,
+	loaded = {},
 	lib_context = {};
 module_context.skip = {};
 module_context.SANDBOX_CONTEXT = true;
@@ -19,6 +20,46 @@ function addGetProp(name, obj, result) {
 				return result;
 			}
 		}
+	});
+}
+
+function runLibs(toLoad, loaded, fn) {
+	//load reusable libs
+	let libQuery = {},
+		loadAll = typeof toLoad == "boolean",
+		moreLibs = {};
+
+	if (!loadAll) {
+		libQuery.uid = { $in: toLoad };
+	}
+
+	entityRepo.getLib(libQuery, (er, libs) => {
+		if (er) return fn(er);
+
+		module_context.libs = libs.reduce(function(holder, lib) {
+			try {
+				var _l = lib.load(holder);
+				loaded[lib.uid] = 1;
+				(lib._references || []).forEach(x => {
+					if (!loaded[x] && !loadAll) moreLibs[x] = 1;
+				});
+				return _l;
+			} catch (e) {
+				debug(`failed to load library ${lib.title} id:${lib._id}`);
+				debug(e);
+				return holder;
+			}
+			//give holder async and debug.
+		}, lib_context);
+
+		let _libs = Object.keys(moreLibs);
+		if (_libs.length > 0) {
+			return runLibs(_libs, loaded, fn);
+		}
+		debug("-=-=-=-=- Loaded Libs -=-=-=-=-=-");
+		debug(loaded);
+		debug("-=-=-=-=-=-=-=-=-=-=");
+		fn();
 	});
 }
 
@@ -43,9 +84,9 @@ if (typeof context.uuid !== "undefined")
 if (typeof elementFactory !== undefined)
 	addGetProp("elementFactory", lib_context, context.elementFactory);
 
-
 module.exports = {
 	getResult: fn => {
+		debugger;
 		const run = () => {
 			var firstProcessor = context.processors[0],
 				tasks = [];
@@ -115,27 +156,20 @@ module.exports = {
 			typeof systemEntities !== "undefined" &&
 			typeof entityRepo !== "undefined"
 		) {
-			//load reusable libs
+			let query = Object.keys(
+				context.processors.reduce((sum, x) => {
+					(x._references || []).forEach(k => {
+						Object.assign(sum, { [k]: 1 });
+					});
+					return sum;
+				}, {})
+			);
+			if (constants) query = query.concat(constants.UIDS.LIB.values());
 
-			entityRepo.getLib({}, (er, libs) => {
+			return runLibs(query, loaded, er => {
 				if (er) return fn(er);
-
-				module_context.libs = libs.reduce(function(holder, lib) {
-					try {
-						return lib.load(holder);
-					} catch (e) {
-						debug(
-							`failed to load library ${lib.title} id:${lib._id}`
-						);
-						debug(e);
-						return holder;
-					}
-					//give holder async and debug.
-				}, lib_context);
-
-				run();
+				return run();
 			});
-			return;
 		}
 		run();
 	}
