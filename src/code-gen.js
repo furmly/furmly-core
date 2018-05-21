@@ -88,10 +88,33 @@ CodeGenerator.prototype._hasCallback = function(node) {
 		}
 		for (var i = 0; i < this._possibleErrorNames.length; i++) {
 			if (this._possibleErrorNames[i].test(node.params[0].name))
-				return "callback";
+				return this._searchAncestorsForCallbackName(node);
 		}
 	}
 	return false;
+};
+
+CodeGenerator.prototype._searchAncestorsForCallbackName = function(node) {
+	if (node.type == "Program" || node == null) return "callback";
+
+	if (
+		(node.type == "ArrowFunctionExpression" ||
+			node.type == "FunctionExpression" ||
+			node.type == "FunctionDeclaration") &&
+		node.params &&
+		node.params.length
+	) {
+		for (var i = 0; i < this._possibleCallbackNames.length; i++) {
+			if (
+				this._possibleCallbackNames[i].test(
+					node.params[node.params.length - 1].name
+				)
+			)
+				return node.params[node.params.length - 1].name;
+		}
+	}
+
+	return this._searchAncestorsForCallbackName(node.parent);
 };
 
 module.exports = CodeGenerator;

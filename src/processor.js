@@ -31,14 +31,15 @@ function DynamoProcessor(opts) {
 	this.standalone = opts.standalone;
 	this._code = opts._code;
 	this._references = opts._references;
-	this.codeGenerator = opts.codeGenerator;
+
 	Object.defineProperties(this, {
 		_save: {
 			enumerable: false,
 			get: function() {
 				return opts.save;
 			}
-		}
+		},
+		codeGenerator: { enumerable: false, value: opts.codeGenerator }
 	});
 
 	/**
