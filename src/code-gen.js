@@ -16,7 +16,6 @@ function CodeGenerator(opts) {
 CodeGenerator.prototype.optimize = function(source, opts) {
 	let optz = this.defaultOptimizations.slice();
 
-
 	if (opts && Array.prototype.isPrototypeOf(opts)) {
 		optz = optz.concat(opts);
 	}
@@ -33,20 +32,21 @@ CodeGenerator.prototype.optimize = function(source, opts) {
 
 CodeGenerator.prototype.optimizations = {
 	"Try-catch-all-async-functions": function(context, node) {
-		if (node.type == "ArrowFunctionExpression") {
-		//	debugger;
-			let body = node.body,
-				exceptionHandler =
-					"//an unexpected error has just occurred. \n callback(e);";
+		if (
+			node.type == "ArrowFunctionExpression" ||
+			node.type == "FunctionExpression" ||
+			node.type == "FunctionDeclaration"
+		) {
+			debugger;
+			let callbackName;
+			if ((callbackName = this._hasCallback(node))) {
+				let body = node.body,
+					exceptionHandler = `\n//an unexpected error has just occurred. \n ${callbackName}(e);`;
 
-			if (this._hasCallback(node)) {
-				exceptionHandler=`//an unexpected error has just occurred. \n ${node.params[
-					node.params.length - 1
-				].name}(e);`;
+				body.update(
+					`{\ntry{\n${body.source()}\n} catch(e){${exceptionHandler}}}`
+				);
 			}
-			body.update(
-				`{try{${body.source()}} catch(e){${exceptionHandler}}}`
-			);
 		}
 	},
 	"Count-all-lib-references": function(context, node) {
@@ -75,6 +75,7 @@ CodeGenerator.prototype._possibleCallbackNames = [
 	/callback/i,
 	/^fn$/i
 ];
+CodeGenerator.prototype._possibleErrorNames = [/^er$/i, /^err$/i, /^error$/i];
 CodeGenerator.prototype._hasCallback = function(node) {
 	if (node.params && node.params.length) {
 		for (var i = 0; i < this._possibleCallbackNames.length; i++) {
@@ -83,7 +84,11 @@ CodeGenerator.prototype._hasCallback = function(node) {
 					node.params[node.params.length - 1].name
 				)
 			)
-				return true;
+				return node.params[node.params.length - 1].name;
+		}
+		for (var i = 0; i < this._possibleErrorNames.length; i++) {
+			if (this._possibleErrorNames[i].test(node.params[0].name))
+				return "callback";
 		}
 	}
 	return false;
