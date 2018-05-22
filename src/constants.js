@@ -70,7 +70,8 @@ function createConstants() {
 				["FIND_ELEMENT_BY_NAME", "findElementByName"],
 				["CONVERT_TO_SELECTABLE_LIST", "convertToSelectableList"],
 				["CONVERT_AND_SAVE_FILE", "convertFileAndSave"],
-				["TO_CAMEL_CASE", "toCamelCase"]
+				["TO_CAMEL_CASE", "toCamelCase"],
+				["LOAD","loadLib"]
 			),
 			PROCESSOR: new Constant(
 				"GET_DOMAINS",

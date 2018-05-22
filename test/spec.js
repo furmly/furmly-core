@@ -1130,6 +1130,7 @@ describe("Integration", function() {
 				}
 			);
 		});
+
 		it("processors can run optimizations on code", function(done) {
 			let repo = new app.EntityRepo({
 				config: Object.assign({}, config, {
@@ -1148,7 +1149,7 @@ describe("Integration", function() {
 				engine.saveProcessor(
 					{
 						code:
-							"const doSomething = () =>{ console.log('nothing is happening here'); callback(null,'does nothing'); }; doSomething();",
+							"const doSomething = (fn) =>{ console.log('nothing is happening here'); fn(null,'does nothing'); }; doSomething(callback);",
 						title: "fake processor"
 					},
 					{
@@ -1198,6 +1199,59 @@ describe("Integration", function() {
 				}
 			);
 			//});
+		});
+
+		it("processors can load libs dynamically", function(done) {
+			var fixture = this;
+
+			_async.forEachOf(
+				[
+					{
+						code: "exports=function(x,y){ var result=0; for(var i=0;i<y;i++) result=this.libs.add(x,result);  return result;}",
+						uid: "multiply"
+					},
+					{ code: "exports=function(x,y){return x+y }", uid: "add" }
+				],
+				fixture.engine.saveLib.bind(fixture.engine),
+				er => {
+					assert.isNull(er);
+					fixture.engine.saveProcessor(
+						{
+							title: "Test Sample",
+							code:
+								"(" +
+								function() {
+									this.libs.loadLib.call(
+										this,
+										"multiply",
+										er => {
+											if (er) return callback(er);
+											return callback(
+												null,
+												this.libs.multiply.call(this,3,2)
+											);
+										}
+									);
+								} +
+								").call(this)"
+						},
+						{
+							retrieve: true
+						},
+						function(er, proc) {
+							_debug(proc);
+							fixture.engine.runProcessor({}, proc, function(
+								er,
+								ans
+							) {
+								assert.isNull(er);
+								assert.equal(ans, 6);
+								done();
+							});
+						}
+					);
+				}
+			);
 		});
 		it("init fires default-process event", function(done) {
 			// fixture.engine.init(function(er) {

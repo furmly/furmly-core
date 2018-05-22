@@ -293,7 +293,7 @@ module.exports = function(constants) {
 					fn
 				) {
 					this.debug(`creating crud for entity ${entityName}`);
-                    debugger;
+					debugger;
 					let constants = this.constants,
 						self = this,
 						title = `Manage ${entityName}`,
@@ -595,6 +595,52 @@ module.exports = function(constants) {
 				exports = create;
 			}).getFunctionBody(),
 			constants.UIDS.LIB.CREATE_CRUD_PROCESS
+		)
+		.createLib(
+			(() => {
+				function loadLibs(toLoad, fn) {
+					//load reusable libs
+					if (typeof toLoad == "string") toLoad = [toLoad];
+					let libQuery = { uid: { $in: toLoad } },
+						_problem,
+						moreLibs = {};
+
+					this.entityRepo.getLib(libQuery, (er, libs) => {
+						if (er) return fn(er);
+
+						libs.reduce(function(holder, lib) {
+							try {
+								if (typeof holder[lib.uid] !== "undefined")
+									return holder;
+								var _l = lib.load(holder);
+								//loaded[lib.uid] = 1;
+								(lib._references || []).forEach(x => {
+									if (typeof holder[x] == "undefined")
+										moreLibs[x] = 1;
+								});
+								return _l;
+							} catch (e) {
+								this.debug(
+									`failed to load library ${lib.title} id:${lib._id}`
+								);
+								this.debug(e);
+								_problem = e;
+								return holder;
+							}
+							//give holder async and debug.
+						}, this.libs);
+						if (_problem) return fn(_problem);
+
+						let _libs = Object.keys(moreLibs);
+						if (_libs.length > 0) {
+							return loadLibs.call(this, _libs, fn);
+						}
+						fn();
+					});
+				}
+				exports = loadLibs;
+			}).getFunctionBody(),
+			constants.UIDS.LIB.LOAD
 		)
 		.createLib(
 			`exports=${misc.toCamelCase.toString()}`,

@@ -51,15 +51,18 @@ CodeGenerator.prototype.optimizations = {
 	},
 	"Count-all-lib-references": function(context, node) {
 		//check if expression is of type member.
+		//
+		if(node.type == "MemberExpression"){}
 		if (
 			node.type == "MemberExpression" &&
 			node.property &&
 			node.object &&
 			node.object.type == "MemberExpression" &&
-			node.object.object &&
-			node.object.object.type == "ThisExpression" &&
+			//node.object.object &&
+			//node.object.object.type == "ThisExpression" &&
 			node.object.property &&
-			node.object.property.name == "libs"
+			node.object.property.name == "libs" && 
+			node.property.name
 		) {
 			if (!context.result.references) context.result.references = {};
 			context.result.references[node.property.name] = context.result
