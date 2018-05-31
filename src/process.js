@@ -326,6 +326,7 @@ DynamoProcess.prototype.describe = function(context, fn) {
 
 	this.validate(fn);
 	var self = this,
+		that = this,
 		proc = Object.assign({}, _.pickBy(self, misc.notAFunction)),
 		_allSteps = [];
 	//delete proc.fetchProcessor;
@@ -347,6 +348,12 @@ DynamoProcess.prototype.describe = function(context, fn) {
 						enumerable: false,
 						get: function() {
 							return proc;
+						}
+					},
+					$process: {
+						enumerable: false,
+						get: function() {
+							return that;
 						}
 					}
 				});
