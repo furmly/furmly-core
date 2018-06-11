@@ -57,9 +57,48 @@ function DynamoEngine(opts) {
 	this.entitiesRepository.processorEntityRepo.saveProcessor = DynamoEngine.prototype.saveProcessor.bind(
 		this
 	);
-	this.entitiesRepository.processorEntityRepo.getProcessor = DynamoEngine.prototype.queryProcessor.bind(
-		this
-	);
+	this.entitiesRepository.processorEntityRepo.getProcessor = function(
+		...args
+	) {
+		//load all the necessary libs.
+		let _processors,
+			loadLibs = !!(args.length == 3 && args[1] && args[1].loadLibs),
+			fn = args.splice(args.length - 1, 1, (er, processors) => {
+				if (er) return fn(er);
+				if (processors) {
+					if (loadLibs) {
+						if (!Array.prototype.isPrototypeOf(processors)) {
+							_processors = [processors];
+						} else _processors = processors;
+						let refs = _processors.reduce(
+							(sum, p) => sum.concat(p._references),
+							[]
+						);
+						let context = args[1].context;
+						if (
+							refs.length > 0 &&
+							(!context || !context.libs || !context.libs.loadLib)
+						)
+							return fn(
+								new Error(
+									"Processor context is needed to setup a processors references"
+								)
+							);
+						if (refs.length > 0)
+							return context.libs.loadLib.call(
+								context,
+								refs,
+								er => {
+									if (er) return fn(er);
+									return fn(null, processors);
+								}
+							);
+					}
+				}
+				return fn(null, processors);
+			})[0];
+		self.queryProcessor.apply(self, args);
+	};
 }
 
 util.inherits(DynamoEngine, EventEmitter);

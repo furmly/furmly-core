@@ -255,22 +255,57 @@ module.exports = function(constants) {
 										);
 										//this.debug(tasks);
 
-										this.async.parallel(tasks, er => {
-											if (er)
-												return (
-													this.debug(
-														"an error occurred while saving items"
-													),
-													fn(er)
+										this.async.parallel(
+											tasks,
+											(er, results) => {
+												if (er) {
+													let reversals = [];
+													results.forEach(item => {
+														if (
+															item &&
+															item.length
+														) {
+															reversals.push(
+																item[0]._id
+															);
+														}
+													});
+
+													if (reversals.length) {
+														return this.async.parallel(
+															[
+																entityRepo.delete.bind(
+																	entityRepo,
+																	entityName,
+																	reversals
+																)
+															],
+															err => {
+																if (err)
+																	return fn(
+																		err
+																	);
+																return fn(er);
+															}
+														);
+													}
+
+													return (
+														this.debug(
+															"an error occurred while saving items"
+														),
+														fn(er)
+													);
+												}
+
+												this.debug("finished!!!!");
+
+												fn(
+													null,
+													"Successfully uploaded records"
 												);
-
-											this.debug("finished!!!!");
-
-											fn(
-												null,
-												"Successfully uploaded records"
-											);
-										});
+											}
+										);
 									});
 								}
 							);

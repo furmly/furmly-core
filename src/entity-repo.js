@@ -1019,7 +1019,7 @@ EntityRepo.prototype.deleteEntity = function(name, id, fn) {
 	if (Array.prototype.isPrototypeOf(id)) {
 		query = { _id: { $in: id } };
 	}
-	if (!Array.prototype.isPrototypeOf(id) && typeof id == "object") {
+	if (!Array.prototype.isPrototypeOf(id) && typeof id == "object" && !ObjectID.prototype.isPrototypeOf(id)) {
 		if (!Object.keys(id).length)
 			return setImmediate(fn, new Error(`That would delete all ${name}`));
 		query = id;
@@ -1068,13 +1068,24 @@ EntityRepo.prototype.createSchemas = function(fn) {
 			var existing = self.models[this.prop] || mongoose.model(this.prop);
 			var newSchema = this.item;
 			//JSON.parse(this.item);
-			//debugger;;
+			debugger;
 			var diff = _.omitBy(newSchema, function(v, k) {
-				return _.isEqual(self.schemas[that.prop][k], v);
-			});
+					return _.isEqual(self.schemas[that.prop][k], v);
+				}),
+				//check if any keys have been deleted
+				couldBeDeleted = _.omitBy(self.schemas[that.prop], function(
+					v,
+					k
+				) {
+					return _.isEqual(newSchema[k], v);
+				});
 
 			var indexes = removeCompoundIndexes(diff);
 			var change = Object.keys(diff);
+			removeCompoundIndexes(couldBeDeleted);
+			Object.keys(couldBeDeleted).forEach(k => {
+				if (!diff[k]) existing.schema.remove(k);
+			});
 			if (diff && change.length) {
 				//debugger;;
 				existing.schema.add(generator.convert(diff, mongoose));
@@ -1086,7 +1097,11 @@ EntityRepo.prototype.createSchemas = function(fn) {
 			}
 			if (indexes.length) {
 				debug(`model has indexes:${indexes}`);
-				setupCompoundIndexes(self.models[this.prop].schema, indexes);
+				setupCompoundIndexes(
+					self.models[this.prop].schema,
+					indexes,
+					self.models[this.prop]
+				);
 			}
 		} catch (e) {
 			if (e.name == "MissingSchemaError") {
@@ -1101,14 +1116,20 @@ EntityRepo.prototype.createSchemas = function(fn) {
 				);
 				self.models[that.prop] = mongoose.model(that.prop, schema);
 				if (indexes.length) {
-					setupCompoundIndexes(schema, indexes);
+					setupCompoundIndexes(
+						schema,
+						indexes,
+						self.models[that.prop]
+					);
 				}
 			} else return callback(e);
 		}
 		debug(`assigned model ${this.prop}`);
 		callback();
 	}
-	function setupCompoundIndexes(schema, indexes) {
+	function setupCompoundIndexes(schema, indexes, model) {
+		debug("setting up compound_index");
+		debug(indexes);
 		indexes.forEach(x => {
 			schema.index(
 				x.reduce((s, v) => {
@@ -1116,6 +1137,12 @@ EntityRepo.prototype.createSchemas = function(fn) {
 				}, {}),
 				{ unique: true, sparse: true }
 			);
+		});
+		model.ensureIndexes(function(err) {
+			if (err) {
+				debug("An error occurred while trying to ensure indexes");
+				debug(err);
+			}
 		});
 	}
 	function removeCompoundIndexes(schema) {

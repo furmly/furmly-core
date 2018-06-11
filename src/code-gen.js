@@ -37,7 +37,6 @@ CodeGenerator.prototype.optimizations = {
 			node.type == "FunctionExpression" ||
 			node.type == "FunctionDeclaration"
 		) {
-			debugger;
 			let callbackName;
 			if ((callbackName = this._hasCallback(node))) {
 				let body = node.body,
@@ -52,7 +51,7 @@ CodeGenerator.prototype.optimizations = {
 	"Count-all-lib-references": function(context, node) {
 		//check if expression is of type member.
 		//
-		if(node.type == "MemberExpression"){}
+		//if(node.type == "MemberExpression"){}
 		if (
 			node.type == "MemberExpression" &&
 			node.property &&

@@ -572,7 +572,17 @@ module.exports = function(constants, systemEntities) {
 					};
 					switch (elementType) {
 						case this.constants.INPUTTYPE.DATE:
-							return [getDateUI("min"), getDateUI("max")];
+							return [
+								getDateUI("min"),
+								getDateUI("max"),
+								this.libs.createElement(
+									"isRange",
+									"Range ?",
+									"",
+									this.constants.ELEMENTTYPE.INPUT,
+									{ type: this.constants.INPUTTYPE.CHECKBOX }
+								)
+							];
 						default:
 							return [];
 					}

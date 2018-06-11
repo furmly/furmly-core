@@ -477,6 +477,9 @@ module.exports = function(constants, systemEntities) {
 															createElement('pageCount','Page Count','',constants.ELEMENTTYPE.INPUT,{
 																type:constants.INPUTTYPE.NUMBER
 															}),
+															createElement("dontAutoFetchFromSource","Fetch from source on load ?","",constants.ELEMENTTYPE.INPUT,{
+																type:constants.INPUTTYPE.CHECKBOX
+															}),
 															createElement(
 																"mode",
 																"Grid mode (CRUD expects Create/Edit/Update Templates)",
