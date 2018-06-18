@@ -9,6 +9,7 @@ class Command extends DynamoElement {
 		this.invariants();
 		this.dynamicFields.push("args.commandText");
 		this.dynamicFields.push("args.commandIcon");
+		this.dynamicFields.push("args.commandProcessorArgs");
 	}
 	isDefault() {
 		return (

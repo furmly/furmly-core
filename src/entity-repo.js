@@ -487,7 +487,7 @@ const extractValueFromLib = function() {
 			callback(new Error("Undefined lib reference"));
 		} else {
 			if (Function.prototype.isPrototypeOf(this.libs[uid])) {
-				this.libs[uid].apply(this, params, callback);
+				this.libs[uid].apply(this, params.concat(callback));
 			} else
 				callback(
 					null,
@@ -760,6 +760,15 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 		options = null;
 	}
 
+	if (typeof fn !== "function")
+		throw new Error(
+			`fn passed to queryEntity is not a function ${JSON.stringify(
+				arguments,
+				null,
+				" "
+			)}`
+		);
+
 	function populate(arr, result, parent) {
 		arr.forEach(function(item) {
 			if (parent && new RegExp(item.path + "$").test(parent)) {
@@ -1019,7 +1028,11 @@ EntityRepo.prototype.deleteEntity = function(name, id, fn) {
 	if (Array.prototype.isPrototypeOf(id)) {
 		query = { _id: { $in: id } };
 	}
-	if (!Array.prototype.isPrototypeOf(id) && typeof id == "object" && !ObjectID.prototype.isPrototypeOf(id)) {
+	if (
+		!Array.prototype.isPrototypeOf(id) &&
+		typeof id == "object" &&
+		!ObjectID.prototype.isPrototypeOf(id)
+	) {
 		if (!Object.keys(id).length)
 			return setImmediate(fn, new Error(`That would delete all ${name}`));
 		query = id;

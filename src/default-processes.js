@@ -334,18 +334,26 @@ module.exports = function(constants, systemEntities) {
 														id:constants.ELEMENTTYPE.COMMAND,
 														displayLabel:'Command',
 														elements:[
-														    createElement('commandProcessor', 'Processor', '', constants.ELEMENTTYPE.SELECT, {
-																type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
-																config: {
-																	value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
-																}
-															}),
+
 															createElement('commandType','Type','',constants.ELEMENTTYPE.SELECTSET,{
 																items: [
 																	{
 																		id: constants.COMMANDTYPE.DEFAULT,
 																		displayLabel: "Default",
-																		elements: []
+																		elements: [
+																					createElement(
+																						"commandProcessor",
+																						"Processor",
+																						"",
+																						constants.ELEMENTTYPE.SELECT,
+																						{
+																							type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																							config: {
+																								value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																							}
+																						}
+																					)
+																				]
 																	},
 																	{
 																		id: constants.COMMANDTYPE.DOWNLOAD,
@@ -395,7 +403,11 @@ module.exports = function(constants, systemEntities) {
 															createElement("elements", "Elements supplying action parameters", "", constants.ELEMENTTYPE.LIST, {
 																itemTemplate: elementItemTemplate
 															}),
-															createElement('commandText', 'Command Text', '', constants.ELEMENTTYPE.INPUT)
+															createElement('commandText', 'Command Text', '', constants.ELEMENTTYPE.INPUT),
+															createElement('commands', 'Commnds','',constants.ELEMENTTYPE.LIST,{
+																itemTemplate:[
+																createElement('command', 'Command','',constants.ELEMENTTYPE.COMMAND)]
+															})
 														]
 													}, {
 														id: constants.ELEMENTTYPE.LABEL,

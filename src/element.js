@@ -162,8 +162,6 @@ DynamoElement.prototype.isLibValue = function(value) {
 	return ex.test(value);
 };
 
-//DynamoElement.prototype.elementInvariants = misc.elementInvariants;
-
 /**
 	 * uses save service to save/update any async validators.
 	 * @param  {Function} fn callback
