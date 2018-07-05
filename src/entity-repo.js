@@ -868,11 +868,11 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
 					};
 				string.split(".").forEach(iterator);
 				_.reduce(cur.split("|"), reducer, m);
-				//debug(m);
+				debug(m);
 				query.populate(m);
 				return;
 			}
-			//debug(string);
+			debug(string);
 			query.populate(string);
 		});
 	}

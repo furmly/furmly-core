@@ -118,7 +118,11 @@ module.exports = function(constants) {
 										z < _sortedKeys.length;
 										z++
 									) {
-										if (rows[i][_sortedKeys[z]]) {
+										if (
+											rows[i][_sortedKeys[z]] &&
+											mustHave.indexOf(_sortedKeys[z]) >=
+												0
+										) {
 											mustHave.splice(
 												mustHave.indexOf(
 													_sortedKeys[z]

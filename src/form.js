@@ -19,6 +19,7 @@ function DynamoForm(opts) {
 	 * @return {Object}      object representing the form.
 	 */
 DynamoForm.prototype.describe = function(fn) {
+
 	async.parallel(
 		_.map(this.elements, function(e) {
 			return e.describe.bind(e);

@@ -633,7 +633,7 @@ module.exports = function(constants, systemEntities) {
 		)
 		.createProcessor(
 			"Menu Filter",
-			"\nlet commands= this.libs.menuFilters;\nif(!commands||!Array.prototype.isPrototypeOf(commands) ||!commands.length)\ncallback(null,this.args.menu);else {\n\n\ncommands[0]=commands[0].bind(this,this.args.menu);\n\nthis.async.waterfall(commands.map(command=>{\n    return command.bind(this);\n}),(er,menu)=>{\n    if(er) return callback(er);\n    \n    callback(null,menu);\n}); }\n",
+			"const defaultError = (er, fn) => {\n  return setImmediate(fn, er);\n};\nconst run = () => {\n  let commands = this.libs.menuFilters;\n  if (!commands) return callback(null, this.args.menu);\n\n  let commandNames = JSON.parse((this.args.$domain.config && this.args.$domain.config.menuFilters) || \"[]\");\n  if (!commandNames.length) return callback(null, this.args.menu);\n\n  this.async.waterfall(\n    commandNames.map((name, index) => {\n      if (!commands[name]) return defaultError.bind(this, new Error(\"Unknown menu filter function\"));\n      if (index === 0) return commands[name].bind(this, this.args.menu);\n      return commands[name].bind(this);\n    }),\n    (er, menu) => {\n      if (er) return callback(er);\n\n      callback(null, menu);\n    }\n  );\n};\nrun();",
 			constants.UIDS.PROCESSOR.MENU_FILTER
 		)
 		.createProcessor(
