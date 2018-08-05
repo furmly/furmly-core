@@ -1,10 +1,10 @@
 /**
-	 * Class Constuctor for a DynamoProcessor
+	 * Class Constuctor for a FurmlyProcessor
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Any} opts Constructor arguments
 	 */
-function DynamoProcessor(opts) {
+function FurmlyProcessor(opts) {
 	(this.debug = require("debug")("processor-constructor")),
 		(constants = require("./constants"));
 	if (!opts.code) {
@@ -80,7 +80,7 @@ function DynamoProcessor(opts) {
 	 * Class invariant function
 	 * @return {Void} nothing
 	 */
-DynamoProcessor.prototype.validate = function() {
+FurmlyProcessor.prototype.validate = function() {
 	if (!this._id) throw new Error("Processor requires a valid _id");
 };
 
@@ -89,7 +89,7 @@ DynamoProcessor.prototype.validate = function() {
 	 * @param  {Function} fn callback
 	 * @return {Object}      object representing the processor.
 	 */
-DynamoProcessor.prototype.describe = function(fn) {
+FurmlyProcessor.prototype.describe = function(fn) {
 	fn(null, {
 		title: this.title,
 		_id: this._id
@@ -101,7 +101,7 @@ DynamoProcessor.prototype.describe = function(fn) {
 	 * @param  {Function} fn calllback
 	 * @return {Any}      saved object
 	 */
-DynamoProcessor.prototype.save = function(fn) {
+FurmlyProcessor.prototype.save = function(fn) {
 	var model = {
 		_id: this._id,
 		code: this.code,
@@ -120,4 +120,4 @@ DynamoProcessor.prototype.save = function(fn) {
 	this._save(model, fn);
 };
 
-module.exports = DynamoProcessor;
+module.exports = FurmlyProcessor;

@@ -1,8 +1,8 @@
-const DynamoElement = require("../element"),
+const FurmlyElement = require("../element"),
 	misc = require("../element-utils"),
 	elementInvariants = misc.elementInvariants;
 
-class Fileupload extends DynamoElement {
+class Fileupload extends FurmlyElement {
 	constructor(opts) {
 		super(opts);
 		//add invariants here.

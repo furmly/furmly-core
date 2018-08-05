@@ -9,26 +9,26 @@ const constants = require("./constants"),
 	path = require("path"),
 	generator = require("mongoose-gen"),
 	ObjectID = require("mongodb").ObjectID,
-	DynamoProcess = require("./process"),
-	DynamoStep = require("./step"),
-	DynamoProcessor = require("./processor"),
+	FurmlyProcess = require("./process"),
+	FurmlyStep = require("./step"),
+	FurmlyProcessor = require("./processor"),
 	ElementFactory = require("./element-factory"),
-	DynamoElement = require("./element"),
-	DynamoForm = require("./form"),
-	DynamoLib = require("./lib"),
+	FurmlyElement = require("./element"),
+	FurmlyForm = require("./form"),
+	FurmlyLib = require("./lib"),
 	CodeGenerator = require("./code-gen"),
-	DynamoAsyncValidator = require("./async-validator"),
+	FurmlyAsyncValidator = require("./async-validator"),
 	mongoose = require("mongoose"),
-	DynamoSandbox = require("./sandbox");
+	FurmlySandbox = require("./sandbox");
 
 mongoose.Promise = global.Promise;
 _elementFactory = new ElementFactory();
 
 /**
  * @typedef {ProcessorContext}
- * @property {module:Dynamo.EntityRepo#queryEntity} get retrieves entities
+ * @property {module:Furmly.EntityRepo#queryEntity} get retrieves entities
  * @property {string} name The name
- * @property {module:Dynamo.EntityRepo#countEntity} count Counts entities that match the criteria
+ * @property {module:Furmly.EntityRepo#countEntity} count Counts entities that match the criteria
  */
 
 /**
@@ -49,7 +49,7 @@ function blockSystemEntities() {
 	 * This class contains the persistence logic for all entities.
 	 * @class
 	 * 
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Object} opts Class constructor parameters , includes ext,folder,delimiter,store...etc
 	 */
 function EntityRepo(opts) {
@@ -155,8 +155,8 @@ function EntityRepo(opts) {
 
 	this.getLibValue = this.getLibValue.bind(this);
 	/**
-	 * @type {module:Dynamo~ProcessorContext}
-	 * @property {module:Dynamo.EntityRepo#queryEntity} get function for querying objects
+	 * @type {module:Furmly~ProcessorContext}
+	 * @property {module:Furmly.EntityRepo#queryEntity} get function for querying objects
 	 */
 	this.processorEntityRepo = {
 		get: blockSystemEntities.bind(self, self.queryEntity),
@@ -182,7 +182,7 @@ function EntityRepo(opts) {
 	};
 
 	this.transformers[systemEntities.process] = function(item, fn) {
-		if (!(item instanceof DynamoProcess)) {
+		if (!(item instanceof FurmlyProcess)) {
 			var tasks = [];
 			if (isIDOnly(item)) {
 				tasks.push(
@@ -237,7 +237,7 @@ function EntityRepo(opts) {
 								if (er) return callback(er);
 								item.fetchProcessor = fp;
 								try {
-									_process = new DynamoProcess(item);
+									_process = new FurmlyProcess(item);
 								} catch (e) {
 									return callback(e);
 								}
@@ -246,7 +246,7 @@ function EntityRepo(opts) {
 							return;
 						}
 						try {
-							_process = new DynamoProcess(item);
+							_process = new FurmlyProcess(item);
 						} catch (e) {
 							return callback(e);
 						}
@@ -260,7 +260,7 @@ function EntityRepo(opts) {
 	};
 
 	this.transformers[systemEntities.step] = function(item, fn) {
-		if (!(item instanceof DynamoStep)) {
+		if (!(item instanceof FurmlyStep)) {
 			var tasks = [],
 				processorTasks = [],
 				postprocessorTasks = [];
@@ -334,7 +334,7 @@ function EntityRepo(opts) {
 					if (er) return fn(er);
 					let _step;
 					try {
-						_step = new DynamoStep(
+						_step = new FurmlyStep(
 							Object.assign(item, { config: self.config })
 						);
 					} catch (e) {
@@ -350,18 +350,18 @@ function EntityRepo(opts) {
 	this.transformers[systemEntities.asyncValidator] = function(item, fn) {
 		basicTransformer(
 			item,
-			DynamoAsyncValidator,
+			FurmlyAsyncValidator,
 			systemEntities.asyncValidator,
 			fn
 		);
 	};
 	this.transformers[systemEntities.processor] = function(item, fn) {
 		item.codeGenerator = self.codeGenerator;
-		basicTransformer(item, DynamoProcessor, systemEntities.processor, fn);
+		basicTransformer(item, FurmlyProcessor, systemEntities.processor, fn);
 	};
 
 	this.transformers[systemEntities.element] = function(item, fn) {
-		if (!(item instanceof DynamoElement)) {
+		if (!(item instanceof FurmlyElement)) {
 			//this shouldnt happen now , elements are part of steps.
 			if (isIDOnly(item)) {
 				return self.queryEntity(
@@ -404,7 +404,7 @@ function EntityRepo(opts) {
 		return fn(null, item);
 	};
 	this.transformers.form = function(item, fn) {
-		if (!(item instanceof DynamoForm)) {
+		if (!(item instanceof FurmlyForm)) {
 			if (!item)
 				return (
 					debug("step does not have a form"),
@@ -422,7 +422,7 @@ function EntityRepo(opts) {
 					item.elements = elements;
 					let _form;
 					try {
-						_form = new DynamoForm(item);
+						_form = new FurmlyForm(item);
 					} catch (e) {
 						return fn(e);
 					}
@@ -435,7 +435,7 @@ function EntityRepo(opts) {
 	};
 	this.transformers[systemEntities.lib] = function(item, fn) {
 		item.codeGenerator = self.codeGenerator;
-		basicTransformer(item, DynamoLib, systemEntities.lib, fn);
+		basicTransformer(item, FurmlyLib, systemEntities.lib, fn);
 	};
 
 	function basicTransformer(item, clazz, entName, fn) {
@@ -507,9 +507,9 @@ const extractValueFromLib = function() {
  * @return {[type]}          [description]
  */
 EntityRepo.prototype.getLibValue = function(params, fn) {
-	new DynamoSandbox({
+	new FurmlySandbox({
 		processors: [
-			new DynamoProcessor({
+			new FurmlyProcessor({
 				title: "dynamic processor",
 				code: extractValueFromLib,
 				_id: "dynamic",
@@ -563,7 +563,7 @@ EntityRepo.prototype.init = function(callback) {
 		);
 	};
 	mongoose
-		.connect(this.config.data.dynamo_url, { useMongoClient: true })
+		.connect(this.config.data.furmly_url, { useMongoClient: true })
 		.then(_init)
 		.catch(e => {
 			if (e && e.message !== "Trying to open unclosed connection.")

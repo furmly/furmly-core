@@ -7,12 +7,12 @@ const _ = require("lodash"),
 const ex = /^\$/;
 
 /**
-	 * Class representing DynamoElement
+	 * Class representing FurmlyElement
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Any} opts Constructor options
 	 */
-function DynamoElement(opts) {
+function FurmlyElement(opts) {
 	if (!opts) throw new Error("opts cannot be null");
 
 	if (!opts.name) throw new Error("element name must be valid");
@@ -52,7 +52,7 @@ function DynamoElement(opts) {
 	});
 }
 
-DynamoElement.prototype.getValue = function(value, fn) {
+FurmlyElement.prototype.getValue = function(value, fn) {
 	if (this.isLibValue(value)) {
 		if (!this.getLibValue)
 			throw new Error(
@@ -63,7 +63,7 @@ DynamoElement.prototype.getValue = function(value, fn) {
 	return setImmediate(fn, null, value);
 };
 
-DynamoElement.prototype.setValue = function(description, path, fn) {
+FurmlyElement.prototype.setValue = function(description, path, fn) {
 	let curr = description,
 		tasks = [],
 		list = path.split("."),
@@ -114,7 +114,7 @@ DynamoElement.prototype.setValue = function(description, path, fn) {
 	 * @param  {Function} fn callback
 	 * @return {Object}      object representing the element.
 	 */
-DynamoElement.prototype.describe = function(fn) {
+FurmlyElement.prototype.describe = function(fn) {
 	let element = {
 		name: this.name,
 		label: this.label,
@@ -140,7 +140,7 @@ DynamoElement.prototype.describe = function(fn) {
  * Sync description of an element. Note no dynamic value resolution is possible with this method.
  * @return {Object} Object representation of element.
  */
-DynamoElement.prototype.describeSync = function() {
+FurmlyElement.prototype.describeSync = function() {
 	let element = {
 		name: this.name,
 		elementType: this.elementType,
@@ -158,7 +158,7 @@ DynamoElement.prototype.describeSync = function() {
 	return element;
 };
 
-DynamoElement.prototype.isLibValue = function(value) {
+FurmlyElement.prototype.isLibValue = function(value) {
 	return ex.test(value);
 };
 
@@ -167,7 +167,7 @@ DynamoElement.prototype.isLibValue = function(value) {
 	 * @param  {Function} fn callback
 	 * @return {Object}      saved object.
 	 */
-DynamoElement.prototype.save = function(fn) {
+FurmlyElement.prototype.save = function(fn) {
 	var self = this;
 
 	//this.updateArgsComponentUID();
@@ -196,4 +196,4 @@ DynamoElement.prototype.save = function(fn) {
 	);
 };
 
-module.exports = DynamoElement;
+module.exports = FurmlyElement;

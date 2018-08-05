@@ -32,7 +32,7 @@
 	async = require("async"),
 	debug = require("debug")("engine"),
 	util = require("util"),
-	DynamoSandbox = require("./sandbox"),
+	FurmlySandbox = require("./sandbox"),
 	_ = require("lodash"),
 	EventEmitter = require("events"),
 	defaultProcessors = require("./default-processors")(
@@ -47,10 +47,10 @@
 /**
 	 * The Engine represents the boundary between the problem domain and the outside world.
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Object} opts Constructor arguments
 	 */
-function DynamoEngine(opts) {
+function FurmlyEngine(opts) {
 	var self = this;
 	if (!opts) throw new Error("opts must be valid");
 
@@ -60,40 +60,40 @@ function DynamoEngine(opts) {
 	this.entitiesRepository = opts.entitiesRepository;
 
 	//there should be a better way to do this but , it works for now so moving on...
-	this.entitiesRepository.processorEntityRepo.saveProcess = DynamoEngine.prototype.saveProcess.bind(
+	this.entitiesRepository.processorEntityRepo.saveProcess = FurmlyEngine.prototype.saveProcess.bind(
 		this
 	);
-	this.entitiesRepository.processorEntityRepo.getProcess = DynamoEngine.prototype.queryProcess.bind(
+	this.entitiesRepository.processorEntityRepo.getProcess = FurmlyEngine.prototype.queryProcess.bind(
 		this
 	);
-	this.entitiesRepository.processorEntityRepo.getLib = DynamoEngine.prototype.queryLib.bind(
+	this.entitiesRepository.processorEntityRepo.getLib = FurmlyEngine.prototype.queryLib.bind(
 		this
 	);
-	this.entitiesRepository.processorEntityRepo.saveLib = DynamoEngine.prototype.saveLib.bind(
+	this.entitiesRepository.processorEntityRepo.saveLib = FurmlyEngine.prototype.saveLib.bind(
 		this
 	);
-	this.entitiesRepository.processorEntityRepo.saveAsyncValidator = DynamoEngine.prototype.saveAsyncValidator.bind(
+	this.entitiesRepository.processorEntityRepo.saveAsyncValidator = FurmlyEngine.prototype.saveAsyncValidator.bind(
 		this
 	);
-	this.entitiesRepository.processorEntityRepo.getAsyncValidator = DynamoEngine.prototype.queryAsyncValidator.bind(
+	this.entitiesRepository.processorEntityRepo.getAsyncValidator = FurmlyEngine.prototype.queryAsyncValidator.bind(
 		this
 	);
-	this.entitiesRepository.processorEntityRepo.saveProcessor = DynamoEngine.prototype.saveProcessor.bind(
+	this.entitiesRepository.processorEntityRepo.saveProcessor = FurmlyEngine.prototype.saveProcessor.bind(
 		this
 	);
-	this.entitiesRepository.processorEntityRepo.getProcessor = DynamoEngine.prototype.queryProcessor.bind(
+	this.entitiesRepository.processorEntityRepo.getProcessor = FurmlyEngine.prototype.queryProcessor.bind(
 		this
 	);
 }
 
-util.inherits(DynamoEngine, EventEmitter);
+util.inherits(FurmlyEngine, EventEmitter);
 
 /**
 	 * Initializes the system
 	 * @param  {Function} fn callback
 	 * @return {Any}      nothing
 	 */
-DynamoEngine.prototype.init = function(fn) {
+FurmlyEngine.prototype.init = function(fn) {
 	var self = this,
 		_processors,
 		dProcessors = Object.keys(defaultProcessors),
@@ -283,15 +283,15 @@ DynamoEngine.prototype.init = function(fn) {
 	);
 };
 
-DynamoEngine.prototype.isValidID = function(id) {
+FurmlyEngine.prototype.isValidID = function(id) {
 	return this.entitiesRepository.isValidID(id);
 };
-DynamoEngine.prototype.setInfrastructure = function(manager) {
+FurmlyEngine.prototype.setInfrastructure = function(manager) {
 	this.entitiesRepository.setInfrastructure(manager);
 };
 
-DynamoEngine.prototype.runProcessor = function(context, processor, fn) {
-	var sandbox = new DynamoSandbox(
+FurmlyEngine.prototype.runProcessor = function(context, processor, fn) {
+	var sandbox = new FurmlySandbox(
 		processor,
 		this.entitiesRepository.processorEntityRepo
 	);
@@ -305,7 +305,7 @@ DynamoEngine.prototype.runProcessor = function(context, processor, fn) {
 	 * @param  {Function} fn     callback
 	 * @return {Any}           nothing
 	 */
-DynamoEngine.prototype.createEntityConfiguration = function(name, config, fn) {
+FurmlyEngine.prototype.createEntityConfiguration = function(name, config, fn) {
 	this.entitiesRepository.createConfig(name, config, fn);
 };
 
@@ -316,7 +316,7 @@ DynamoEngine.prototype.createEntityConfiguration = function(name, config, fn) {
 	 * @param  {Function} fn     callback
 	 * @return {Any}             nothing
 	 */
-DynamoEngine.prototype.updateEntityConfiguration = function(name, config, fn) {
+FurmlyEngine.prototype.updateEntityConfiguration = function(name, config, fn) {
 	this.entitiesRepository.updateConfig(name, config, fn);
 };
 
@@ -327,7 +327,7 @@ DynamoEngine.prototype.updateEntityConfiguration = function(name, config, fn) {
 	 * @param  {Function} fn     callback
 	 * @return {Object}          updated instance
 	 */
-DynamoEngine.prototype.updateEntityInstance = function(name, data, fn) {
+FurmlyEngine.prototype.updateEntityInstance = function(name, data, fn) {
 	this.entitiesRepository.updateEntity(name, data, fn);
 };
 
@@ -338,7 +338,7 @@ DynamoEngine.prototype.updateEntityInstance = function(name, data, fn) {
 	 * @param  {Function} fn   callback
 	 * @return {Object}        created instance.
 	 */
-DynamoEngine.prototype.createEntityInstance = function(name, data, fn) {
+FurmlyEngine.prototype.createEntityInstance = function(name, data, fn) {
 	this.entitiesRepository.createEntity(name, data, fn);
 };
 
@@ -350,7 +350,7 @@ DynamoEngine.prototype.createEntityInstance = function(name, data, fn) {
 	 * @param  {Function} fn      callback
 	 * @return {Any}              either an array of entity instances or a single instance
 	 */
-DynamoEngine.prototype.query = function(name, filter, options, fn) {
+FurmlyEngine.prototype.query = function(name, filter, options, fn) {
 	if (Array.prototype.slice.call(arguments).length == 3) {
 		fn = options;
 		options = null;
@@ -363,14 +363,14 @@ DynamoEngine.prototype.query = function(name, filter, options, fn) {
 Object.keys(systemEntities).forEach(function(key) {
 	var cap = misc.capitalizeText(key);
 	var entName = systemEntities[key];
-	DynamoEngine.prototype["query" + cap] = function(filter, options, fn) {
+	FurmlyEngine.prototype["query" + cap] = function(filter, options, fn) {
 		if (Array.prototype.slice.call(arguments).length == 2) {
 			fn = options;
 			options = null;
 		}
 		this.entitiesRepository.queryEntity(entName, filter, options, fn);
 	};
-	DynamoEngine.prototype["save" + cap] = function(data, options, fn) {
+	FurmlyEngine.prototype["save" + cap] = function(data, options, fn) {
 		var self = this;
 
 		if (Array.prototype.slice.call(arguments).length == 2) {
@@ -406,7 +406,7 @@ Object.keys(systemEntities).forEach(function(key) {
 			this.entitiesRepository.updateEntity(systemEntities[key], data, fn);
 	};
 
-	DynamoEngine.prototype[`delete${cap}`] = function(id, fn) {
+	FurmlyEngine.prototype[`delete${cap}`] = function(id, fn) {
 		if (!id) {
 			return setImmediate(
 				fn,
@@ -419,7 +419,7 @@ Object.keys(systemEntities).forEach(function(key) {
 
 //-------------------------------------------------------------------------
 
-module.exports = DynamoEngine;
+module.exports = FurmlyEngine;
 </code></pre>
         </article>
     </section>
@@ -430,7 +430,7 @@ module.exports = DynamoEngine;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dynamo.html">Dynamo</a></li><li><a href="module-misc.html">misc</a></li></ul><h3>Classes</h3><ul><li><a href="module-Dynamo.DynamoAsyncValidator.html">DynamoAsyncValidator</a></li><li><a href="module-Dynamo.DynamoElement.html">DynamoElement</a></li><li><a href="module-Dynamo.DynamoEngine.html">DynamoEngine</a></li><li><a href="module-Dynamo.DynamoForm.html">DynamoForm</a></li><li><a href="module-Dynamo.DynamoLib.html">DynamoLib</a></li><li><a href="module-Dynamo.DynamoProcess.html">DynamoProcess</a></li><li><a href="module-Dynamo.DynamoProcessor.html">DynamoProcessor</a></li><li><a href="module-Dynamo.DynamoSandbox.html">DynamoSandbox</a></li><li><a href="module-Dynamo.DynamoStep.html">DynamoStep</a></li><li><a href="module-Dynamo.DynamoStep-Client.html">Client</a></li><li><a href="module-Dynamo.EntityRepo.html">EntityRepo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#blockSystemEntities">blockSystemEntities</a></li><li><a href="global.html#init">init</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Furmly.html">Furmly</a></li><li><a href="module-misc.html">misc</a></li></ul><h3>Classes</h3><ul><li><a href="module-Furmly.FurmlyAsyncValidator.html">FurmlyAsyncValidator</a></li><li><a href="module-Furmly.FurmlyElement.html">FurmlyElement</a></li><li><a href="module-Furmly.FurmlyEngine.html">FurmlyEngine</a></li><li><a href="module-Furmly.FurmlyForm.html">FurmlyForm</a></li><li><a href="module-Furmly.FurmlyLib.html">FurmlyLib</a></li><li><a href="module-Furmly.FurmlyProcess.html">FurmlyProcess</a></li><li><a href="module-Furmly.FurmlyProcessor.html">FurmlyProcessor</a></li><li><a href="module-Furmly.FurmlySandbox.html">FurmlySandbox</a></li><li><a href="module-Furmly.FurmlyStep.html">FurmlyStep</a></li><li><a href="module-Furmly.FurmlyStep-Client.html">Client</a></li><li><a href="module-Furmly.EntityRepo.html">EntityRepo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#blockSystemEntities">blockSystemEntities</a></li><li><a href="global.html#init">init</a></li></ul>
 </nav>
 
 <br class="clear">

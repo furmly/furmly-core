@@ -31,16 +31,16 @@
 	misc = require("./misc"),
 	async = require("async"),
 	_ = require("lodash"),
-	DynamoSandbox = require("./sandbox"),
-	DynamoStep = require("./step"),
+	FurmlySandbox = require("./sandbox"),
+	FurmlyStep = require("./step"),
 	constants = require("./constants");
 /**
-	 * this is a class constructor for a dynamo process.
+	 * this is a class constructor for a furmly process.
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Any} opts constructor parameters
 	 */
-function DynamoProcess(opts) {
+function FurmlyProcess(opts) {
 	var self = this;
 	if (!opts) throw new Error("Process arg missing");
 
@@ -100,16 +100,16 @@ function DynamoProcess(opts) {
 	 * Enforce class invariant
 	 * 
 	 */
-DynamoProcess.prototype.validate = function(fn) {
+FurmlyProcess.prototype.validate = function(fn) {
 	if (!this._id) fn(new Error("Process must have an id"));
 };
 
 /**
 	 * Utility function for updating a process properties. Primarily used during initialization
-	 * @param  {Object} opts Object or Type of DynamoProcess
+	 * @param  {Object} opts Object or Type of FurmlyProcess
 	 * @return {Void}      Nothing.
 	 */
-DynamoProcess.prototype.updateProps = function(opts) {
+FurmlyProcess.prototype.updateProps = function(opts) {
 	if (opts.steps) {
 		let steps = opts.steps;
 		delete opts.steps;
@@ -128,7 +128,7 @@ DynamoProcess.prototype.updateProps = function(opts) {
 	 * @param  {Function} fn      callback
 	 * @return {Any}           result passed from processor chain.
 	 */
-DynamoProcess.prototype.run = function(context, fn) {
+FurmlyProcess.prototype.run = function(context, fn) {
 	var self = this;
 	this.validate(fn);
 
@@ -137,7 +137,7 @@ DynamoProcess.prototype.run = function(context, fn) {
 		var index = self.currentStepIndex || 0,
 			step = self.steps[index],
 			nextStep = self.steps[index + 1];
-		assert.equal(step instanceof DynamoStep, true);
+		assert.equal(step instanceof FurmlyStep, true);
 		let _continue = () => {
 			step.run(context, function(er, message) {
 				if (er) return fn(er);
@@ -233,7 +233,7 @@ DynamoProcess.prototype.run = function(context, fn) {
 	 * @param  {Function} fn callback
 	 * @return {Any}      saved object.
 	 */
-DynamoProcess.prototype.save = function(fn) {
+FurmlyProcess.prototype.save = function(fn) {
 	var self = this;
 	var unsaved = _.filter(this.steps, _.isObject);
 	var tasks = [];
@@ -278,7 +278,7 @@ DynamoProcess.prototype.save = function(fn) {
 	 * @param  {Function} fn callback
 	 * @return {Object}      object representing the process.
 	 */
-DynamoProcess.prototype.describe = function(context, fn) {
+FurmlyProcess.prototype.describe = function(context, fn) {
 	if (Array.prototype.slice.call(arguments).length == 1) {
 		fn = context;
 		context = null;
@@ -303,7 +303,7 @@ DynamoProcess.prototype.describe = function(context, fn) {
 
 			if (self.fetchProcessor &amp;&amp; context) {
 				context.$description = proc;
-				new DynamoSandbox(
+				new FurmlySandbox(
 					self.fetchProcessor,
 					self.entityRepo
 				).run(context, function(er, result, modifiedProcess) {
@@ -330,7 +330,7 @@ DynamoProcess.prototype.describe = function(context, fn) {
 	self.steps[0].describe(collect);
 };
 
-module.exports = DynamoProcess;
+module.exports = FurmlyProcess;
 </code></pre>
         </article>
     </section>
@@ -341,7 +341,7 @@ module.exports = DynamoProcess;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dynamo.html">Dynamo</a></li><li><a href="module-misc.html">misc</a></li></ul><h3>Classes</h3><ul><li><a href="module-Dynamo.DynamoAsyncValidator.html">DynamoAsyncValidator</a></li><li><a href="module-Dynamo.DynamoElement.html">DynamoElement</a></li><li><a href="module-Dynamo.DynamoEngine.html">DynamoEngine</a></li><li><a href="module-Dynamo.DynamoForm.html">DynamoForm</a></li><li><a href="module-Dynamo.DynamoLib.html">DynamoLib</a></li><li><a href="module-Dynamo.DynamoProcess.html">DynamoProcess</a></li><li><a href="module-Dynamo.DynamoProcessor.html">DynamoProcessor</a></li><li><a href="module-Dynamo.DynamoSandbox.html">DynamoSandbox</a></li><li><a href="module-Dynamo.DynamoStep.html">DynamoStep</a></li><li><a href="module-Dynamo.DynamoStep-Client.html">Client</a></li><li><a href="module-Dynamo.EntityRepo.html">EntityRepo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#blockSystemEntities">blockSystemEntities</a></li><li><a href="global.html#init">init</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Furmly.html">Furmly</a></li><li><a href="module-misc.html">misc</a></li></ul><h3>Classes</h3><ul><li><a href="module-Furmly.FurmlyAsyncValidator.html">FurmlyAsyncValidator</a></li><li><a href="module-Furmly.FurmlyElement.html">FurmlyElement</a></li><li><a href="module-Furmly.FurmlyEngine.html">FurmlyEngine</a></li><li><a href="module-Furmly.FurmlyForm.html">FurmlyForm</a></li><li><a href="module-Furmly.FurmlyLib.html">FurmlyLib</a></li><li><a href="module-Furmly.FurmlyProcess.html">FurmlyProcess</a></li><li><a href="module-Furmly.FurmlyProcessor.html">FurmlyProcessor</a></li><li><a href="module-Furmly.FurmlySandbox.html">FurmlySandbox</a></li><li><a href="module-Furmly.FurmlyStep.html">FurmlyStep</a></li><li><a href="module-Furmly.FurmlyStep-Client.html">Client</a></li><li><a href="module-Furmly.EntityRepo.html">EntityRepo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#blockSystemEntities">blockSystemEntities</a></li><li><a href="global.html#init">init</a></li></ul>
 </nav>
 
 <br class="clear">

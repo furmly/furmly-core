@@ -357,7 +357,7 @@ function capitalizeText(txt) {
 }
 
 /**
- * Returns an initialization function for dynamo
+ * Returns an initialization function for furmly
  * @module misc
  */
 

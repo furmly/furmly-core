@@ -2,7 +2,7 @@ const debug = require("debug")("init");
 /**
  * Startup initialization
  * @param  {Object} config Configuration
- * @return {Object}        Dynamo classes and constants.
+ * @return {Object}        Furmly classes and constants.
  */
 function init(config) {
 	var constants = require("./constants");
@@ -22,7 +22,7 @@ function init(config) {
 }
 
 /**
- * Returns an initialization function for dynamo
- * @module Dynamo
+ * Returns an initialization function for furmly
+ * @module Furmly
  */
 module.exports = init;

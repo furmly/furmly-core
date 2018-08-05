@@ -14,12 +14,12 @@ const constants = require("./constants"),
 	),
 	{ NodeVM } = require("vm2");
 /**
-	 * This represents a dynamo step. Steps could  require user input or not.
+	 * This represents a furmly step. Steps could  require user input or not.
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Any} opts Object representation of a step or string with _id
 	 */
-function DynamoStep(opts) {
+function FurmlyStep(opts) {
 	var self = this;
 	this._id = opts._id;
 	this.stepType = opts.stepType;
@@ -209,7 +209,7 @@ function DynamoStep(opts) {
 	 * @param  {Function} fn callback
 	 * @return {Object}      saved object
 	 */
-DynamoStep.prototype.save = function(fn) {
+FurmlyStep.prototype.save = function(fn) {
 	var self = this;
 	try {
 		this.validate();
@@ -275,7 +275,7 @@ DynamoStep.prototype.save = function(fn) {
 /**
 	 * Class invariant
 	 */
-DynamoStep.prototype.validate = function(shouldBePersisted) {
+FurmlyStep.prototype.validate = function(shouldBePersisted) {
 	if (shouldBePersisted && !this._id)
 		throw new Error("opts._id is null or undefined");
 
@@ -290,7 +290,7 @@ DynamoStep.prototype.validate = function(shouldBePersisted) {
 	if (!this._save) throw new Error("Step needs save service for persistence");
 };
 
-DynamoStep.prototype.describe = function(fn) {
+FurmlyStep.prototype.describe = function(fn) {
 	this.validate(true);
 	var self = this,
 		step = _.pickBy(self, misc.notAFunction);
@@ -303,9 +303,9 @@ DynamoStep.prototype.describe = function(fn) {
 	});
 };
 
-DynamoStep.prototype.run = function(context, fn) {
+FurmlyStep.prototype.run = function(context, fn) {
 	this.validate(true);
 	this.state.run(context, fn);
 };
 
-module.exports = DynamoStep;
+module.exports = FurmlyStep;

@@ -1,7 +1,7 @@
-const DynamoElement = require("../element"),
+const FurmlyElement = require("../element"),
 	_warn = require("../element-utils").warn(require("debug")("element:input"));
 
-class Input extends DynamoElement {
+class Input extends FurmlyElement {
 	constructor(opts) {
 		super(opts);
 		//add invariants here.

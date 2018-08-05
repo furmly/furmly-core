@@ -30,7 +30,7 @@
 	EventEmitter = require("events"),
 	async = require("async"),
 	_debug = require("debug"),
-	debug = _debug("dynamo"),
+	debug = _debug("furmly"),
 	ObjectID = require("mongodb").ObjectID,
 	util = require("util"),
 	_ = require("lodash"),
@@ -52,7 +52,7 @@ const { NodeVM } = require("vm2");
 /**
  * Startup script
  * @param  {Object} config Configuration
- * @return {Object}        Dynamo classes and constants.
+ * @return {Object}        Furmly classes and constants.
  */
 function init(config) {
 	var constants = createConstants();
@@ -60,11 +60,11 @@ function init(config) {
 	generator.setDefault("requiresIdentity", function(value) {
 		return true;
 	});
-	mongoose.connect(config.data.dynamo_url);
+	mongoose.connect(config.data.furmly_url);
 
 	/**
 	 * Returns Array of Strings
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param  {String} folderPath
 	 * @param  {Function} callback
 	 * @return {String}
@@ -93,7 +93,7 @@ function init(config) {
 	}
 	/**
 	 * Returns a function that checks if a property is defined
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param  {String} propertyName
 	 * @return {Function}
 	 */
@@ -105,7 +105,7 @@ function init(config) {
 
 	/**
 	 * Returns a function that checks the type of the supplied argument
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param  {String} value
 	 * @return {Function}
 	 */
@@ -117,7 +117,7 @@ function init(config) {
 
 	/**
 	 * Returns a function that returns the first child of an array result.
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param  {Function} fn
 	 * @return {Object}
 	 */
@@ -260,7 +260,7 @@ function init(config) {
 
 	/**
 	 * Capitalizes Text
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param  {String} txt
 	 * @return {String}
 	 */
@@ -270,7 +270,7 @@ function init(config) {
 
 	/**
 	 * Contants for default entities
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @type {Object}
 	 */
 	var systemEntities = {
@@ -291,12 +291,12 @@ function init(config) {
 		);
 
 	/**
-	 * This represents a dynamo step. Steps could  require user input or not.
+	 * This represents a furmly step. Steps could  require user input or not.
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Any} opts Object representation of a step or string with _id
 	 */
-	function DynamoStep(opts) {
+	function FurmlyStep(opts) {
 		var self = this;
 		this._id = opts._id;
 		this.stepType = opts.stepType;
@@ -475,7 +475,7 @@ function init(config) {
 	 * @param  {Function} fn callback
 	 * @return {Object}      saved object
 	 */
-	DynamoStep.prototype.save = function(fn) {
+	FurmlyStep.prototype.save = function(fn) {
 		var self = this;
 		try {
 			this.validate();
@@ -540,7 +540,7 @@ function init(config) {
 	/**
 	 * Class invariant
 	 */
-	DynamoStep.prototype.validate = function(shouldBePersisted) {
+	FurmlyStep.prototype.validate = function(shouldBePersisted) {
 		if (shouldBePersisted &amp;&amp; !this._id)
 			throw new Error("opts._id is null or undefined");
 
@@ -558,7 +558,7 @@ function init(config) {
 			throw new Error("Step needs save service for persistence");
 	};
 
-	DynamoStep.prototype.describe = function(fn) {
+	FurmlyStep.prototype.describe = function(fn) {
 		this.validate(true);
 		var self = this,
 			step = _.pickBy(self, notAFunction);
@@ -571,7 +571,7 @@ function init(config) {
 		});
 	};
 
-	DynamoStep.prototype.run = function(context, fn) {
+	FurmlyStep.prototype.run = function(context, fn) {
 		this.validate(true);
 		this.state.run(context, fn);
 	};
@@ -579,16 +579,16 @@ function init(config) {
 	/**
 	 * Loads these reusable classes during every processor run.
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Object} opts data for the lib
 	 */
-	function DynamoLib(opts) {
-		if (!opts) throw new Error("missing opts to Dynamo Lib");
+	function FurmlyLib(opts) {
+		if (!opts) throw new Error("missing opts to Furmly Lib");
 
 		if (!opts.uid || /\s+/.exec(opts.uid))
-			throw new Error("a valid key is required by dynamo lib");
+			throw new Error("a valid key is required by furmly lib");
 
-		if (!opts.code) throw new Error("code is required by dynamo lib");
+		if (!opts.code) throw new Error("code is required by furmly lib");
 
 		this._id = opts._id;
 		this.code = opts.code;
@@ -600,7 +600,7 @@ function init(config) {
 	 * @param  {Object} holder Placeholder for returned function
 	 * @return {Object}        holder object
 	 */
-	DynamoLib.prototype.load = function(holder) {
+	FurmlyLib.prototype.load = function(holder) {
 		var self = this;
 		if (holder[this.key])
 			throw new Error("key  " + this.key + " already exists");
@@ -615,34 +615,34 @@ function init(config) {
 		})();
 	};
 
-	DynamoLib.prototype.save = function(fn) {
+	FurmlyLib.prototype.save = function(fn) {
 		this._save(this, fn);
 	};
 
 	/**
 	 * Inner class used for running processors that are not part of a steps chain of processors
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Object} opts Class constructor options , including entityRepo and processors.
 	 */
-	function DynamoSandbox(opts) {
+	function FurmlySandbox(opts) {
 		var args;
 		if (
 			!opts ||
-			(!(opts instanceof DynamoProcessor) &amp;&amp;
+			(!(opts instanceof FurmlyProcessor) &amp;&amp;
 				(!opts.processors || !opts.processors.length))
 		)
 			throw new Error("A sandbox needs atleast one processor to run");
 
 		if (
 			!opts.entityRepo &amp;&amp;
-			opts instanceof DynamoProcessor &amp;&amp;
+			opts instanceof FurmlyProcessor &amp;&amp;
 			(args = Array.prototype.slice.call(arguments)).length == 1
 		)
 			throw new Error("EntityRepo is required by all processors");
 
-		var processors = opts instanceof DynamoProcessor ? [opts] : opts,
+		var processors = opts instanceof FurmlyProcessor ? [opts] : opts,
 			entityRepo =
-				opts instanceof DynamoProcessor ? args[1] : opts.entityRepo;
+				opts instanceof FurmlyProcessor ? args[1] : opts.entityRepo;
 
 		this.run = function(context, fn) {
 			let vm = new NodeVM({
@@ -669,12 +669,12 @@ function init(config) {
 	}
 
 	/**
-	 * this is a class constructor for a dynamo process.
+	 * this is a class constructor for a furmly process.
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Any} opts constructor parameters
 	 */
-	function DynamoProcess(opts) {
+	function FurmlyProcess(opts) {
 		var self = this;
 		if (!opts) throw new Error("Process arg missing");
 
@@ -733,16 +733,16 @@ function init(config) {
 	 * Enforce class invariant
 	 * 
 	 */
-	DynamoProcess.prototype.validate = function(fn) {
+	FurmlyProcess.prototype.validate = function(fn) {
 		if (!this._id) fn(new Error("Process must have an id"));
 	};
 
 	/**
 	 * Utility function for updating a process properties. Primarily used during initialization
-	 * @param  {Object} data Object or Type of DynamoProcess
+	 * @param  {Object} data Object or Type of FurmlyProcess
 	 * @return {Void}      Nothing.
 	 */
-	DynamoProcess.prototype.updateProps = function(opts) {
+	FurmlyProcess.prototype.updateProps = function(opts) {
 		if (opts.steps) {
 			let steps = opts.steps;
 			delete opts.steps;
@@ -761,13 +761,13 @@ function init(config) {
 	 * @param  {Function} fn      callback
 	 * @return {Any}           result passed from processor chain.
 	 */
-	DynamoProcess.prototype.run = function(context, fn) {
+	FurmlyProcess.prototype.run = function(context, fn) {
 		var self = this;
 		this.validate(fn);
 
 		function processStep(args) {
 			var step = self.steps[self.currentStepIndex || 0];
-			assert.equal(step instanceof DynamoStep, true);
+			assert.equal(step instanceof FurmlyStep, true);
 			step.run(context, function(er, message) {
 				if (er) return fn(er);
 
@@ -836,7 +836,7 @@ function init(config) {
 	 * @param  {Function} fn callback
 	 * @return {Any}      saved object.
 	 */
-	DynamoProcess.prototype.save = function(fn) {
+	FurmlyProcess.prototype.save = function(fn) {
 		var self = this;
 		var unsaved = _.filter(this.steps, _.isObject);
 		var tasks = [];
@@ -884,7 +884,7 @@ function init(config) {
 	 * @param  {Function} fn callback
 	 * @return {Object}      object representing the process.
 	 */
-	DynamoProcess.prototype.describe = function(context, fn) {
+	FurmlyProcess.prototype.describe = function(context, fn) {
 		if (Array.prototype.slice.call(arguments).length == 1) {
 			fn = context;
 			context = null;
@@ -909,7 +909,7 @@ function init(config) {
 
 				if (self.fetchProcessor &amp;&amp; context) {
 					context.$description = proc;
-					new DynamoSandbox(
+					new FurmlySandbox(
 						self.fetchProcessor,
 						self.entityRepo
 					).run(context, function(er, result, modifiedProcess) {
@@ -936,10 +936,10 @@ function init(config) {
 	/**
 	 * The Engine represents the boundary between the problem domain and the outside world.
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Object} opts Constructor arguments
 	 */
-	function DynamoEngine(opts) {
+	function FurmlyEngine(opts) {
 		var self = this;
 		if (!opts) throw new Error("opts must be valid");
 
@@ -949,40 +949,40 @@ function init(config) {
 		this.entitiesRepository = opts.entitiesRepository;
 
 		//there should be a better way to do this but , it works for now so moving on...
-		this.entitiesRepository.processorEntityRepo.saveProcess = DynamoEngine.prototype.saveProcess.bind(
+		this.entitiesRepository.processorEntityRepo.saveProcess = FurmlyEngine.prototype.saveProcess.bind(
 			this
 		);
-		this.entitiesRepository.processorEntityRepo.getProcess = DynamoEngine.prototype.queryProcess.bind(
+		this.entitiesRepository.processorEntityRepo.getProcess = FurmlyEngine.prototype.queryProcess.bind(
 			this
 		);
-		this.entitiesRepository.processorEntityRepo.getLib = DynamoEngine.prototype.queryLib.bind(
+		this.entitiesRepository.processorEntityRepo.getLib = FurmlyEngine.prototype.queryLib.bind(
 			this
 		);
-		this.entitiesRepository.processorEntityRepo.saveLib = DynamoEngine.prototype.saveLib.bind(
+		this.entitiesRepository.processorEntityRepo.saveLib = FurmlyEngine.prototype.saveLib.bind(
 			this
 		);
-		this.entitiesRepository.processorEntityRepo.saveAsyncValidator = DynamoEngine.prototype.saveAsyncValidator.bind(
+		this.entitiesRepository.processorEntityRepo.saveAsyncValidator = FurmlyEngine.prototype.saveAsyncValidator.bind(
 			this
 		);
-		this.entitiesRepository.processorEntityRepo.getAsyncValidator = DynamoEngine.prototype.queryAsyncValidator.bind(
+		this.entitiesRepository.processorEntityRepo.getAsyncValidator = FurmlyEngine.prototype.queryAsyncValidator.bind(
 			this
 		);
-		this.entitiesRepository.processorEntityRepo.saveProcessor = DynamoEngine.prototype.saveProcessor.bind(
+		this.entitiesRepository.processorEntityRepo.saveProcessor = FurmlyEngine.prototype.saveProcessor.bind(
 			this
 		);
-		this.entitiesRepository.processorEntityRepo.getProcessor = DynamoEngine.prototype.queryProcessor.bind(
+		this.entitiesRepository.processorEntityRepo.getProcessor = FurmlyEngine.prototype.queryProcessor.bind(
 			this
 		);
 	}
 
-	util.inherits(DynamoEngine, EventEmitter);
+	util.inherits(FurmlyEngine, EventEmitter);
 
 	/**
 	 * Initializes the system
 	 * @param  {Function} fn callback
 	 * @return {Any}      nothing
 	 */
-	DynamoEngine.prototype.init = function(fn) {
+	FurmlyEngine.prototype.init = function(fn) {
 		var self = this,
 			_processors,
 			dProcessors = Object.keys(defaultProcessors),
@@ -1177,15 +1177,15 @@ function init(config) {
 		);
 	};
 
-	DynamoEngine.prototype.isValidID = function(id) {
+	FurmlyEngine.prototype.isValidID = function(id) {
 		return mongoose.Types.ObjectId.isValid(id);
 	};
-	DynamoEngine.prototype.setInfrastructure = function(manager) {
+	FurmlyEngine.prototype.setInfrastructure = function(manager) {
 		this.entitiesRepository.setInfrastructure(manager);
 	};
 
-	DynamoEngine.prototype.runProcessor = function(context, processor, fn) {
-		var sandbox = new DynamoSandbox(
+	FurmlyEngine.prototype.runProcessor = function(context, processor, fn) {
+		var sandbox = new FurmlySandbox(
 			processor,
 			this.entitiesRepository.processorEntityRepo
 		);
@@ -1199,7 +1199,7 @@ function init(config) {
 	 * @param  {Function} fn     callback
 	 * @return {Any}           nothing
 	 */
-	DynamoEngine.prototype.createEntityConfiguration = function(
+	FurmlyEngine.prototype.createEntityConfiguration = function(
 		name,
 		config,
 		fn
@@ -1214,7 +1214,7 @@ function init(config) {
 	 * @param  {Function} fn     callback
 	 * @return {Any}             nothing
 	 */
-	DynamoEngine.prototype.updateEntityConfiguration = function(
+	FurmlyEngine.prototype.updateEntityConfiguration = function(
 		name,
 		config,
 		fn
@@ -1229,7 +1229,7 @@ function init(config) {
 	 * @param  {Function} fn     callback
 	 * @return {Object}          updated instance
 	 */
-	DynamoEngine.prototype.updateEntityInstance = function(name, data, fn) {
+	FurmlyEngine.prototype.updateEntityInstance = function(name, data, fn) {
 		this.entitiesRepository.updateEntity(name, data, fn);
 	};
 
@@ -1240,7 +1240,7 @@ function init(config) {
 	 * @param  {Function} fn   callback
 	 * @return {Object}        created instance.
 	 */
-	DynamoEngine.prototype.createEntityInstance = function(name, data, fn) {
+	FurmlyEngine.prototype.createEntityInstance = function(name, data, fn) {
 		this.entitiesRepository.createEntity(name, data, fn);
 	};
 
@@ -1252,7 +1252,7 @@ function init(config) {
 	 * @param  {Function} fn      callback
 	 * @return {Any}              either an array of entity instances or a single instance
 	 */
-	DynamoEngine.prototype.query = function(name, filter, options, fn) {
+	FurmlyEngine.prototype.query = function(name, filter, options, fn) {
 		if (Array.prototype.slice.call(arguments).length == 3) {
 			fn = options;
 			options = null;
@@ -1265,14 +1265,14 @@ function init(config) {
 	Object.keys(systemEntities).forEach(function(key) {
 		var cap = capitalizeText(key);
 		var entName = systemEntities[key];
-		DynamoEngine.prototype["query" + cap] = function(filter, options, fn) {
+		FurmlyEngine.prototype["query" + cap] = function(filter, options, fn) {
 			if (Array.prototype.slice.call(arguments).length == 2) {
 				fn = options;
 				options = null;
 			}
 			this.entitiesRepository.queryEntity(entName, filter, options, fn);
 		};
-		DynamoEngine.prototype["save" + cap] = function(data, options, fn) {
+		FurmlyEngine.prototype["save" + cap] = function(data, options, fn) {
 			var self = this;
 
 			if (Array.prototype.slice.call(arguments).length == 2) {
@@ -1316,7 +1316,7 @@ function init(config) {
 				);
 		};
 
-		DynamoEngine.prototype[`delete${cap}`] = function(id, fn) {
+		FurmlyEngine.prototype[`delete${cap}`] = function(id, fn) {
 			if (!id) {
 				return setImmediate(
 					fn,
@@ -1330,12 +1330,12 @@ function init(config) {
 	//-------------------------------------------------------------------------
 
 	/**
-	 * Class representing DynamoElement
+	 * Class representing FurmlyElement
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Any} opts Constructor options
 	 */
-	function DynamoElement(opts) {
+	function FurmlyElement(opts) {
 		if (!opts) throw new Error("opts cannot be null");
 
 		if (!opts.name) throw new Error("element name must be valid");
@@ -1363,7 +1363,7 @@ function init(config) {
 	 * @param  {Function} fn callback
 	 * @return {Object}      object representing the element.
 	 */
-	DynamoElement.prototype.describe = function(fn) {
+	FurmlyElement.prototype.describe = function(fn) {
 		fn(null, {
 			name: this.name,
 			label: this.label,
@@ -1377,7 +1377,7 @@ function init(config) {
 			asyncValidators: _.map(this.asyncValidators, "_id")
 		});
 	};
-	DynamoElement.prototype.updateArgsComponentUID = function() {
+	FurmlyElement.prototype.updateArgsComponentUID = function() {
 		if (this.args) {
 			runThroughObj(
 				[
@@ -1396,7 +1396,7 @@ function init(config) {
 	 * @param  {Function} fn callback
 	 * @return {Object}      saved object.
 	 */
-	DynamoElement.prototype.save = function(fn) {
+	FurmlyElement.prototype.save = function(fn) {
 		var self = this;
 
 		this.updateArgsComponentUID();
@@ -1428,10 +1428,10 @@ function init(config) {
 	/**
 	 * Form used by Client based Steps
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Any} opts Contructor arguments
 	 */
-	function DynamoForm(opts) {
+	function FurmlyForm(opts) {
 		if (!opts || !opts.elements || !opts.elements.length)
 			throw new Error("Form does not contain any elements");
 
@@ -1443,7 +1443,7 @@ function init(config) {
 	 * @param  {Function} fn callback
 	 * @return {Object}      object representing the form.
 	 */
-	DynamoForm.prototype.describe = function(fn) {
+	FurmlyForm.prototype.describe = function(fn) {
 		async.parallel(
 			_.map(this.elements, function(e) {
 				return e.describe.bind(e);
@@ -1461,7 +1461,7 @@ function init(config) {
 	 * @param  {Function} fn callback
 	 * @return {Any}      saved object.
 	 */
-	DynamoForm.prototype.save = function(fn) {
+	FurmlyForm.prototype.save = function(fn) {
 		async.parallel(
 			_.map(this.elements, function(x) {
 				return x.save.bind(x);
@@ -1476,12 +1476,12 @@ function init(config) {
 	};
 
 	/**
-	 * Class Constuctor for a DynamoProcessor
+	 * Class Constuctor for a FurmlyProcessor
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Any} opts Constructor arguments
 	 */
-	function DynamoProcessor(opts) {
+	function FurmlyProcessor(opts) {
 		if (!opts.code) {
 			debug(opts);
 			throw new Error("Processor must include code to run");
@@ -1536,7 +1536,7 @@ function init(config) {
 	 * Class invariant function
 	 * @return {Void} nothing
 	 */
-	DynamoProcessor.prototype.validate = function() {
+	FurmlyProcessor.prototype.validate = function() {
 		if (!this._id) throw new Error("Processor requires a valid _id");
 	};
 
@@ -1545,7 +1545,7 @@ function init(config) {
 	 * @param  {Function} fn callback
 	 * @return {Object}      object representing the processor.
 	 */
-	DynamoProcessor.prototype.describe = function(fn) {
+	FurmlyProcessor.prototype.describe = function(fn) {
 		fn(null, {
 			title: this.title,
 			_id: this._id
@@ -1557,7 +1557,7 @@ function init(config) {
 	 * @param  {Function} fn calllback
 	 * @return {Any}      saved object
 	 */
-	DynamoProcessor.prototype.save = function(fn) {
+	FurmlyProcessor.prototype.save = function(fn) {
 		var model = {
 			_id: this._id,
 			code: this.code,
@@ -1573,12 +1573,12 @@ function init(config) {
 	/**
 	 * Inherits from processor. Runs user editable code for validation. It is used to validate elements before submission.
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Object} opts [description]
 	 */
-	function DynamoAsyncValidator(opts) {
+	function FurmlyAsyncValidator(opts) {
 		var self = this;
-		DynamoProcessor.call(this, opts);
+		FurmlyProcessor.call(this, opts);
 
 		var _process = this.process;
 		//convert result to boolean value.
@@ -1596,12 +1596,12 @@ function init(config) {
 			});
 		};
 	}
-	util.inherits(DynamoAsyncValidator, DynamoProcessor);
+	util.inherits(FurmlyAsyncValidator, FurmlyProcessor);
 
 	/**
 	 * This class contains the persistence logic for entities.
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Object} opts Class constructor parameters , includes ext,folder,delimiter,store...etc
 	 */
 	function EntityRepo(opts) {
@@ -1717,7 +1717,7 @@ function init(config) {
 		};
 
 		this.transformers[systemEntities.process] = function(item, fn) {
-			if (!(item instanceof DynamoProcess)) {
+			if (!(item instanceof FurmlyProcess)) {
 				var tasks = [];
 				if (typeof item == "string" || item instanceof ObjectID) {
 					tasks.push(
@@ -1773,7 +1773,7 @@ function init(config) {
 									if (er) return callback(er);
 									item.fetchProcessor = fp;
 									try {
-										_process = new DynamoProcess(item);
+										_process = new FurmlyProcess(item);
 									} catch (e) {
 										return callback(e);
 									}
@@ -1782,7 +1782,7 @@ function init(config) {
 								return;
 							}
 							try {
-								_process = new DynamoProcess(item);
+								_process = new FurmlyProcess(item);
 							} catch (e) {
 								return callback(e);
 							}
@@ -1796,7 +1796,7 @@ function init(config) {
 		};
 
 		this.transformers[systemEntities.step] = function(item, fn) {
-			if (!(item instanceof DynamoStep)) {
+			if (!(item instanceof FurmlyStep)) {
 				var tasks = [],
 					processorTasks = [],
 					postprocessorTasks = [];
@@ -1872,7 +1872,7 @@ function init(config) {
 						if (er) return fn(er);
 						let _step;
 						try {
-							_step = new DynamoStep(item);
+							_step = new FurmlyStep(item);
 						} catch (e) {
 							return fn(e);
 						}
@@ -1886,7 +1886,7 @@ function init(config) {
 		this.transformers[systemEntities.asyncValidator] = function(item, fn) {
 			basicTransformer(
 				item,
-				DynamoAsyncValidator,
+				FurmlyAsyncValidator,
 				systemEntities.asyncValidator,
 				fn
 			);
@@ -1894,13 +1894,13 @@ function init(config) {
 		this.transformers[systemEntities.processor] = function(item, fn) {
 			basicTransformer(
 				item,
-				DynamoProcessor,
+				FurmlyProcessor,
 				systemEntities.processor,
 				fn
 			);
 		};
 		this.transformers[systemEntities.element] = function(item, fn) {
-			if (!(item instanceof DynamoElement)) {
+			if (!(item instanceof FurmlyElement)) {
 				if (typeof item == "string" || item instanceof ObjectID) {
 					return self.queryEntity(
 						systemEntities.element,
@@ -1929,7 +1929,7 @@ function init(config) {
 						item.asyncValidators = asyncValidators;
 						let _element;
 						try {
-							_element = new DynamoElement(item);
+							_element = new FurmlyElement(item);
 						} catch (e) {
 							return fn(e);
 						}
@@ -1941,7 +1941,7 @@ function init(config) {
 			return fn(null, item);
 		};
 		this.transformers.form = function(item, fn) {
-			if (!(item instanceof DynamoForm)) {
+			if (!(item instanceof FurmlyForm)) {
 				if (!item)
 					return (
 						debug("step does not have a form"),
@@ -1959,7 +1959,7 @@ function init(config) {
 						item.elements = elements;
 						let _form;
 						try {
-							_form = new DynamoForm(item);
+							_form = new FurmlyForm(item);
 						} catch (e) {
 							return fn(e);
 						}
@@ -1971,7 +1971,7 @@ function init(config) {
 			return fn(null, item);
 		};
 		this.transformers[systemEntities.lib] = function(item, fn) {
-			basicTransformer(item, DynamoLib, systemEntities.lib, fn);
+			basicTransformer(item, FurmlyLib, systemEntities.lib, fn);
 		};
 
 		function basicTransformer(item, clazz, entName, fn) {
@@ -2564,22 +2564,22 @@ function init(config) {
 		);
 	};
 	return {
-		Engine: DynamoEngine,
-		Form: DynamoForm,
-		Process: DynamoProcess,
-		Lib: DynamoLib,
-		Step: DynamoStep,
-		Processor: DynamoProcessor,
+		Engine: FurmlyEngine,
+		Form: FurmlyForm,
+		Process: FurmlyProcess,
+		Lib: FurmlyLib,
+		Step: FurmlyStep,
+		Processor: FurmlyProcessor,
 		constants: constants,
 		systemEntities: systemEntities,
 		EntityRepo: EntityRepo,
-		Element: DynamoElement
+		Element: FurmlyElement
 	};
 }
 
 /**
- * Returns an initialization function for dynamo
- * @module Dynamo
+ * Returns an initialization function for furmly
+ * @module Furmly
  */
 module.exports = init;
 </code></pre>
@@ -2592,7 +2592,7 @@ module.exports = init;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dynamo.html">Dynamo</a></li></ul><h3>Classes</h3><ul><li><a href="module-Dynamo.DynamoAsyncValidator.html">DynamoAsyncValidator</a></li><li><a href="module-Dynamo.DynamoElement.html">DynamoElement</a></li><li><a href="module-Dynamo.DynamoEngine.html">DynamoEngine</a></li><li><a href="module-Dynamo.DynamoForm.html">DynamoForm</a></li><li><a href="module-Dynamo.DynamoLib.html">DynamoLib</a></li><li><a href="module-Dynamo.DynamoProcess.html">DynamoProcess</a></li><li><a href="module-Dynamo.DynamoProcessor.html">DynamoProcessor</a></li><li><a href="module-Dynamo.DynamoStep.html">DynamoStep</a></li><li><a href="module-Dynamo.DynamoStep-Client.html">Client</a></li><li><a href="module-Dynamo.EntityRepo.html">EntityRepo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#createElement">createElement</a></li><li><a href="global.html#init">init</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Furmly.html">Furmly</a></li></ul><h3>Classes</h3><ul><li><a href="module-Furmly.FurmlyAsyncValidator.html">FurmlyAsyncValidator</a></li><li><a href="module-Furmly.FurmlyElement.html">FurmlyElement</a></li><li><a href="module-Furmly.FurmlyEngine.html">FurmlyEngine</a></li><li><a href="module-Furmly.FurmlyForm.html">FurmlyForm</a></li><li><a href="module-Furmly.FurmlyLib.html">FurmlyLib</a></li><li><a href="module-Furmly.FurmlyProcess.html">FurmlyProcess</a></li><li><a href="module-Furmly.FurmlyProcessor.html">FurmlyProcessor</a></li><li><a href="module-Furmly.FurmlyStep.html">FurmlyStep</a></li><li><a href="module-Furmly.FurmlyStep-Client.html">Client</a></li><li><a href="module-Furmly.EntityRepo.html">EntityRepo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#createElement">createElement</a></li><li><a href="global.html#init">init</a></li></ul>
 </nav>
 
 <br class="clear">

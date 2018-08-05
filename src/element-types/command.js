@@ -1,8 +1,8 @@
-const DynamoElement = require("../element"),
+const FurmlyElement = require("../element"),
 	_constants = require("../constants"),
 	misc = require("../element-utils"),
 	elementInvariants = misc.elementInvariants;
-class Command extends DynamoElement {
+class Command extends FurmlyElement {
 	constructor(opts) {
 		super(opts);
 		//add invariants here.

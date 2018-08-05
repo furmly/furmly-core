@@ -1,16 +1,16 @@
 /**
 	 * Loads these reusable classes during every processor run.
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Object} opts data for the lib
 	 */
-function DynamoLib(opts) {
-	if (!opts) throw new Error("missing opts to Dynamo Lib");
+function FurmlyLib(opts) {
+	if (!opts) throw new Error("missing opts to Furmly Lib");
 
 	if (!opts.uid || /\s+/.exec(opts.uid))
-		throw new Error("a valid key is required by dynamo lib");
+		throw new Error("a valid key is required by furmly lib");
 
-	if (!opts.code) throw new Error("code is required by dynamo lib");
+	if (!opts.code) throw new Error("code is required by furmly lib");
 	const debug = require("debug")("lib");
 	this._id = opts._id;
 	this.code = opts.code;
@@ -33,7 +33,7 @@ function DynamoLib(opts) {
 	 * @param  {Object} holder Placeholder for returned function
 	 * @return {Object}        holder object
 	 */
-DynamoLib.prototype.load = function(holder) {
+FurmlyLib.prototype.load = function(holder) {
 	var self = this,
 		code = this._code || this.code;
 	if (holder[this.key])
@@ -50,7 +50,7 @@ DynamoLib.prototype.load = function(holder) {
 	})();
 };
 
-DynamoLib.prototype.save = function(fn) {
+FurmlyLib.prototype.save = function(fn) {
 	if (this.codeGenerator) {
 		//optimize code.
 		let { code, references = {} } = this.codeGenerator.optimize(this.code);
@@ -60,4 +60,4 @@ DynamoLib.prototype.save = function(fn) {
 	this._save(this, fn);
 };
 
-module.exports = DynamoLib;
+module.exports = FurmlyLib;

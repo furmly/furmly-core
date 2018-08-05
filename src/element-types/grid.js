@@ -1,4 +1,4 @@
-const DynamoElement = require("../element"),
+const FurmlyElement = require("../element"),
 	_constants = require("../constants"),
 	misc = require("../element-utils"),
 	async = require("async"),
@@ -6,7 +6,7 @@ const DynamoElement = require("../element"),
 	_warn = misc.warn(require("debug")("element:grid")),
 	elementInvariants = misc.elementInvariants;
 
-class Grid extends DynamoElement {
+class Grid extends FurmlyElement {
 	constructor(opts, factory) {
 		super(opts);
 		//add invariants here.

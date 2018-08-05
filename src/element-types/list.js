@@ -1,11 +1,11 @@
-const DynamoElement = require("../element"),
+const FurmlyElement = require("../element"),
 	misc = require("../element-utils"),
 	async = require("async"),
 	_ = require("lodash"),
 	_warn = misc.warn(require("debug")("element:list")),
 	elementInvariants = misc.elementInvariants;
 
-class List extends DynamoElement {
+class List extends FurmlyElement {
 	constructor(opts, factory) {
 		super(opts);
 		//add invariants here.
@@ -93,10 +93,10 @@ class List extends DynamoElement {
 		if (
 			this.args.itemTemplate &&
 			!Array.prototype.isPrototypeOf(this.args.itemTemplate) &&
-			(!this.args.itemTemplate.dynamo_ref || !this.args.template_ref)
+			(!this.args.itemTemplate.furmly_ref || !this.args.template_ref)
 		)
 			_warn(
-				"itemTemplate does not contain dynamo_ref but its template is not directly an array"
+				"itemTemplate does not contain furmly_ref but its template is not directly an array"
 			);
 
 		if (

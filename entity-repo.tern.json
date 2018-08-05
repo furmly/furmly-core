@@ -1,5 +1,5 @@
 {
-  "!name": "dynamo",
+  "!name": "furmly",
   "entRepo": {
     "createSchema": {
       "!type": "fn(name: ?, config: ?, fn: +Function)",
@@ -58,6 +58,6 @@
     },
     "!type": "fn(opts: ?)",
     "!doc":
-      "This class contains the persistence logic for all entities.\n@class\n\n@memberOf module:Dynamo\n@param {Object} opts Class constructor parameters , includes ext,folder,delimiter,store...etc"
+      "This class contains the persistence logic for all entities.\n@class\n\n@memberOf module:Furmly\n@param {Object} opts Class constructor parameters , includes ext,folder,delimiter,store...etc"
   }
 }

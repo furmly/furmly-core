@@ -1,11 +1,11 @@
-const DynamoElement = require("../element"),
+const FurmlyElement = require("../element"),
 	misc = require("../element-utils"),
 	_ = require("lodash"),
 	async = require("async"),
 	_warn = misc.warn(require("debug")("element:selectset"));
 elementInvariants = misc.elementInvariants;
 
-class Selectset extends DynamoElement {
+class Selectset extends FurmlyElement {
 	constructor(opts, factory) {
 		super(opts);
 		//add invariants here.

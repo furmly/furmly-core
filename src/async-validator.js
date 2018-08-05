@@ -1,14 +1,14 @@
 let util = require("util"),
-	DynamoProcessor = require("./processor");
+	FurmlyProcessor = require("./processor");
 /**
 	 * Inherits from processor. Runs user editable code for validation. It is used to validate elements before submission.
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Object} opts [description]
 	 */
-function DynamoAsyncValidator(opts) {
+function FurmlyAsyncValidator(opts) {
 	var self = this;
-	DynamoProcessor.call(this, opts);
+	FurmlyProcessor.call(this, opts);
 
 	var _process = this.process;
 	//convert result to boolean value.
@@ -26,6 +26,6 @@ function DynamoAsyncValidator(opts) {
 		});
 	};
 }
-util.inherits(DynamoAsyncValidator, DynamoProcessor);
+util.inherits(FurmlyAsyncValidator, FurmlyProcessor);
 
-module.exports = DynamoAsyncValidator;
+module.exports = FurmlyAsyncValidator;

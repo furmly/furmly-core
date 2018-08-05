@@ -4,7 +4,7 @@ const constants = require("./constants"),
 	async = require("async"),
 	debug = require("debug")("engine"),
 	util = require("util"),
-	DynamoSandbox = require("./sandbox"),
+	FurmlySandbox = require("./sandbox"),
 	_ = require("lodash"),
 	EventEmitter = require("events"),
 	defaultProcessors = require("./default-processors")(
@@ -19,10 +19,10 @@ const constants = require("./constants"),
 /**
 	 * The Engine represents the boundary between the problem domain and the outside world.
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Object} opts Constructor arguments
 	 */
-function DynamoEngine(opts) {
+function FurmlyEngine(opts) {
 	var self = this;
 	if (!opts) throw new Error("opts must be valid");
 
@@ -33,28 +33,28 @@ function DynamoEngine(opts) {
 
 	//there should be a better way to do this but , it works for now so moving on...
 	//
-	this.entitiesRepository.processorEntityRepo.getStep = DynamoEngine.prototype.queryStep.bind(
+	this.entitiesRepository.processorEntityRepo.getStep = FurmlyEngine.prototype.queryStep.bind(
 		this
 	);
-	this.entitiesRepository.processorEntityRepo.saveProcess = DynamoEngine.prototype.saveProcess.bind(
+	this.entitiesRepository.processorEntityRepo.saveProcess = FurmlyEngine.prototype.saveProcess.bind(
 		this
 	);
-	this.entitiesRepository.processorEntityRepo.getProcess = DynamoEngine.prototype.queryProcess.bind(
+	this.entitiesRepository.processorEntityRepo.getProcess = FurmlyEngine.prototype.queryProcess.bind(
 		this
 	);
-	this.entitiesRepository.processorEntityRepo.getLib = DynamoEngine.prototype.queryLib.bind(
+	this.entitiesRepository.processorEntityRepo.getLib = FurmlyEngine.prototype.queryLib.bind(
 		this
 	);
-	this.entitiesRepository.processorEntityRepo.saveLib = DynamoEngine.prototype.saveLib.bind(
+	this.entitiesRepository.processorEntityRepo.saveLib = FurmlyEngine.prototype.saveLib.bind(
 		this
 	);
-	this.entitiesRepository.processorEntityRepo.saveAsyncValidator = DynamoEngine.prototype.saveAsyncValidator.bind(
+	this.entitiesRepository.processorEntityRepo.saveAsyncValidator = FurmlyEngine.prototype.saveAsyncValidator.bind(
 		this
 	);
-	this.entitiesRepository.processorEntityRepo.getAsyncValidator = DynamoEngine.prototype.queryAsyncValidator.bind(
+	this.entitiesRepository.processorEntityRepo.getAsyncValidator = FurmlyEngine.prototype.queryAsyncValidator.bind(
 		this
 	);
-	this.entitiesRepository.processorEntityRepo.saveProcessor = DynamoEngine.prototype.saveProcessor.bind(
+	this.entitiesRepository.processorEntityRepo.saveProcessor = FurmlyEngine.prototype.saveProcessor.bind(
 		this
 	);
 	this.entitiesRepository.processorEntityRepo.getProcessor = function(
@@ -101,14 +101,14 @@ function DynamoEngine(opts) {
 	};
 }
 
-util.inherits(DynamoEngine, EventEmitter);
+util.inherits(FurmlyEngine, EventEmitter);
 
 /**
 	 * Initializes the system
 	 * @param  {Function} fn callback
 	 * @return {Any}      nothing
 	 */
-DynamoEngine.prototype.init = function(fn) {
+FurmlyEngine.prototype.init = function(fn) {
 	var self = this,
 		_processors,
 		dProcessors = Object.keys(defaultProcessors),
@@ -298,15 +298,15 @@ DynamoEngine.prototype.init = function(fn) {
 	);
 };
 
-DynamoEngine.prototype.isValidID = function(id) {
+FurmlyEngine.prototype.isValidID = function(id) {
 	return this.entitiesRepository.isValidID(id);
 };
-DynamoEngine.prototype.setInfrastructure = function(manager) {
+FurmlyEngine.prototype.setInfrastructure = function(manager) {
 	this.entitiesRepository.setInfrastructure(manager);
 };
 
-DynamoEngine.prototype.runProcessor = function(context, processor, fn) {
-	var sandbox = new DynamoSandbox(
+FurmlyEngine.prototype.runProcessor = function(context, processor, fn) {
+	var sandbox = new FurmlySandbox(
 		processor,
 		this.entitiesRepository.processorEntityRepo
 	);
@@ -320,7 +320,7 @@ DynamoEngine.prototype.runProcessor = function(context, processor, fn) {
 	 * @param  {Function} fn     callback
 	 * @return {Any}           nothing
 	 */
-DynamoEngine.prototype.createEntityConfiguration = function(name, config, fn) {
+FurmlyEngine.prototype.createEntityConfiguration = function(name, config, fn) {
 	this.entitiesRepository.createConfig(name, config, fn);
 };
 
@@ -331,7 +331,7 @@ DynamoEngine.prototype.createEntityConfiguration = function(name, config, fn) {
 	 * @param  {Function} fn     callback
 	 * @return {Any}             nothing
 	 */
-DynamoEngine.prototype.updateEntityConfiguration = function(name, config, fn) {
+FurmlyEngine.prototype.updateEntityConfiguration = function(name, config, fn) {
 	this.entitiesRepository.updateConfig(name, config, fn);
 };
 
@@ -340,11 +340,11 @@ DynamoEngine.prototype.updateEntityConfiguration = function(name, config, fn) {
  * @param  {Function} fn Callback
  * @return {Array}      List of entity name
  */
-DynamoEngine.prototype.allEntityConfigurations = function(...args) {
+FurmlyEngine.prototype.allEntityConfigurations = function(...args) {
 	this.entitiesRepository.getConfigNames.apply(this.entitiesRepository, args);
 };
 
-DynamoEngine.prototype.countConfigurations = function(...args) {
+FurmlyEngine.prototype.countConfigurations = function(...args) {
 	this.entitiesRepository.countConfig.apply(this.entitiesRepository, args);
 };
 /**
@@ -354,7 +354,7 @@ DynamoEngine.prototype.countConfigurations = function(...args) {
 	 * @param  {Function} fn     callback
 	 * @return {Object}          updated instance
 	 */
-DynamoEngine.prototype.updateEntityInstance = function(name, data, fn) {
+FurmlyEngine.prototype.updateEntityInstance = function(name, data, fn) {
 	this.entitiesRepository.updateEntity(name, data, fn);
 };
 
@@ -365,7 +365,7 @@ DynamoEngine.prototype.updateEntityInstance = function(name, data, fn) {
 	 * @param  {Function} fn   callback
 	 * @return {Object}        created instance.
 	 */
-DynamoEngine.prototype.createEntityInstance = function(name, data, fn) {
+FurmlyEngine.prototype.createEntityInstance = function(name, data, fn) {
 	this.entitiesRepository.createEntity(name, data, fn);
 };
 
@@ -377,7 +377,7 @@ DynamoEngine.prototype.createEntityInstance = function(name, data, fn) {
 	 * @param  {Function} fn      callback
 	 * @return {Any}              either an array of entity instances or a single instance
 	 */
-DynamoEngine.prototype.query = function(name, filter, options, fn) {
+FurmlyEngine.prototype.query = function(name, filter, options, fn) {
 	if (Array.prototype.slice.call(arguments).length == 3) {
 		fn = options;
 		options = null;
@@ -385,12 +385,12 @@ DynamoEngine.prototype.query = function(name, filter, options, fn) {
 	this.entitiesRepository.queryEntity(name, filter, options, fn);
 };
 
-DynamoEngine.prototype.count = function(name, filter, fn) {
+FurmlyEngine.prototype.count = function(name, filter, fn) {
 	return this.entitiesRepository.countEntity(name, filter, fn);
 	// body...
 };
 
-DynamoEngine.prototype.createId = function(...args) {
+FurmlyEngine.prototype.createId = function(...args) {
 	return this.entitiesRepository.createId.apply(null, args);
 };
 
@@ -399,14 +399,14 @@ DynamoEngine.prototype.createId = function(...args) {
 Object.keys(systemEntities).forEach(function(key) {
 	var cap = misc.capitalizeText(key);
 	var entName = systemEntities[key];
-	DynamoEngine.prototype["query" + cap] = function(filter, options, fn) {
+	FurmlyEngine.prototype["query" + cap] = function(filter, options, fn) {
 		if (Array.prototype.slice.call(arguments).length == 2) {
 			fn = options;
 			options = null;
 		}
 		this.entitiesRepository.queryEntity(entName, filter, options, fn);
 	};
-	DynamoEngine.prototype["save" + cap] = function(data, options, fn) {
+	FurmlyEngine.prototype["save" + cap] = function(data, options, fn) {
 		var self = this;
 
 		if (Array.prototype.slice.call(arguments).length == 2) {
@@ -448,7 +448,7 @@ Object.keys(systemEntities).forEach(function(key) {
 			this.entitiesRepository.updateEntity(systemEntities[key], data, fn);
 	};
 
-	DynamoEngine.prototype[`delete${cap}`] = function(id, fn) {
+	FurmlyEngine.prototype[`delete${cap}`] = function(id, fn) {
 		if (!id) {
 			return setImmediate(
 				fn,
@@ -461,4 +461,4 @@ Object.keys(systemEntities).forEach(function(key) {
 
 //-------------------------------------------------------------------------
 
-module.exports = DynamoEngine;
+module.exports = FurmlyEngine;

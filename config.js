@@ -1,7 +1,7 @@
 module.exports = {
 	dev: {
 		data: {
-			dynamo_url: 'mongodb://localhost:27017/dynamo'
+			furmly_url: 'mongodb://localhost:27017/furmly'
 		},
 		processors: {
 			ttl: 5000
@@ -12,7 +12,7 @@ module.exports = {
 	},
 	unitTest: {
 		data: {
-			dynamo_url: 'mongodb://localhost:27017/unit_test'
+			furmly_url: 'mongodb://localhost:27017/unit_test'
 		},
 		codeGenerator:{
 			defaultOptimizations:["Count-all-lib-references"]

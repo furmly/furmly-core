@@ -29,16 +29,16 @@
             <pre class="prettyprint source linenums"><code>/**
 	 * Loads these reusable classes during every processor run.
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Object} opts data for the lib
 	 */
-function DynamoLib(opts) {
-	if (!opts) throw new Error("missing opts to Dynamo Lib");
+function FurmlyLib(opts) {
+	if (!opts) throw new Error("missing opts to Furmly Lib");
 
 	if (!opts.uid || /\s+/.exec(opts.uid))
-		throw new Error("a valid key is required by dynamo lib");
+		throw new Error("a valid key is required by furmly lib");
 
-	if (!opts.code) throw new Error("code is required by dynamo lib");
+	if (!opts.code) throw new Error("code is required by furmly lib");
 	const debug = require("debug")("lib");
 	this._id = opts._id;
 	this.code = opts.code;
@@ -58,7 +58,7 @@ function DynamoLib(opts) {
 	 * @param  {Object} holder Placeholder for returned function
 	 * @return {Object}        holder object
 	 */
-DynamoLib.prototype.load = function(holder) {
+FurmlyLib.prototype.load = function(holder) {
 	var self = this;
 	if (holder[this.key])
 		throw new Error("key  " + this.key + " already exists");
@@ -74,11 +74,11 @@ DynamoLib.prototype.load = function(holder) {
 	})();
 };
 
-DynamoLib.prototype.save = function(fn) {
+FurmlyLib.prototype.save = function(fn) {
 	this._save(this, fn);
 };
 
-module.exports = DynamoLib;
+module.exports = FurmlyLib;
 </code></pre>
         </article>
     </section>
@@ -89,7 +89,7 @@ module.exports = DynamoLib;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dynamo.html">Dynamo</a></li><li><a href="module-misc.html">misc</a></li></ul><h3>Classes</h3><ul><li><a href="module-Dynamo.DynamoAsyncValidator.html">DynamoAsyncValidator</a></li><li><a href="module-Dynamo.DynamoElement.html">DynamoElement</a></li><li><a href="module-Dynamo.DynamoEngine.html">DynamoEngine</a></li><li><a href="module-Dynamo.DynamoForm.html">DynamoForm</a></li><li><a href="module-Dynamo.DynamoLib.html">DynamoLib</a></li><li><a href="module-Dynamo.DynamoProcess.html">DynamoProcess</a></li><li><a href="module-Dynamo.DynamoProcessor.html">DynamoProcessor</a></li><li><a href="module-Dynamo.DynamoSandbox.html">DynamoSandbox</a></li><li><a href="module-Dynamo.DynamoStep.html">DynamoStep</a></li><li><a href="module-Dynamo.DynamoStep-Client.html">Client</a></li><li><a href="module-Dynamo.EntityRepo.html">EntityRepo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#blockSystemEntities">blockSystemEntities</a></li><li><a href="global.html#init">init</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Furmly.html">Furmly</a></li><li><a href="module-misc.html">misc</a></li></ul><h3>Classes</h3><ul><li><a href="module-Furmly.FurmlyAsyncValidator.html">FurmlyAsyncValidator</a></li><li><a href="module-Furmly.FurmlyElement.html">FurmlyElement</a></li><li><a href="module-Furmly.FurmlyEngine.html">FurmlyEngine</a></li><li><a href="module-Furmly.FurmlyForm.html">FurmlyForm</a></li><li><a href="module-Furmly.FurmlyLib.html">FurmlyLib</a></li><li><a href="module-Furmly.FurmlyProcess.html">FurmlyProcess</a></li><li><a href="module-Furmly.FurmlyProcessor.html">FurmlyProcessor</a></li><li><a href="module-Furmly.FurmlySandbox.html">FurmlySandbox</a></li><li><a href="module-Furmly.FurmlyStep.html">FurmlyStep</a></li><li><a href="module-Furmly.FurmlyStep-Client.html">Client</a></li><li><a href="module-Furmly.EntityRepo.html">EntityRepo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#blockSystemEntities">blockSystemEntities</a></li><li><a href="global.html#init">init</a></li></ul>
 </nav>
 
 <br class="clear">

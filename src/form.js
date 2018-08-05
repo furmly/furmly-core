@@ -3,10 +3,10 @@ const async = require("async"),
 /**
 	 * Form used by Client based Steps
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Any} opts Contructor arguments
 	 */
-function DynamoForm(opts) {
+function FurmlyForm(opts) {
 	if (!opts || !opts.elements || !opts.elements.length)
 		throw new Error("Form does not contain any elements");
 
@@ -18,7 +18,7 @@ function DynamoForm(opts) {
 	 * @param  {Function} fn callback
 	 * @return {Object}      object representing the form.
 	 */
-DynamoForm.prototype.describe = function(fn) {
+FurmlyForm.prototype.describe = function(fn) {
 
 	async.parallel(
 		_.map(this.elements, function(e) {
@@ -37,7 +37,7 @@ DynamoForm.prototype.describe = function(fn) {
 	 * @param  {Function} fn callback
 	 * @return {Any}      saved object.
 	 */
-DynamoForm.prototype.save = function(fn) {
+FurmlyForm.prototype.save = function(fn) {
 	async.parallel(
 		_.map(this.elements, function(x) {
 			return x.save.bind(x);
@@ -51,4 +51,4 @@ DynamoForm.prototype.save = function(fn) {
 	);
 };
 
-module.exports = DynamoForm;
+module.exports = FurmlyForm;

@@ -1,10 +1,10 @@
-const DynamoElement = require("../element"),
+const FurmlyElement = require("../element"),
 	_constants = require("../constants"),
 	misc = require("../element-utils"),
 	_warn = misc.warn(require("debug")("element:image")),
 	elementInvariants = misc.elementInvariants;
 
-class Image extends DynamoElement {
+class Image extends FurmlyElement {
 	constructor(props) {
 		super(props);
 		this.invariants();

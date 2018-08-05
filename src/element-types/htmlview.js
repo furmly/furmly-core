@@ -1,8 +1,8 @@
-const DynamoElement = require("../element"),
+const FurmlyElement = require("../element"),
 	misc = require("../element-utils"),
 	elementInvariants = misc.elementInvariants;
 
-class HtmlView extends DynamoElement {
+class HtmlView extends FurmlyElement {
 	constructor(props) {
 		super(props);
 		this.invariants();

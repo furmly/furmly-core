@@ -20,7 +20,7 @@ module.exports = function(constants, systemEntities) {
 
 	function tag(obj, t) {
 		return {
-			dynamo_ref: t,
+			furmly_ref: t,
 			template: obj
 		};
 	}
@@ -406,7 +406,14 @@ module.exports = function(constants, systemEntities) {
 															createElement('commandText', 'Command Text', '', constants.ELEMENTTYPE.INPUT),
 															createElement('commands', 'Commnds','',constants.ELEMENTTYPE.LIST,{
 																itemTemplate:[
-																createElement('command', 'Command','',constants.ELEMENTTYPE.COMMAND)]
+															   createElement("commandProcessor","Processor that will run when command fires","",constants.ELEMENTTYPE.SELECT,{
+                                                               	type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
+																	config: {
+																		value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
+																	}
+																}),
+                                                               createElement("commandText","Text Displayed by the client","",constants.ELEMENTTYPE.INPUT),
+                                                               createElement("commandIcon","Name of the icon to be displayed by the client","",constants.ELEMENTTYPE.INPUT)]
 															})
 														]
 													}, {
@@ -430,9 +437,9 @@ module.exports = function(constants, systemEntities) {
 																path: "config",
 																items: [{
 																	id: constants.NAVIGATIONTYPE.DYNAMO,
-																	displayLabel: "Link to a Dynamo process/view",
+																	displayLabel: "Link to a Furmly process/view",
 																	elements: [
-																		createElement("value", "Select a Dynamo Process", "", constants.ELEMENTTYPE.SELECT, {
+																		createElement("value", "Select a Furmly Process", "", constants.ELEMENTTYPE.SELECT, {
 																			type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
 																			config: {
 																				value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSES]
@@ -477,7 +484,8 @@ module.exports = function(constants, systemEntities) {
 																	}
 															}),
 															createElement("filterCommands","commands used by the filter to perform things like print...etc","",constants.ELEMENTTYPE.LIST,{
-                                                               itemTemplate:[createElement("commandProcessor","Processor that will run when command fires","",constants.ELEMENTTYPE.SELECT,{
+                                                               itemTemplate:[
+                                                               createElement("commandProcessor","Processor that will run when command fires","",constants.ELEMENTTYPE.SELECT,{
                                                                	type: constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR,
 																	config: {
 																		value: opts[constants.UIDS.PROCESSOR.LIST_PROCESSORS]
@@ -751,7 +759,7 @@ module.exports = function(constants, systemEntities) {
 																		id: "TAG",
 																		displayLabel: "Tag Template",
 																		elements: [
-																			createElement("dynamo_ref", "Tag", "", constants.ELEMENTTYPE.INPUT, {
+																			createElement("furmly_ref", "Tag", "", constants.ELEMENTTYPE.INPUT, {
 																				type: constants.INPUTTYPE.TEXT
 																			})
 																		]
@@ -914,7 +922,7 @@ module.exports = function(constants, systemEntities) {
 						createElement("properties", "Of", "", constants.ELEMENTTYPE.LIST, {
 							options: "TAG",
 							behavior: {
-								dynamo_ref: arrayTemplateName
+								furmly_ref: arrayTemplateName
 							},
 							itemTemplate: null
 						})
@@ -941,7 +949,7 @@ module.exports = function(constants, systemEntities) {
 					createElement("value", "Entity Template", "", constants.ELEMENTTYPE.LIST, {
 						options: "TAG",
 						behavior: {
-							dynamo_ref: templateName
+							furmly_ref: templateName
 						},
 						itemTemplate: baseItemTemplate
 					})

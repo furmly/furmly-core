@@ -37,21 +37,21 @@
 	path = require("path"),
 	generator = require("mongoose-gen"),
 	ObjectID = require("mongodb").ObjectID,
-	DynamoProcess = require("./process"),
-	DynamoStep = require("./step"),
-	DynamoProcessor = require("./processor"),
-	DynamoElement = require("./element"),
-	DynamoForm = require("./form"),
-	DynamoLib = require("./lib"),
-	DynamoAsyncValidator = require("./async-validator"),
+	FurmlyProcess = require("./process"),
+	FurmlyStep = require("./step"),
+	FurmlyProcessor = require("./processor"),
+	FurmlyElement = require("./element"),
+	FurmlyForm = require("./form"),
+	FurmlyLib = require("./lib"),
+	FurmlyAsyncValidator = require("./async-validator"),
 	mongoose = require("mongoose");
 
 mongoose.Promise = global.Promise;
 /**
  * @typedef {ProcessorContext}
- * @property {module:Dynamo.EntityRepo#queryEntity} get retrieves entities
+ * @property {module:Furmly.EntityRepo#queryEntity} get retrieves entities
  * @property {string} name The name
- * @property {module:Dynamo.EntityRepo#countEntity} count Counts entities that match the criteria
+ * @property {module:Furmly.EntityRepo#countEntity} count Counts entities that match the criteria
  */
 
 /**
@@ -72,7 +72,7 @@ function blockSystemEntities() {
 	 * This class contains the persistence logic for all entities.
 	 * @class
 	 * 
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Object} opts Class constructor parameters , includes ext,folder,delimiter,store...etc
 	 */
 function EntityRepo(opts) {
@@ -160,8 +160,8 @@ function EntityRepo(opts) {
 		};
 	this.config = opts.config;
 	/**
-	 * @type {module:Dynamo.ProcessorContext}
-	 * @property {module:Dynamo.EntityRepo#queryEntity} get function for querying objects
+	 * @type {module:Furmly.ProcessorContext}
+	 * @property {module:Furmly.EntityRepo#queryEntity} get function for querying objects
 	 */
 	this.processorEntityRepo = {
 		get: blockSystemEntities.bind(self, self.queryEntity),
@@ -186,7 +186,7 @@ function EntityRepo(opts) {
 	};
 
 	this.transformers[systemEntities.process] = function(item, fn) {
-		if (!(item instanceof DynamoProcess)) {
+		if (!(item instanceof FurmlyProcess)) {
 			var tasks = [];
 			if (typeof item == "string" || item instanceof ObjectID) {
 				tasks.push(
@@ -238,7 +238,7 @@ function EntityRepo(opts) {
 								if (er) return callback(er);
 								item.fetchProcessor = fp;
 								try {
-									_process = new DynamoProcess(item);
+									_process = new FurmlyProcess(item);
 								} catch (e) {
 									return callback(e);
 								}
@@ -247,7 +247,7 @@ function EntityRepo(opts) {
 							return;
 						}
 						try {
-							_process = new DynamoProcess(item);
+							_process = new FurmlyProcess(item);
 						} catch (e) {
 							return callback(e);
 						}
@@ -261,7 +261,7 @@ function EntityRepo(opts) {
 	};
 
 	this.transformers[systemEntities.step] = function(item, fn) {
-		if (!(item instanceof DynamoStep)) {
+		if (!(item instanceof FurmlyStep)) {
 			var tasks = [],
 				processorTasks = [],
 				postprocessorTasks = [];
@@ -335,7 +335,7 @@ function EntityRepo(opts) {
 					if (er) return fn(er);
 					let _step;
 					try {
-						_step = new DynamoStep(
+						_step = new FurmlyStep(
 							Object.assign(item, { config: self.config })
 						);
 					} catch (e) {
@@ -351,17 +351,17 @@ function EntityRepo(opts) {
 	this.transformers[systemEntities.asyncValidator] = function(item, fn) {
 		basicTransformer(
 			item,
-			DynamoAsyncValidator,
+			FurmlyAsyncValidator,
 			systemEntities.asyncValidator,
 			fn
 		);
 	};
 	this.transformers[systemEntities.processor] = function(item, fn) {
-		basicTransformer(item, DynamoProcessor, systemEntities.processor, fn);
+		basicTransformer(item, FurmlyProcessor, systemEntities.processor, fn);
 	};
 
 	this.transformers[systemEntities.element] = function(item, fn) {
-		if (!(item instanceof DynamoElement)) {
+		if (!(item instanceof FurmlyElement)) {
 			//this shouldnt happen now , elements are part of steps.
 			if (typeof item == "string" || item instanceof ObjectID) {
 				return self.queryEntity(
@@ -391,7 +391,7 @@ function EntityRepo(opts) {
 					item.asyncValidators = asyncValidators;
 					let _element;
 					try {
-						_element = new DynamoElement(item);
+						_element = new FurmlyElement(item);
 					} catch (e) {
 						return fn(e);
 					}
@@ -403,7 +403,7 @@ function EntityRepo(opts) {
 		return fn(null, item);
 	};
 	this.transformers.form = function(item, fn) {
-		if (!(item instanceof DynamoForm)) {
+		if (!(item instanceof FurmlyForm)) {
 			if (!item)
 				return (
 					debug("step does not have a form"),
@@ -421,7 +421,7 @@ function EntityRepo(opts) {
 					item.elements = elements;
 					let _form;
 					try {
-						_form = new DynamoForm(item);
+						_form = new FurmlyForm(item);
 					} catch (e) {
 						return fn(e);
 					}
@@ -433,7 +433,7 @@ function EntityRepo(opts) {
 		return fn(null, item);
 	};
 	this.transformers[systemEntities.lib] = function(item, fn) {
-		basicTransformer(item, DynamoLib, systemEntities.lib, fn);
+		basicTransformer(item, FurmlyLib, systemEntities.lib, fn);
 	};
 
 	function basicTransformer(item, clazz, entName, fn) {
@@ -544,7 +544,7 @@ EntityRepo.prototype.init = function(callback) {
 		);
 	};
 	mongoose
-		.connect(this.config.data.dynamo_url)
+		.connect(this.config.data.furmly_url)
 		.then(_init)
 		.catch(e => {
 			if (e &amp;&amp; e.message !== "Trying to open unclosed connection.")
@@ -1150,7 +1150,7 @@ module.exports = EntityRepo;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dynamo.html">Dynamo</a></li><li><a href="module-misc.html">misc</a></li></ul><h3>Classes</h3><ul><li><a href="module-Dynamo.DynamoAsyncValidator.html">DynamoAsyncValidator</a></li><li><a href="module-Dynamo.DynamoElement.html">DynamoElement</a></li><li><a href="module-Dynamo.DynamoEngine.html">DynamoEngine</a></li><li><a href="module-Dynamo.DynamoForm.html">DynamoForm</a></li><li><a href="module-Dynamo.DynamoLib.html">DynamoLib</a></li><li><a href="module-Dynamo.DynamoProcess.html">DynamoProcess</a></li><li><a href="module-Dynamo.DynamoProcessor.html">DynamoProcessor</a></li><li><a href="module-Dynamo.DynamoSandbox.html">DynamoSandbox</a></li><li><a href="module-Dynamo.DynamoStep.html">DynamoStep</a></li><li><a href="module-Dynamo.DynamoStep-Client.html">Client</a></li><li><a href="module-Dynamo.EntityRepo.html">EntityRepo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#blockSystemEntities">blockSystemEntities</a></li><li><a href="global.html#init">init</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Furmly.html">Furmly</a></li><li><a href="module-misc.html">misc</a></li></ul><h3>Classes</h3><ul><li><a href="module-Furmly.FurmlyAsyncValidator.html">FurmlyAsyncValidator</a></li><li><a href="module-Furmly.FurmlyElement.html">FurmlyElement</a></li><li><a href="module-Furmly.FurmlyEngine.html">FurmlyEngine</a></li><li><a href="module-Furmly.FurmlyForm.html">FurmlyForm</a></li><li><a href="module-Furmly.FurmlyLib.html">FurmlyLib</a></li><li><a href="module-Furmly.FurmlyProcess.html">FurmlyProcess</a></li><li><a href="module-Furmly.FurmlyProcessor.html">FurmlyProcessor</a></li><li><a href="module-Furmly.FurmlySandbox.html">FurmlySandbox</a></li><li><a href="module-Furmly.FurmlyStep.html">FurmlyStep</a></li><li><a href="module-Furmly.FurmlyStep-Client.html">Client</a></li><li><a href="module-Furmly.EntityRepo.html">EntityRepo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#blockSystemEntities">blockSystemEntities</a></li><li><a href="global.html#init">init</a></li></ul>
 </nav>
 
 <br class="clear">

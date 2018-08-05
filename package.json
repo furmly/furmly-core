@@ -1,5 +1,5 @@
 {
-  "name": "dynamo",
+  "name": "furmly-core",
   "version": "1.0.0",
   "description": "This is the backend processor for configurable dynamic tasks",
   "main": "./src/index.js",
@@ -8,7 +8,7 @@
     "test:debug": "set profile=unitTest&& set DEBUG=test,sandbox&& mocha --debug-brk --inspect --require  test-helpers/chai.js"
   },
   "keywords": [
-    "dynamo",
+    "furmly",
     "forms",
     "dynamic",
     "process",

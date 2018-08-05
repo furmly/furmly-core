@@ -3,16 +3,16 @@ const assert = require("assert"),
 	misc = require("./misc"),
 	async = require("async"),
 	_ = require("lodash"),
-	DynamoSandbox = require("./sandbox"),
-	DynamoStep = require("./step"),
+	FurmlySandbox = require("./sandbox"),
+	FurmlyStep = require("./step"),
 	constants = require("./constants");
 /**
-	 * this is a class constructor for a dynamo process.
+	 * this is a class constructor for a furmly process.
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Any} opts constructor parameters
 	 */
-function DynamoProcess(opts) {
+function FurmlyProcess(opts) {
 	var self = this;
 	if (!opts) throw new Error("Process arg missing");
 
@@ -80,16 +80,16 @@ function DynamoProcess(opts) {
 	 * Enforce class invariant
 	 * 
 	 */
-DynamoProcess.prototype.validate = function(fn) {
+FurmlyProcess.prototype.validate = function(fn) {
 	if (!this._id) fn(new Error("Process must have an id"));
 };
 
 /**
 	 * Utility function for updating a process properties. Primarily used during initialization
-	 * @param  {Object} opts Object or Type of DynamoProcess
+	 * @param  {Object} opts Object or Type of FurmlyProcess
 	 * @return {Void}      Nothing.
 	 */
-DynamoProcess.prototype.updateProps = function(opts) {
+FurmlyProcess.prototype.updateProps = function(opts) {
 	if (opts.steps) {
 		let steps = opts.steps;
 		delete opts.steps;
@@ -108,7 +108,7 @@ DynamoProcess.prototype.updateProps = function(opts) {
 	 * @param  {Function} fn      callback
 	 * @return {Any}           result passed from processor chain.
 	 */
-DynamoProcess.prototype.run = function(context, fn) {
+FurmlyProcess.prototype.run = function(context, fn) {
 	var self = this,
 		that = self;
 	this.validate(fn);
@@ -138,7 +138,7 @@ DynamoProcess.prototype.run = function(context, fn) {
 		var index = self.currentStepIndex || 0,
 			step = self.steps[index],
 			nextStep = self.steps[index + 1];
-		assert.equal(step instanceof DynamoStep, true);
+		assert.equal(step instanceof FurmlyStep, true);
 		let _continue = () => {
 			Object.defineProperties(context, {
 				$process: {
@@ -260,7 +260,7 @@ DynamoProcess.prototype.run = function(context, fn) {
 	processStep();
 };
 
-DynamoProcess.prototype.goBack = function(context, fn) {
+FurmlyProcess.prototype.goBack = function(context, fn) {
 	if (context.$instanceId) {
 		this.store.get(context.$instanceId, (er, info) => {});
 	}
@@ -270,7 +270,7 @@ DynamoProcess.prototype.goBack = function(context, fn) {
 	 * @param  {Function} fn callback
 	 * @return {Any}      saved object.
 	 */
-DynamoProcess.prototype.save = function(fn) {
+FurmlyProcess.prototype.save = function(fn) {
 	var self = this;
 	var unsaved = _.filter(this.steps, _.isObject);
 	var tasks = [];
@@ -318,7 +318,7 @@ DynamoProcess.prototype.save = function(fn) {
 	 * @param  {Function} fn callback
 	 * @return {Object}      object representing the process.
 	 */
-DynamoProcess.prototype.describe = function(context, fn) {
+FurmlyProcess.prototype.describe = function(context, fn) {
 	if (Array.prototype.slice.call(arguments).length == 1) {
 		fn = context;
 		context = null;
@@ -358,7 +358,7 @@ DynamoProcess.prototype.describe = function(context, fn) {
 					}
 				});
 				//	context.$description = proc;
-				new DynamoSandbox(
+				new FurmlySandbox(
 					self.fetchProcessor,
 					self.entityRepo
 				).run(context, function(er, result, modifiedProcess) {
@@ -385,4 +385,4 @@ DynamoProcess.prototype.describe = function(context, fn) {
 	self.steps[0].describe(collect);
 };
 
-module.exports = DynamoProcess;
+module.exports = FurmlyProcess;

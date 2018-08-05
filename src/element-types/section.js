@@ -1,10 +1,10 @@
-const DynamoElement = require("../element"),
+const FurmlyElement = require("../element"),
 	misc = require("../element-utils"),
 	_ = require("lodash"),
 	async = require("async"),
 	elementInvariants = misc.elementInvariants;
 
-class Section extends DynamoElement {
+class Section extends FurmlyElement {
 	constructor(opts, factory) {
 		super(opts);
 		//add invariants here.

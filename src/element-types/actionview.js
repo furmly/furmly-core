@@ -1,10 +1,10 @@
-const DynamoElement = require("../element"),
+const FurmlyElement = require("../element"),
 	misc = require("../element-utils"),
 	async = require("async"),
 	_ = require("lodash"),
 	elementInvariants = misc.elementInvariants;
 
-class ActionView extends DynamoElement {
+class ActionView extends FurmlyElement {
 	constructor(opts, factory) {
 		super(opts);
 		//add actionview invariants here.

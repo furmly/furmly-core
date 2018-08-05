@@ -3,7 +3,7 @@ const { NodeVM } = require("vm2"),
 	systemEntities = constants.systemEntities,
 	async = require("async"),
 	debug = require("debug")("sandbox"),
-	DynamoProcessor = require("./processor"),
+	FurmlyProcessor = require("./processor"),
 	path = require("path"),
 	sandboxCode = require("fs").readFileSync(
 		__dirname + path.sep + "processor-sandbox.js"
@@ -14,28 +14,28 @@ const { NodeVM } = require("vm2"),
 /**
 	 * Class used for running processors that are not part of a steps chain of processors
 	 * @class
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Object} opts Class constructor options , including entityRepo and processors.
 	 */
-function DynamoSandbox(opts) {
+function FurmlySandbox(opts) {
 	var args;
 	if (
 		!opts ||
-		(!(opts instanceof DynamoProcessor) &&
+		(!(opts instanceof FurmlyProcessor) &&
 			(!opts.processors || !opts.processors.length))
 	)
 		throw new Error("A sandbox needs atleast one processor to run");
 
 	if (
 		!opts.entityRepo &&
-		opts instanceof DynamoProcessor &&
+		opts instanceof FurmlyProcessor &&
 		(args = Array.prototype.slice.call(arguments)).length == 1
 	)
 		throw new Error("EntityRepo is required by all processors");
 
-	(this.processors = opts instanceof DynamoProcessor ? [opts] : opts.processors),
+	(this.processors = opts instanceof FurmlyProcessor ? [opts] : opts.processors),
 		(this.entityRepo =
-			opts instanceof DynamoProcessor ? args[1] : opts.entityRepo);
+			opts instanceof FurmlyProcessor ? args[1] : opts.entityRepo);
 }
 /**
  * Run processor(s) created in constructor
@@ -43,7 +43,7 @@ function DynamoSandbox(opts) {
  * @param  {Function} fn      Callback
  * @return {Object}           Result of operation
  */
-DynamoSandbox.prototype.run = function(context, ttl, fn) {
+FurmlySandbox.prototype.run = function(context, ttl, fn) {
 	if (Array.prototype.slice.call(arguments).length == 2) {
 		fn = ttl;
 		ttl = null;
@@ -70,4 +70,4 @@ DynamoSandbox.prototype.run = function(context, ttl, fn) {
 	let handle = vm.run(sandboxCode);
 	handle.getResult(fn);
 };
-module.exports = DynamoSandbox;
+module.exports = FurmlySandbox;

@@ -27,12 +27,12 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>/**
-	 * Class Constuctor for a DynamoProcessor
+	 * Class Constuctor for a FurmlyProcessor
 	 * @constructor
-	 * @memberOf module:Dynamo
+	 * @memberOf module:Furmly
 	 * @param {Any} opts Constructor arguments
 	 */
-function DynamoProcessor(opts) {
+function FurmlyProcessor(opts) {
 	(this.debug = require("debug")("processor-constructor")),
 		(constants = require("./constants"));
 	if (!opts.code) {
@@ -94,7 +94,7 @@ function DynamoProcessor(opts) {
 	 * Class invariant function
 	 * @return {Void} nothing
 	 */
-DynamoProcessor.prototype.validate = function() {
+FurmlyProcessor.prototype.validate = function() {
 	if (!this._id) throw new Error("Processor requires a valid _id");
 };
 
@@ -103,7 +103,7 @@ DynamoProcessor.prototype.validate = function() {
 	 * @param  {Function} fn callback
 	 * @return {Object}      object representing the processor.
 	 */
-DynamoProcessor.prototype.describe = function(fn) {
+FurmlyProcessor.prototype.describe = function(fn) {
 	fn(null, {
 		title: this.title,
 		_id: this._id
@@ -115,7 +115,7 @@ DynamoProcessor.prototype.describe = function(fn) {
 	 * @param  {Function} fn calllback
 	 * @return {Any}      saved object
 	 */
-DynamoProcessor.prototype.save = function(fn) {
+FurmlyProcessor.prototype.save = function(fn) {
 	var model = {
 		_id: this._id,
 		code: this.code,
@@ -128,7 +128,7 @@ DynamoProcessor.prototype.save = function(fn) {
 	this._save(model, fn);
 };
 
-module.exports = DynamoProcessor;
+module.exports = FurmlyProcessor;
 </code></pre>
         </article>
     </section>
@@ -139,7 +139,7 @@ module.exports = DynamoProcessor;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Dynamo.html">Dynamo</a></li><li><a href="module-misc.html">misc</a></li></ul><h3>Classes</h3><ul><li><a href="module-Dynamo.DynamoAsyncValidator.html">DynamoAsyncValidator</a></li><li><a href="module-Dynamo.DynamoElement.html">DynamoElement</a></li><li><a href="module-Dynamo.DynamoEngine.html">DynamoEngine</a></li><li><a href="module-Dynamo.DynamoForm.html">DynamoForm</a></li><li><a href="module-Dynamo.DynamoLib.html">DynamoLib</a></li><li><a href="module-Dynamo.DynamoProcess.html">DynamoProcess</a></li><li><a href="module-Dynamo.DynamoProcessor.html">DynamoProcessor</a></li><li><a href="module-Dynamo.DynamoSandbox.html">DynamoSandbox</a></li><li><a href="module-Dynamo.DynamoStep.html">DynamoStep</a></li><li><a href="module-Dynamo.DynamoStep-Client.html">Client</a></li><li><a href="module-Dynamo.EntityRepo.html">EntityRepo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#blockSystemEntities">blockSystemEntities</a></li><li><a href="global.html#init">init</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Furmly.html">Furmly</a></li><li><a href="module-misc.html">misc</a></li></ul><h3>Classes</h3><ul><li><a href="module-Furmly.FurmlyAsyncValidator.html">FurmlyAsyncValidator</a></li><li><a href="module-Furmly.FurmlyElement.html">FurmlyElement</a></li><li><a href="module-Furmly.FurmlyEngine.html">FurmlyEngine</a></li><li><a href="module-Furmly.FurmlyForm.html">FurmlyForm</a></li><li><a href="module-Furmly.FurmlyLib.html">FurmlyLib</a></li><li><a href="module-Furmly.FurmlyProcess.html">FurmlyProcess</a></li><li><a href="module-Furmly.FurmlyProcessor.html">FurmlyProcessor</a></li><li><a href="module-Furmly.FurmlySandbox.html">FurmlySandbox</a></li><li><a href="module-Furmly.FurmlyStep.html">FurmlyStep</a></li><li><a href="module-Furmly.FurmlyStep-Client.html">Client</a></li><li><a href="module-Furmly.EntityRepo.html">EntityRepo</a></li></ul><h3>Global</h3><ul><li><a href="global.html#blockSystemEntities">blockSystemEntities</a></li><li><a href="global.html#init">init</a></li></ul>
 </nav>
 
 <br class="clear">
