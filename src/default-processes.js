@@ -436,7 +436,7 @@ module.exports = function(constants, systemEntities) {
 															createElement("type", "Type", "", constants.ELEMENTTYPE.SELECTSET, {
 																path: "config",
 																items: [{
-																	id: constants.NAVIGATIONTYPE.DYNAMO,
+																	id: constants.NAVIGATIONTYPE.FURMLY,
 																	displayLabel: "Link to a Furmly process/view",
 																	elements: [
 																		createElement("value", "Select a Furmly Process", "", constants.ELEMENTTYPE.SELECT, {

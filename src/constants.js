@@ -53,7 +53,7 @@ function createConstants() {
 			["CHECKBOX", "checkbox"],
 			["PASSWORD", "password"]
 		),
-		NAVIGATIONTYPE: new Constant("CLIENT", "DYNAMO"),
+		NAVIGATIONTYPE: new Constant("CLIENT", "FURMLY"),
 		IMAGETYPE: new Constant("REL", "DATA", "URL"),
 		UIDS: {
 			LIB: new Constant(

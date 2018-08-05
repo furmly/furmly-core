@@ -32,7 +32,6 @@ function FurmlyEngine(opts) {
 	this.entitiesRepository = opts.entitiesRepository;
 
 	//there should be a better way to do this but , it works for now so moving on...
-	//
 	this.entitiesRepository.processorEntityRepo.getStep = FurmlyEngine.prototype.queryStep.bind(
 		this
 	);

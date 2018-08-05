@@ -601,7 +601,7 @@ module.exports = function(constants) {
 														group: menuGroup,
 														icon: "process",
 														claims: [result._id],
-														type: "DYNAMO",
+														type: "FURMLY",
 														value: proc._id,
 														activated: true,
 														category:
