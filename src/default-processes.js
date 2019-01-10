@@ -216,12 +216,13 @@ module.exports = function(constants, systemEntities) {
                     ],
                     relationships: {
                       has: {
-                        processor: "fetchProcessor",
+                        processor: { path: "fetchProcessor", default: true },
                         "existing-processor": "fetchProcessor"
                       },
                       hasMany: {
                         step: {
                           path: "steps",
+                          default: true,
                           hasSelect: false
                         },
                         "existing-step": {
@@ -253,7 +254,7 @@ module.exports = function(constants, systemEntities) {
                       elements: [
                         createElement(
                           "_id",
-                          "Step",
+                          "Processor",
                           "",
                           constants.ELEMENTTYPE.SELECT,
                           {
@@ -321,7 +322,7 @@ module.exports = function(constants, systemEntities) {
                           form: "form"
                         },
                         hasMany: {
-                          processor: "processors",
+                          processor: { path: "processors", default: true },
                           "existing-processor": "processors"
                         }
                       }
@@ -1401,7 +1402,7 @@ module.exports = function(constants, systemEntities) {
                                               createElement(
                                                 "template_ref",
                                                 "Referenced Tag",
-                                                "",
+                                                "Please note. The template must already be in the cache before this element is rendered.",
                                                 constants.ELEMENTTYPE.INPUT,
                                                 {
                                                   type: constants.INPUTTYPE.TEXT
