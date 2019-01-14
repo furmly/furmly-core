@@ -1,6 +1,7 @@
 module.exports = function(constants, systemEntities) {
   const _ = require("lodash"),
-    misc = require("./misc");
+    misc = require("./misc"),
+    CHIP_LIST = "CHIP_LIST";
   /**
    * Function used for creating element objects
    * @param  {String} name        Scope name of element
@@ -25,6 +26,14 @@ module.exports = function(constants, systemEntities) {
     };
   }
 
+  function createElementWithUid() {
+    let args = Array.prototype.slice.call(arguments);
+    let uid = args.pop();
+    let element = createElement.apply(null, args);
+    element.uid = uid;
+    return element;
+  }
+
   function clone(obj) {
     return JSON.parse(JSON.stringify(obj));
   }
@@ -41,9 +50,15 @@ module.exports = function(constants, systemEntities) {
    */
 
   function getCreateProcessDefinition(opts) {
-    var elementTag = "$elementTemplate$",
-      validatorTag = "$validatorTemplate$",
-      asyncValidatorTag = "$asyncValidatorTemplate$",
+    var elementTag = "_elementTemplate_",
+      validatorTag = "_validatorTemplate_",
+      elementRowTemplate = JSON.stringify({
+        name: "expression",
+        config: {
+          exp: "{name}"
+        }
+      }),
+      asyncValidatorTag = "_asyncValidatorTemplate_",
       elementItemTemplate = {
         template_ref: elementTag,
         extension: [
@@ -72,14 +87,16 @@ module.exports = function(constants, systemEntities) {
         ]
       },
       gridCrudElements = [
-        createElement(
+        createElementWithUid(
           "createTemplate",
           "Create Template",
           "",
           constants.ELEMENTTYPE.LIST,
           {
+            rowTemplate: elementRowTemplate,
             itemTemplate: elementItemTemplate
-          }
+          },
+          CHIP_LIST
         ),
         createElement(
           "createProcessor",
@@ -100,6 +117,7 @@ module.exports = function(constants, systemEntities) {
           constants.ELEMENTTYPE.LIST,
           {
             itemTemplate: elementItemTemplate,
+            rowTemplate: elementRowTemplate,
             optional: true
           }
         ),
@@ -372,100 +390,12 @@ module.exports = function(constants, systemEntities) {
                       ]
                     },
                     validator: {
-                      elements: tag(
-                        [
-                          createElement(
-                            "validatorType",
-                            "Type of Validator",
-                            "",
-                            constants.ELEMENTTYPE.SELECTSET,
-                            {
-                              path: "args",
-                              items: [
-                                {
-                                  id: constants.VALIDATORTYPE.REQUIRED,
-                                  displayLabel: "Required",
-                                  elements: []
-                                },
-                                {
-                                  id: constants.VALIDATORTYPE.MAXLENGTH,
-                                  displayLabel: "Maximum Number of Characters",
-                                  elements: [
-                                    createElement(
-                                      "max",
-                                      "Max",
-                                      "",
-                                      constants.ELEMENTTYPE.INPUT,
-                                      {
-                                        type: constants.INPUTTYPE.NUMBER
-                                      }
-                                    )
-                                  ]
-                                },
-                                {
-                                  id: constants.VALIDATORTYPE.MINLENGTH,
-                                  displayLabel: "Minimum Number of Characters",
-                                  elements: [
-                                    createElement(
-                                      "min",
-                                      "Minimum",
-                                      "",
-                                      constants.ELEMENTTYPE.INPUT,
-                                      {
-                                        type: constants.INPUTTYPE.NUMBER
-                                      }
-                                    )
-                                  ]
-                                },
-                                {
-                                  id: constants.VALIDATORTYPE.REGEX,
-                                  displayLabel: "Regular Expression",
-                                  elements: [
-                                    createElement(
-                                      "exp",
-                                      "Expression",
-                                      "",
-                                      constants.ELEMENTTYPE.INPUT
-                                    )
-                                  ]
-                                }
-                              ]
-                            }
-                          )
-                        ],
-                        validatorTag
-                      )
+                      elements: { template_ref: validatorTag }
                     },
                     asyncValidator: {
-                      elements: tag(
-                        [
-                          createId(),
-                          createHidden("uid"),
-                          createElement(
-                            "title",
-                            "Title",
-                            "Title",
-                            constants.ELEMENTTYPE.INPUT
-                          ),
-                          createElement(
-                            "code",
-                            "This code runs when a client makes a request to the processor endpoint.",
-                            "Title",
-                            constants.ELEMENTTYPE.SCRIPT
-                          ),
-                          createElement(
-                            "requiresIdentity",
-                            "Requires Identity",
-                            "",
-                            constants.ELEMENTTYPE.INPUT,
-                            {
-                              type: constants.INPUTTYPE.CHECKBOX,
-                              default: true
-                            }
-                          )
-                        ],
-                        asyncValidatorTag
-                      )
+                      elements: {
+                        template_ref: asyncValidatorTag
+                      }
                     },
                     element: {
                       elements: tag(
@@ -482,14 +412,16 @@ module.exports = function(constants, systemEntities) {
                                   id: constants.ELEMENTTYPE.PARTIAL,
                                   displayLabel: "Partial",
                                   elements: [
-                                    createElement(
+                                    createElementWithUid(
                                       "elements",
                                       "Elements in the section",
                                       "Elements in the partial",
                                       constants.ELEMENTTYPE.LIST,
                                       {
-                                        itemTemplate: elementItemTemplate
-                                      }
+                                        itemTemplate: elementItemTemplate,
+                                        rowTemplate: elementRowTemplate
+                                      },
+                                      CHIP_LIST
                                     ),
                                     createElement(
                                       "processor",
@@ -639,14 +571,16 @@ module.exports = function(constants, systemEntities) {
                                         }
                                       }
                                     ),
-                                    createElement(
+                                    createElementWithUid(
                                       "elements",
                                       "Elements supplying action parameters",
                                       "",
                                       constants.ELEMENTTYPE.LIST,
                                       {
-                                        itemTemplate: elementItemTemplate
-                                      }
+                                        itemTemplate: elementItemTemplate,
+                                        rowTemplate: elementRowTemplate
+                                      },
+                                      CHIP_LIST
                                     ),
                                     createElement(
                                       "commandText",
@@ -819,15 +753,17 @@ module.exports = function(constants, systemEntities) {
                                   id: constants.ELEMENTTYPE.GRID,
                                   displayLabel: "Grid",
                                   elements: [
-                                    createElement(
+                                    createElementWithUid(
                                       "filter",
                                       "Items used to filter the grid",
                                       "",
                                       constants.ELEMENTTYPE.LIST,
                                       {
                                         itemTemplate: elementItemTemplate,
+                                        rowTemplate: elementRowTemplate,
                                         optional: true
-                                      }
+                                      },
+                                      CHIP_LIST
                                     ),
                                     createElement(
                                       "filterProcessor",
@@ -1321,14 +1257,16 @@ module.exports = function(constants, systemEntities) {
                                             "",
                                             constants.ELEMENTTYPE.INPUT
                                           ),
-                                          createElement(
+                                          createElementWithUid(
                                             "elements",
                                             "Properties to add",
                                             "",
                                             constants.ELEMENTTYPE.LIST,
                                             {
-                                              itemTemplate: elementItemTemplate
-                                            }
+                                              itemTemplate: elementItemTemplate,
+                                              rowTemplate: elementRowTemplate
+                                            },
+                                            CHIP_LIST
                                           )
                                         ]
                                       }
@@ -1357,14 +1295,16 @@ module.exports = function(constants, systemEntities) {
                                   id: constants.ELEMENTTYPE.LIST,
                                   displayLabel: "List",
                                   elements: [
-                                    createElement(
+                                    createElementWithUid(
                                       "itemTemplate",
                                       "Template",
                                       "Template used to create and edit items in this list",
                                       constants.ELEMENTTYPE.LIST,
                                       {
-                                        itemTemplate: elementItemTemplate
-                                      }
+                                        itemTemplate: elementItemTemplate,
+                                        rowTemplate: elementRowTemplate
+                                      },
+                                      CHIP_LIST
                                     ),
                                     createElement(
                                       "options",
@@ -1408,14 +1348,16 @@ module.exports = function(constants, systemEntities) {
                                                   type: constants.INPUTTYPE.TEXT
                                                 }
                                               ),
-                                              createElement(
+                                              createElementWithUid(
                                                 "extension",
                                                 "Extensions (additional UI components)",
                                                 "",
                                                 constants.ELEMENTTYPE.LIST,
                                                 {
-                                                  itemTemplate: elementItemTemplate
-                                                }
+                                                  itemTemplate: elementItemTemplate,
+                                                  rowTemplate: elementRowTemplate
+                                                },
+                                                CHIP_LIST
                                               )
                                             ]
                                           }
@@ -1464,14 +1406,16 @@ module.exports = function(constants, systemEntities) {
                                   id: constants.ELEMENTTYPE.SECTION,
                                   displayLabel: "Section",
                                   elements: [
-                                    createElement(
+                                    createElementWithUid(
                                       "elements",
                                       "Elements in the section",
                                       "Elements in the section",
                                       constants.ELEMENTTYPE.LIST,
                                       {
-                                        itemTemplate: elementItemTemplate
-                                      }
+                                        itemTemplate: elementItemTemplate,
+                                        rowTemplate: elementRowTemplate
+                                      },
+                                      CHIP_LIST
                                     )
                                   ]
                                 }
@@ -1527,6 +1471,94 @@ module.exports = function(constants, systemEntities) {
                         }
                       }
                     }
+                  },
+                  templateCache: {
+                    [validatorTag]: [
+                      createElement(
+                        "validatorType",
+                        "Type of Validator",
+                        "",
+                        constants.ELEMENTTYPE.SELECTSET,
+                        {
+                          path: "args",
+                          items: [
+                            {
+                              id: constants.VALIDATORTYPE.REQUIRED,
+                              displayLabel: "Required",
+                              elements: []
+                            },
+                            {
+                              id: constants.VALIDATORTYPE.MAXLENGTH,
+                              displayLabel: "Maximum Number of Characters",
+                              elements: [
+                                createElement(
+                                  "max",
+                                  "Max",
+                                  "",
+                                  constants.ELEMENTTYPE.INPUT,
+                                  {
+                                    type: constants.INPUTTYPE.NUMBER
+                                  }
+                                )
+                              ]
+                            },
+                            {
+                              id: constants.VALIDATORTYPE.MINLENGTH,
+                              displayLabel: "Minimum Number of Characters",
+                              elements: [
+                                createElement(
+                                  "min",
+                                  "Minimum",
+                                  "",
+                                  constants.ELEMENTTYPE.INPUT,
+                                  {
+                                    type: constants.INPUTTYPE.NUMBER
+                                  }
+                                )
+                              ]
+                            },
+                            {
+                              id: constants.VALIDATORTYPE.REGEX,
+                              displayLabel: "Regular Expression",
+                              elements: [
+                                createElement(
+                                  "exp",
+                                  "Expression",
+                                  "",
+                                  constants.ELEMENTTYPE.INPUT
+                                )
+                              ]
+                            }
+                          ]
+                        }
+                      )
+                    ],
+                    [asyncValidatorTag]: [
+                      createId(),
+                      createHidden("uid"),
+                      createElement(
+                        "title",
+                        "Title",
+                        "Title",
+                        constants.ELEMENTTYPE.INPUT
+                      ),
+                      createElement(
+                        "code",
+                        "This code runs when a client makes a request to the processor endpoint.",
+                        "Title",
+                        constants.ELEMENTTYPE.SCRIPT
+                      ),
+                      createElement(
+                        "requiresIdentity",
+                        "Requires Identity",
+                        "",
+                        constants.ELEMENTTYPE.INPUT,
+                        {
+                          type: constants.INPUTTYPE.CHECKBOX,
+                          default: true
+                        }
+                      )
+                    ]
                   }
                 },
                 asyncValidators: [],
