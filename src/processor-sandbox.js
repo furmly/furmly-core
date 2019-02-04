@@ -86,7 +86,6 @@ if (typeof elementFactory !== undefined)
 
 module.exports = {
 	getResult: fn => {
-		debugger;
 		const run = () => {
 			var firstProcessor = context.processors[0],
 				tasks = [];

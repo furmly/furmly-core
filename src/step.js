@@ -112,6 +112,7 @@ function FurmlyStep(opts) {
 
     this.form = opts.form;
     this.entityRepo = opts.entityRepo;
+    this.infrastructure = opts.infrastructure;
     /**
      * prepare for context for processors.
      * @param  {Object} opts object containing configuration,processors,postprocessors etc.
@@ -153,7 +154,6 @@ function FurmlyStep(opts) {
           this
         )} , with context ${misc.toObjectString(context)}`
       );
-      var self = this;
       if (parent.mode == constants.STEPMODE.VIEW)
         return fn(new Error("Cannot process a view step"));
 
@@ -169,9 +169,10 @@ function FurmlyStep(opts) {
         requireExternal: false,
         sandbox: {
           context: Object.assign(_context, {
+            entityRepo: this.entityRepo,
+            infrastructure: this.infrastructure,
             systemEntities,
             constants,
-            entityRepo: this.entityRepo,
             async,
             debug,
             uuid,
@@ -225,8 +226,7 @@ FurmlyStep.prototype.save = function(fn) {
         list.push(s);
       };
     },
-    postTasks = [],
-    elements = [];
+    postTasks = [];
   unsavedProcessors.forEach(saveFn(tasks));
   unsavedPostProcessors.forEach(saveFn(postTasks));
   async.waterfall(
@@ -242,9 +242,9 @@ FurmlyStep.prototype.save = function(fn) {
       },
       function(ids, callback) {
         //ids will contain the newly saved ids
-        var processorIds = _.map(ids.processors, "_id"); // _.filter(self.processors, typeOf('string')).concat(_.map(ids.processors, '_id'));
-        var postprocessorIds = _.map(ids.postprocessors, "_id"); //_.filter(self.postprocessors, typeOf('string')).concat(_.map(ids.postprocessors, '_id'));
-        //
+        var processorIds = _.map(ids.processors, "_id");
+        var postprocessorIds = _.map(ids.postprocessors, "_id");
+
         self.state.save(function(er, state) {
           if (er) return callback(er);
           self._save(
