@@ -183,8 +183,8 @@ module.exports = function(constants, systemEntities) {
                       createId(),
                       createElement(
                         "uid",
-                        "Unique Key (used for customization)",
-                        "",
+                        "Unique Key",
+                        "Used for customization",
                         constants.ELEMENTTYPE.INPUT,
                         {
                           type: constants.INPUTTYPE.TEXT
@@ -414,7 +414,7 @@ module.exports = function(constants, systemEntities) {
                                   elements: [
                                     createElementWithUid(
                                       "elements",
-                                      "Elements in the section",
+                                      "Elements",
                                       "Elements in the partial",
                                       constants.ELEMENTTYPE.LIST,
                                       {
@@ -425,8 +425,8 @@ module.exports = function(constants, systemEntities) {
                                     ),
                                     createElement(
                                       "processor",
+                                      "Processor",
                                       "Processor that will fire",
-                                      "",
                                       constants.ELEMENTTYPE.SELECT,
                                       {
                                         type:
@@ -573,8 +573,8 @@ module.exports = function(constants, systemEntities) {
                                     ),
                                     createElementWithUid(
                                       "elements",
+                                      "Elements",
                                       "Elements supplying action parameters",
-                                      "",
                                       constants.ELEMENTTYPE.LIST,
                                       {
                                         itemTemplate: elementItemTemplate,
@@ -622,8 +622,8 @@ module.exports = function(constants, systemEntities) {
                                           ),
                                           createElement(
                                             "commandIcon",
+                                            "Icon",
                                             "Name of the icon to be displayed by the client",
-                                            "",
                                             constants.ELEMENTTYPE.INPUT
                                           )
                                         ]
@@ -648,8 +648,8 @@ module.exports = function(constants, systemEntities) {
                                   elements: [
                                     createElement(
                                       "type",
-                                      "Type (json,Javascript or ejs)",
-                                      "",
+                                      "Type",
+                                      "json,Javascript or ejs",
                                       constants.ELEMENTTYPE.INPUT
                                     )
                                   ]
@@ -660,8 +660,8 @@ module.exports = function(constants, systemEntities) {
                                   elements: [
                                     createElement(
                                       "text",
-                                      "Text (visible to client.)",
                                       "Text",
+                                      "Text visible to client",
                                       constants.ELEMENTTYPE.INPUT
                                     ),
                                     createElement(
@@ -679,8 +679,8 @@ module.exports = function(constants, systemEntities) {
                                             elements: [
                                               createElement(
                                                 "value",
+                                                "Process",
                                                 "Select a Furmly Process",
-                                                "",
                                                 constants.ELEMENTTYPE.SELECT,
                                                 {
                                                   type:
@@ -705,8 +705,8 @@ module.exports = function(constants, systemEntities) {
                                             elements: [
                                               createElement(
                                                 "value",
+                                                "Client UID",
                                                 "Client Process UID",
-                                                "",
                                                 constants.ELEMENTTYPE.INPUT,
                                                 {
                                                   type: constants.INPUTTYPE.TEXT
@@ -719,8 +719,8 @@ module.exports = function(constants, systemEntities) {
                                     ),
                                     createElement(
                                       "params",
-                                      "Params (pipe delimited strings, e.g name=chidi|number=8|height=23) ",
-                                      "",
+                                      "Params",
+                                      "Pipe delimited strings, e.g name=chidi|number=8|height=23",
                                       constants.ELEMENTTYPE.INPUT
                                     )
                                   ]
@@ -731,8 +731,8 @@ module.exports = function(constants, systemEntities) {
                                   elements: [
                                     createElement(
                                       "fileType",
+                                      "Extensions",
                                       "Allowed file extensions",
-                                      "",
                                       constants.ELEMENTTYPE.INPUT,
                                       {
                                         type: constants.INPUTTYPE.TEXT
@@ -767,8 +767,8 @@ module.exports = function(constants, systemEntities) {
                                     ),
                                     createElement(
                                       "filterProcessor",
-                                      "async retrieve items used to filter grid",
-                                      "",
+                                      "Async Filter Template",
+                                      "Async retrieve elements used to filter the grid",
                                       constants.ELEMENTTYPE.SELECT,
                                       {
                                         type:
@@ -785,15 +785,15 @@ module.exports = function(constants, systemEntities) {
                                     ),
                                     createElement(
                                       "filterCommands",
+                                      "Filter Commands",
                                       "commands used by the filter to perform things like print...etc",
-                                      "",
                                       constants.ELEMENTTYPE.LIST,
                                       {
                                         itemTemplate: [
                                           createElement(
                                             "commandProcessor",
+                                            "Processor",
                                             "Processor that will run when command fires",
-                                            "",
                                             constants.ELEMENTTYPE.SELECT,
                                             {
                                               type:
@@ -811,14 +811,14 @@ module.exports = function(constants, systemEntities) {
                                           ),
                                           createElement(
                                             "commandText",
+                                            "Text",
                                             "Text Displayed by the client",
-                                            "",
                                             constants.ELEMENTTYPE.INPUT
                                           ),
                                           createElement(
                                             "commandIcon",
+                                            "Name",
                                             "Name of the icon to be displayed by the client",
-                                            "",
                                             constants.ELEMENTTYPE.INPUT
                                           )
                                         ]
@@ -844,8 +844,8 @@ module.exports = function(constants, systemEntities) {
                                     ),
                                     createElement(
                                       "mode",
-                                      "Grid mode (CRUD expects Create/Edit/Update Templates)",
-                                      "",
+                                      "Grid mode",
+                                      "CRUD expects Create/Edit/Update Templates",
                                       constants.ELEMENTTYPE.SELECTSET,
                                       {
                                         path: "extra",
@@ -1003,8 +1003,8 @@ module.exports = function(constants, systemEntities) {
                                     ),
                                     createElement(
                                       "gridArgs",
-                                      "Arguments (passed to all processors)",
-                                      "",
+                                      "Arguments",
+                                      "Custom arguments passed to all processors",
                                       constants.ELEMENTTYPE.SCRIPT,
                                       {
                                         type: "JSON"
@@ -1012,8 +1012,8 @@ module.exports = function(constants, systemEntities) {
                                     ),
                                     createElement(
                                       "templateConfig",
-                                      'Template (JSON representing template/template config e.g {"name":"basic","config":{name:"Name"}})',
-                                      "",
+                                      "Template",
+                                      'JSON representing template/template config e.g {"name":"basic","config":{name:"Name"}}',
                                       constants.ELEMENTTYPE.SCRIPT,
                                       {
                                         type: "JSON"
@@ -1071,8 +1071,8 @@ module.exports = function(constants, systemEntities) {
                                             elements: [
                                               createElement(
                                                 "data",
+                                                "Base64",
                                                 "Base64 Image String",
-                                                "",
                                                 constants.ELEMENTTYPE.INPUT,
                                                 {
                                                   type: constants.INPUTTYPE.TEXT
@@ -1111,7 +1111,7 @@ module.exports = function(constants, systemEntities) {
                                   elements: [
                                     createElement(
                                       "type",
-                                      "Type of Select",
+                                      "Type",
                                       "The user interface uses this value to determine the available types",
                                       constants.ELEMENTTYPE.SELECTSET,
                                       {
@@ -1204,7 +1204,7 @@ module.exports = function(constants, systemEntities) {
                                   elements: [
                                     createElement(
                                       "path",
-                                      "Path (Required)",
+                                      "Path",
                                       "Processors will use this path to refer to items contained here",
                                       constants.ELEMENTTYPE.INPUT,
                                       {
@@ -1273,8 +1273,8 @@ module.exports = function(constants, systemEntities) {
                                     ),
                                     createElement(
                                       "mode",
-                                      "Mode (Default or ObjectId)",
-                                      "",
+                                      "Mode",
+                                      "(Default or ObjectId)",
                                       constants.ELEMENTTYPE.SELECTSET,
                                       {
                                         items: [
@@ -1350,8 +1350,8 @@ module.exports = function(constants, systemEntities) {
                                               ),
                                               createElementWithUid(
                                                 "extension",
-                                                "Extensions (additional UI components)",
-                                                "",
+                                                "Extensions",
+                                                "Additional UI components",
                                                 constants.ELEMENTTYPE.LIST,
                                                 {
                                                   itemTemplate: elementItemTemplate,
@@ -1384,8 +1384,8 @@ module.exports = function(constants, systemEntities) {
                                     ),
                                     createElement(
                                       "rowTemplate",
-                                      'Template (JSON representing template/template config e.g {"name":"basic","config":{name:"Name"}})',
-                                      "",
+                                      "Template",
+                                      'JSON representing template/template config e.g {"name":"basic","config":{name:"Name"}}',
                                       constants.ELEMENTTYPE.SCRIPT,
                                       {
                                         type: "JSON"
@@ -1408,7 +1408,7 @@ module.exports = function(constants, systemEntities) {
                                   elements: [
                                     createElementWithUid(
                                       "elements",
-                                      "Elements in the section",
+                                      "Elements",
                                       "Elements in the section",
                                       constants.ELEMENTTYPE.LIST,
                                       {
@@ -1436,8 +1436,8 @@ module.exports = function(constants, systemEntities) {
                           ),
                           createElement(
                             "order",
-                            "Display (tells the container where to place this element)",
-                            "",
+                            "Display",
+                            "Tells the container where to place this element",
                             constants.ELEMENTTYPE.INPUT,
                             {
                               type: constants.INPUTTYPE.NUMBER
@@ -1445,8 +1445,8 @@ module.exports = function(constants, systemEntities) {
                           ),
                           createElement(
                             "uid",
-                            "Unique Identifier (possibly used to customize the appearance on clientside",
-                            "",
+                            "Unique Identifier",
+                            "Possibly used to customize the appearance on clientside",
                             constants.ELEMENTTYPE.INPUT
                           ),
                           createElement(
@@ -1489,7 +1489,7 @@ module.exports = function(constants, systemEntities) {
                             },
                             {
                               id: constants.VALIDATORTYPE.MAXLENGTH,
-                              displayLabel: "Maximum Number of Characters",
+                              displayLabel: "Maximum Number",
                               elements: [
                                 createElement(
                                   "max",
@@ -1504,7 +1504,7 @@ module.exports = function(constants, systemEntities) {
                             },
                             {
                               id: constants.VALIDATORTYPE.MINLENGTH,
-                              displayLabel: "Minimum Number of Characters",
+                              displayLabel: "Minimum Number",
                               elements: [
                                 createElement(
                                   "min",
@@ -1544,8 +1544,8 @@ module.exports = function(constants, systemEntities) {
                       ),
                       createElement(
                         "code",
-                        "This code runs when a client makes a request to the processor endpoint.",
                         "Title",
+                        "This code runs when a client makes a request to the processor endpoint.",
                         constants.ELEMENTTYPE.SCRIPT
                       ),
                       createElement(
@@ -1582,8 +1582,8 @@ module.exports = function(constants, systemEntities) {
               ),
               createElement(
                 "createClaim",
-                "Create claim if it does not exist",
-                "",
+                "Create claim",
+                "A claim will be created if it does not exist",
                 constants.ELEMENTTYPE.INPUT,
                 {
                   type: constants.INPUTTYPE.CHECKBOX,

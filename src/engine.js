@@ -370,10 +370,7 @@ Object.keys(systemEntities).forEach(function(key) {
       options = null;
     }
     if (this.entitiesRepository.transformers[entName]) {
-      var model = this.entitiesRepository.transformers[entName](data, function(
-        er,
-        model
-      ) {
+      this.entitiesRepository.transformers[entName](data, function(er, model) {
         if (er) return fn(er);
         model.save(function(er, item) {
           if (er) return fn(er);

@@ -30,70 +30,77 @@ module.exports = function(constants, systemEntities) {
         this.args.process,
         { retrieve: true },
         (er, proc) => {
+          debugger;
           if (er) return callback(er);
+          this.debug("no problem saving process");
+          this.debug(arguments);
           if (!this.args.createClaim)
-            return callback(null, `Saved ${this.args.process.title}'`);
-          if (this.args.createClaim) {
-            let inf = this.infrastructure;
-            if (!inf || !inf.server)
-              return (
-                this.debug("infrastructure not available for create process"),
-                callback(new Error("infrastructure is not available"))
-              );
+            return callback(null, {
+              message: `Saved ${this.args.process.title}'`,
+              _id: proc._id
+            });
 
-            if (!this.args.process._id) {
-              let _processors = proc.steps.reduce((sum, x, index) => {
-                return x.processors.reduce((o, v) => {
-                  return o.push(v), o;
-                }, sum);
-              }, []);
-              this.async.parallel(
-                _processors.map(x =>
-                  inf.server.saveClaim.bind(inf.server, {
-                    type: inf.server.constants.CLAIMS.PROCESSOR,
-                    description: x.title,
-                    value: x._id
-                  })
-                ),
+          let inf = this.infrastructure;
+          if (!inf || !inf.server)
+            return (
+              this.debug("infrastructure not available for create process"),
+              callback(new Error("infrastructure is not available"))
+            );
+
+          if (!this.args.process._id) {
+            let _processors = proc.steps.reduce((sum, x, index) => {
+              return x.processors.reduce((o, v) => {
+                return o.push(v), o;
+              }, sum);
+            }, []);
+            this.async.parallel(
+              _processors.map(x =>
+                inf.server.saveClaim.bind(inf.server, {
+                  type: inf.server.constants.CLAIMS.PROCESSOR,
+                  description: x.title,
+                  value: x._id
+                })
+              ),
+              er => {
+                if (er)
+                  return (
+                    this.debug(
+                      `an error occurred while attempting to save claims for processes processors ${
+                        er.message
+                      }`
+                    ),
+                    this.debug(er)
+                  );
+              }
+            );
+          }
+
+          inf.server.getClaims({ value: proc._id }, (er, claim) => {
+            if (er)
+              return (
+                this.debug("error occurred while querying claims"), callback(er)
+              );
+            if (!claim || !claim.length)
+              return inf.server.saveClaim(
+                {
+                  type: inf.server.constants.CLAIMS.PROCESS,
+                  description: `${proc.title}`,
+                  value: proc._id
+                },
                 er => {
-                  if (er)
-                    return (
-                      this.debug(
-                        `an error occurred while attempting to save claims for processes processors ${
-                          er.message
-                        }`
-                      ),
-                      this.debug(er)
-                    );
+                  if (er) return callback(er);
+                  callback(null, {
+                    message: `Successfully saved '${proc.title}' and claim`,
+                    _id: proc._id
+                  });
                 }
               );
-            }
 
-            inf.server.getClaims({ value: proc._id }, (er, claim) => {
-              if (er)
-                return (
-                  this.debug("error occurred while querying claims"),
-                  callback(er)
-                );
-              if (!claim || !claim.length)
-                return inf.server.saveClaim(
-                  {
-                    type: inf.server.constants.CLAIMS.PROCESS,
-                    description: `${proc.title}`,
-                    value: proc._id
-                  },
-                  er => {
-                    if (er) return callback(er);
-                    callback(
-                      null,
-                      `Successfully saved '${proc.title}' and claim`
-                    );
-                  }
-                );
-
-              return callback(null, `Saved '${this.args.process.title}'`);
+            return callback(null, {
+              message: `Saved '${this.args.process.title}'`,
+              _id: this.args.process._id
             });
-          }
+          });
         }
       );
     });
@@ -123,7 +130,8 @@ module.exports = function(constants, systemEntities) {
                   er => {
                     if (!er) {
                       return callback(null, {
-                        message: `Successfully saved ${_p.title} and Claim`
+                        message: `Successfully saved ${_p.title} and Claim`,
+                        id: _p._id
                       });
                     }
                     return success();
@@ -215,6 +223,7 @@ module.exports = function(constants, systemEntities) {
         ? x.map(function(z) {
             return {
               _id: z._id,
+              uid: z.uid,
               displayLabel: z$label
             };
           })

@@ -72,6 +72,7 @@ module.exports = function(constants) {
           }
           return list.map(x => ({
             displayLabel: prop ? x[prop] : x,
+            uid: x.uid,
             _id: x._id || x
           }));
         }
@@ -769,10 +770,8 @@ module.exports = function(constants) {
               )
             );
 
-			debugger;
           if (!user || !password) return fn(new Error("Invalid Credentials"));
 
-          
           server.checkPassword(
             user.domain,
             user.client.clientId,

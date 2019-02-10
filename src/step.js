@@ -150,9 +150,7 @@ function FurmlyStep(opts) {
      */
     this.run = function(context, fn) {
       debug(
-        `running client step  ${misc.toObjectString(
-          this
-        )} , with context ${misc.toObjectString(context)}`
+        `running client step with context ${misc.toObjectString(context)}`
       );
       if (parent.mode == constants.STEPMODE.VIEW)
         return fn(new Error("Cannot process a view step"));
