@@ -115,22 +115,19 @@ FurmlyEngine.prototype.init = function(fn) {
         }
       }),
       (processors, callback) => {
-        var uidsIn = [],
-          uidsNotIn = _.differenceWith(dProcessors, processors, function(
-            uid,
-            obj
-          ) {
-            let result = uid == obj.uid;
-            if (result) {
-              var _proc = Object.assign(
-                { _id: obj._id },
-                defaultProcessors[uid]
-              );
-              uidsIn.push(_proc);
-            }
-            return result;
-          }),
-          tasks = [];
+        const uidsIn = [];
+        const uidsNotIn = _.differenceWith(dProcessors, processors, function(
+          uid,
+          obj
+        ) {
+          let result = uid == obj.uid;
+          if (result) {
+            var _proc = Object.assign({ _id: obj._id }, defaultProcessors[uid]);
+            uidsIn.push(_proc);
+          }
+          return result;
+        });
+        const tasks = [];
         for (var i = 0; i < uidsNotIn.length; i++)
           tasks.push(
             self.saveProcessor.bind(self, defaultProcessors[uidsNotIn[i]], {
@@ -168,43 +165,36 @@ FurmlyEngine.prototype.init = function(fn) {
         }
       }),
       (libs, callback) => {
-        if (
-          true
-          // !libs || libs.length !== dLibs.length
-        ) {
-          var uidsIn = [],
-            uidsNotIn = _.differenceWith(dLibs, libs, function(uid, obj) {
-              var result = uid == obj.uid;
-              if (result) {
-                var _lib = Object.assign({ _id: obj._id }, defaultLibs[uid]);
-                uidsIn.push(_lib);
-              }
-              return result;
-            }),
-            tasks = [];
+        const uidsIn = [];
+        const uidsNotIn = _.differenceWith(dLibs, libs, function(uid, obj) {
+          const result = uid == obj.uid;
+          if (result) {
+            const _lib = Object.assign({ _id: obj._id }, defaultLibs[uid]);
+            uidsIn.push(_lib);
+          }
+          return result;
+        });
+        const tasks = [];
 
-          for (var i = 0; i < uidsNotIn.length; i++)
-            tasks.push(
-              self.saveLib.bind(self, defaultLibs[uidsNotIn[i]], {
-                retrieve: true
-              })
-            );
+        for (var i = 0; i < uidsNotIn.length; i++)
+          tasks.push(
+            self.saveLib.bind(self, defaultLibs[uidsNotIn[i]], {
+              retrieve: true
+            })
+          );
 
-          for (var i = 0; i < uidsIn.length; i++)
-            tasks.push(
-              self.saveLib.bind(self, uidsIn[i], {
-                retrieve: true
-              })
-            );
+        for (var i = 0; i < uidsIn.length; i++)
+          tasks.push(
+            self.saveLib.bind(self, uidsIn[i], {
+              retrieve: true
+            })
+          );
 
-          async.parallel(tasks, function(er, ps) {
-            if (er) return callback(er);
-
-            callback();
-          });
-          return;
-        }
-        callback();
+        async.parallel(tasks, function(er, ps) {
+          if (er) return callback(er);
+          callback();
+        });
+        return;
       },
       this.queryProcess.bind(this, {
         uid: {
@@ -212,31 +202,33 @@ FurmlyEngine.prototype.init = function(fn) {
         }
       }),
       (exists, callback) => {
-        //debug(exists);
-        //debug(defaultProcesses);
         if (!exists.length || dProcesses.length !== exists.length) {
-          let tasks = [],
-            cb = (data, callback) => {
-              self.saveProcess(
-                data,
-                {
-                  retrieve: true,
-                  full: true
-                },
-                function(er, proc) {
-                  if (er) return fn(er);
-                  self.emit("default-process-created", _.cloneDeep(proc));
-                  callback(null, proc);
-                }
-              );
-            },
-            args = _processors.reduce((x, a) => {
-              x[a.uid] = a._id;
-              return x;
-            }, {}),
-            doesntExist = _.differenceWith(dProcesses, exists, (uid, obj) => {
+          const tasks = [];
+          const cb = (data, callback) => {
+            self.saveProcess(
+              data,
+              {
+                retrieve: true,
+                full: true
+              },
+              function(er, proc) {
+                if (er) return fn(er);
+                self.emit("default-process-created", _.cloneDeep(proc));
+                callback(null, proc);
+              }
+            );
+          };
+          const args = _processors.reduce((x, a) => {
+            x[a.uid] = a._id;
+            return x;
+          }, {});
+          const doesntExist = _.differenceWith(
+            dProcesses,
+            exists,
+            (uid, obj) => {
               return uid == obj.uid;
-            });
+            }
+          );
 
           for (var i = 0; i < doesntExist.length; i++)
             tasks.push(cb.bind(self, defaultProcesses[doesntExist[i]](args)));
@@ -245,9 +237,8 @@ FurmlyEngine.prototype.init = function(fn) {
         } else return callback();
       }
     ],
-    (er, result) => {
+    er => {
       if (er) return fn(er);
-
       fn();
     }
   );

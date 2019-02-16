@@ -115,7 +115,8 @@ module.exports = function(constants, systemEntities) {
           if (er) return callback(er);
           const success = () =>
             callback(null, {
-              message: `Successfully saved ${_p.title}`
+              message: `Successfully saved ${_p.title}`,
+              _id:_p._id
             });
           if (this.args.entity.createClaim) {
             let um = this.infrastructure.server;

@@ -1572,7 +1572,7 @@ module.exports = function(constants, systemEntities) {
                 constants.ELEMENTTYPE.LABEL
               ),
               createElement(
-                "password",
+                "$password",
                 "Password (Current User)",
                 "",
                 constants.ELEMENTTYPE.INPUT,
@@ -1868,7 +1868,7 @@ module.exports = function(constants, systemEntities) {
                       ),
                       gui,
                       createElement(
-                        "password",
+                        "$password",
                         "Password (Current User)",
                         "",
                         constants.ELEMENTTYPE.INPUT,
@@ -1883,7 +1883,7 @@ module.exports = function(constants, systemEntities) {
                       createHidden("name"),
                       gui,
                       createElement(
-                        "password",
+                        "$password",
                         "Password (Current User)",
                         "",
                         constants.ELEMENTTYPE.INPUT,
@@ -1928,7 +1928,7 @@ module.exports = function(constants, systemEntities) {
         }
       ),
       createElement(
-        "password",
+        "$password",
         "Password (Current User)",
         "",
         constants.ELEMENTTYPE.INPUT,
@@ -2012,7 +2012,7 @@ module.exports = function(constants, systemEntities) {
       ),
       createElement("code", "Enter Code", "", constants.ELEMENTTYPE.SCRIPT),
       createElement(
-        "password",
+        "$password",
         "Password (Current User)",
         "",
         constants.ELEMENTTYPE.INPUT,

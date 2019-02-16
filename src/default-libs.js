@@ -414,7 +414,7 @@ module.exports = function(constants) {
               );
               template.push(
                 self.libs.createElement(
-                  "password",
+                  "$password",
                   "Enter Password (Current User)",
                   "",
                   constants.ELEMENTTYPE.INPUT,
@@ -758,11 +758,11 @@ module.exports = function(constants) {
         //should be called with request scope.
         exports = function(fn) {
           if (!this.args.$authorized) return fn(new Error("Unauthorized"));
-          let server = this.infrastructure.server,
-            user = this.args.$user,
-            password =
-              this.args.password ||
-              (this.args.entity && this.args.entity.password);
+          const server = this.infrastructure.server;
+          const user = this.args.$user;
+          const password =
+            this.args.$password ||
+            (this.args.entity && this.args.entity.$password);
           if (!server)
             return fn(
               new Error(
@@ -780,6 +780,7 @@ module.exports = function(constants) {
             (er, valid) => {
               if (er) return fn(er);
               if (!valid) return fn(new Error("Invalid Credentials"));
+              if (this.args.entity) delete this.args.entity.$password;
               fn();
             }
           );

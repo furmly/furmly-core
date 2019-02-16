@@ -6,7 +6,6 @@ const constants = require("./constants"),
   vm = require("vm"),
   _ = require("lodash"),
   debug = require("debug")("entity-repo"),
-  path = require("path"),
   generator = require("mongoose-gen"),
   ObjectID = require("mongodb").ObjectID,
   FurmlyProcess = require("./process"),
@@ -151,7 +150,21 @@ function EntityRepo(opts) {
       item._id
     );
   };
+  const notQuery = { name: { $nin: this._systemEntities.slice() } };
+  const _getConfigProxy = (name, fn) => {
+    if (this._systemEntities.indexOf(name) !== -1)
+      return fn(new Error(`Access Violation '${name}'`));
 
+    this.getConfig(name, fn);
+  };
+  const _getConfigNamesProxy = (...args) => {
+    if (args.length < 3) {
+      args[2] = notQuery;
+    } else {
+      args[2] = Object.assign(args[2] || {}, notQuery);
+    }
+    this.getConfigNames.apply(this, args);
+  };
   this.getLibValue = this.getLibValue.bind(this);
   /**
    * @type {module:Furmly~ProcessorContext}
@@ -166,13 +179,13 @@ function EntityRepo(opts) {
     createSchema: self.createConfig.bind(self),
     updateSchema: self.updateConfig.bind(self),
     countSchemas: self.countConfig.bind(self),
-    getSchema: self.getConfig.bind(self),
-    getSchemas: self.getConfigNames.bind(self),
+    getSchema: _getConfigProxy,
+    getSchemas: _getConfigNamesProxy,
     createId: self.createId.bind(null),
     store: self.store,
     aggregate: blockSystemEntities.bind(self, self.aggregateEntity),
     getCollectionName: blockSystemEntities.bind(self, self.getCollectionName)
-  }
+  };
 
   this.transformers[systemEntities.process] = function(item, fn) {
     if (!(item instanceof FurmlyProcess)) {
@@ -650,7 +663,9 @@ EntityRepo.prototype.getConfigNames = function(
   if (!!includeSchema) {
     fields.schema = 1;
   }
+  debug("options:");
   debug(options);
+  debug("query:");
   debug(query);
   this.$schemas
     .find(
