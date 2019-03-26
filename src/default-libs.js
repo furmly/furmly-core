@@ -158,7 +158,7 @@ module.exports = function(constants) {
               return cb(new Error("error occurred processing file records"));
             }
           }
-          debugger;
+
           fileUpload.readFile(file, user, (er, data, description) => {
             if (er)
               return (
@@ -282,7 +282,7 @@ module.exports = function(constants) {
           fn
         ) {
           this.debug(`creating crud for entity ${entityName}`);
-          debugger;
+
           let constants = this.constants,
             self = this,
             title = `Manage ${entityName}`,
@@ -297,7 +297,7 @@ module.exports = function(constants) {
             server = self.infrastructure.server;
           if (!server)
             return fn(
-              new Error("Entity Repo does not provide a means of reating menus")
+              new Error("Entity Repo does not provide a means of creating menus")
             );
 
           this.async.waterfall(
@@ -828,7 +828,12 @@ module.exports = function(constants) {
       (() => {
         //should be called with request scope.
         exports = function(fn) {
-          if (!this.args.$authorized) return fn(new Error("Unauthorized"));
+          //when using only password authentication.
+          if (
+            !this.args.$authorized &&
+            !this.infrastructure.config.disableSecurity
+          )
+            return fn(new Error("Unauthorized"));
           const server = this.infrastructure.server;
           const user = this.args.$user;
           const password =

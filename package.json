@@ -4,8 +4,8 @@
   "description": "This is the backend processor for configurable dynamic tasks",
   "main": "./src/index.js",
   "scripts": {
-    "test": "set profile=unitTest&& mocha --require  test-helpers/chai.js",
-    "test:debug": "set profile=unitTest&& set DEBUG=test,sandbox&& mocha --debug-brk --inspect --require  test-helpers/chai.js"
+    "test": "set profile=unitTest&& mocha --exit --require  test-helpers/chai.js",
+    "test:debug": "set profile=unitTest&& set DEBUG=test&& mocha --inspect-brk --require  test-helpers/chai.js"
   },
   "keywords": [
     "furmly",
@@ -18,7 +18,7 @@
   "license": "ISC",
   "devDependencies": {
     "chai": "^3.5.0",
-    "mocha": "^3.5.3",
+    "mocha": "^6.0.2",
     "sandboxed-module": "^2.0.3",
     "sinon": "^2.3.1",
     "tern": "^0.21.0"
@@ -28,8 +28,8 @@
     "async": "^2.4.1",
     "debug": "^3.0.0",
     "glob": "^7.1.2",
-    "lodash": "^4.17.10",
-    "mongoose": "^4.13.12",
+    "lodash": "^4.17.11",
+    "mongoose": "^5.4.20",
     "mongoose-gen": "git+https://github.com/chidionuekwusi/mongoose-gen.git",
     "uuid": "^3.1.0",
     "vm2": "^3.4.6"

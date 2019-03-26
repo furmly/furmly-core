@@ -20,75 +20,14 @@ const constants = require("./constants"),
  * @param {Object} opts Constructor arguments
  */
 function FurmlyEngine(opts) {
-  var self = this;
+
+  debug("constructing furmly engine...");
   if (!opts) throw new Error("opts must be valid");
 
   if (!opts.entitiesRepository)
     throw new Error("opts.entitiesRepository must be valid");
 
   this.entitiesRepository = opts.entitiesRepository;
-
-  //there should be a better way to do this but , it works for now so moving on...
-  this.entitiesRepository.processorEntityRepo.getStep = FurmlyEngine.prototype.queryStep.bind(
-    this
-  );
-  this.entitiesRepository.processorEntityRepo.saveProcess = FurmlyEngine.prototype.saveProcess.bind(
-    this
-  );
-  this.entitiesRepository.processorEntityRepo.getProcess = FurmlyEngine.prototype.queryProcess.bind(
-    this
-  );
-  this.entitiesRepository.processorEntityRepo.getLib = FurmlyEngine.prototype.queryLib.bind(
-    this
-  );
-  this.entitiesRepository.processorEntityRepo.saveLib = FurmlyEngine.prototype.saveLib.bind(
-    this
-  );
-  this.entitiesRepository.processorEntityRepo.saveAsyncValidator = FurmlyEngine.prototype.saveAsyncValidator.bind(
-    this
-  );
-  this.entitiesRepository.processorEntityRepo.getAsyncValidator = FurmlyEngine.prototype.queryAsyncValidator.bind(
-    this
-  );
-  this.entitiesRepository.processorEntityRepo.saveProcessor = FurmlyEngine.prototype.saveProcessor.bind(
-    this
-  );
-  this.entitiesRepository.processorEntityRepo.getProcessor = function(...args) {
-    //load all the necessary libs.
-    let _processors,
-      loadLibs = !!(args.length == 3 && args[1] && args[1].loadLibs),
-      fn = args.splice(args.length - 1, 1, (er, processors) => {
-        if (er) return fn(er);
-        if (processors) {
-          if (loadLibs) {
-            if (!Array.prototype.isPrototypeOf(processors)) {
-              _processors = [processors];
-            } else _processors = processors;
-            let refs = _processors.reduce(
-              (sum, p) => sum.concat(p._references),
-              []
-            );
-            let context = args[1].context;
-            if (
-              refs.length > 0 &&
-              (!context || !context.libs || !context.libs.loadLib)
-            )
-              return fn(
-                new Error(
-                  "Processor context is needed to setup a processors references"
-                )
-              );
-            if (refs.length > 0)
-              return context.libs.loadLib.call(context, refs, er => {
-                if (er) return fn(er);
-                return fn(null, processors);
-              });
-          }
-        }
-        return fn(null, processors);
-      })[0];
-    self.queryProcessor.apply(self, args);
-  };
 }
 
 util.inherits(FurmlyEngine, EventEmitter);
@@ -218,6 +157,7 @@ FurmlyEngine.prototype.init = function(fn) {
               }
             );
           };
+
           const args = _processors.reduce((x, a) => {
             x[a.uid] = a._id;
             return x;
@@ -247,15 +187,16 @@ FurmlyEngine.prototype.init = function(fn) {
 FurmlyEngine.prototype.isValidID = function(id) {
   return this.entitiesRepository.isValidID(id);
 };
-FurmlyEngine.prototype.setInfrastructure = function(manager) {
-  this.entitiesRepository.setInfrastructure(manager);
+FurmlyEngine.prototype.extendProcessorContext = function(extensions) {
+  this.entitiesRepository.extendProcessorContext(extensions);
+  this.extensions = extensions;
 };
 
 FurmlyEngine.prototype.runProcessor = function(context, processor, fn) {
   var sandbox = new FurmlySandbox(
     processor,
-    this.entitiesRepository.processorEntityRepo,
-    this.entitiesRepository.infrastructure
+    this.entitiesRepository.getProcessorContext(),
+    this.extensions
   );
   sandbox.run(context, fn);
 };
@@ -341,7 +282,6 @@ FurmlyEngine.prototype.createId = function(...args) {
   return this.entitiesRepository.createId.apply(null, args);
 };
 
-//---------------------------------------------------------------------------
 
 Object.keys(systemEntities).forEach(function(key) {
   var cap = misc.capitalizeText(key);
@@ -353,39 +293,12 @@ Object.keys(systemEntities).forEach(function(key) {
     }
     this.entitiesRepository.queryEntity(entName, filter, options, fn);
   };
-  FurmlyEngine.prototype["save" + cap] = function(data, options, fn) {
-    var self = this;
-
-    if (Array.prototype.slice.call(arguments).length == 2) {
-      fn = options;
-      options = null;
-    }
-    if (this.entitiesRepository.transformers[entName]) {
-      this.entitiesRepository.transformers[entName](data, function(er, model) {
-        if (er) return fn(er);
-        model.save(function(er, item) {
-          if (er) return fn(er);
-          if (options && options.retrieve) {
-            self.entitiesRepository.queryEntity(entName, item, function(e, x) {
-              fn(e, x && x[0]);
-            });
-            return;
-          }
-          if (typeof fn !== "function") {
-            console.log(fn);
-            console.log("fn is not a function");
-            console.log(data);
-            console.log(options);
-          }
-          fn(er, item);
-        });
-      });
-      return;
-    }
-
-    if (!data._id)
-      this.entitiesRepository.createEntity(systemEntities[key], data, fn);
-    else this.entitiesRepository.updateEntity(systemEntities[key], data, fn);
+  FurmlyEngine.prototype["save" + cap] = function(...args) {
+    args.unshift(entName, key);
+    this.entitiesRepository.saveSystemEntity.apply(
+      this.entitiesRepository,
+      args
+    );
   };
 
   FurmlyEngine.prototype[`delete${cap}`] = function(id, fn) {
@@ -396,6 +309,5 @@ Object.keys(systemEntities).forEach(function(key) {
   };
 });
 
-//-------------------------------------------------------------------------
 
 module.exports = FurmlyEngine;

@@ -1,8 +1,8 @@
 const constants = require("./constants"),
+  assert = require("assert"),
   systemEntities = constants.systemEntities,
   async = require("async"),
   misc = require("./misc"),
-  fs = require("fs"),
   vm = require("vm"),
   _ = require("lodash"),
   debug = require("debug")("entity-repo"),
@@ -16,6 +16,7 @@ const constants = require("./constants"),
   FurmlyForm = require("./form"),
   FurmlyLib = require("./lib"),
   CodeGenerator = require("./code-gen"),
+  parser = require("./parser"),
   FurmlyAsyncValidator = require("./async-validator"),
   mongoose = require("mongoose"),
   FurmlySandbox = require("./sandbox");
@@ -63,14 +64,14 @@ function EntityRepo(opts) {
   this.entityExt = opts.ext || ".json";
   this.entityFolder = opts.folder || "./src/entities/";
   this.delimiter = opts.delimiter || /('|")\$\{(\w+)\}+('|")/i;
-  this.codeGenerator = new CodeGenerator(opts.config.codeGenerator);
+  this.codeGenerator = new CodeGenerator(opts.config.codeGenerator, parser);
   this._systemEntities = _.map(systemEntities, function(x) {
     return x;
   });
   this.store =
     opts.store ||
     function() {
-      var collection = mongoose.connection.db.collection("_temp_store_");
+      const collection = mongoose.connection.db.collection("_temp_store_");
 
       function createIndex(fn) {
         collection.createIndex(
@@ -97,14 +98,16 @@ function EntityRepo(opts) {
             fn = extra;
             extra = null;
           }
-          collection.update(
+          collection.updateOne(
             {
               _id: id ? ObjectID(id) : id
             },
             {
-              value: info,
-              extra: extra,
-              createdOn: new Date()
+              $set: {
+                value: info,
+                extra: extra,
+                createdOn: new Date()
+              }
             },
             fn
           );
@@ -170,22 +173,85 @@ function EntityRepo(opts) {
    * @type {module:Furmly~ProcessorContext}
    * @property {module:Furmly.EntityRepo#queryEntity} get function for querying objects
    */
-  this.processorEntityRepo = {
-    get: blockSystemEntities.bind(self, self.queryEntity),
-    count: self.countEntity.bind(this),
-    update: blockSystemEntities.bind(self, self.updateEntity),
-    delete: blockSystemEntities.bind(self, self.deleteEntity),
-    create: blockSystemEntities.bind(self, self.createEntity),
-    createSchema: self.createConfig.bind(self),
-    updateSchema: self.updateConfig.bind(self),
-    countSchemas: self.countConfig.bind(self),
-    getSchema: _getConfigProxy,
-    getSchemas: _getConfigNamesProxy,
-    createId: self.createId.bind(null),
-    store: self.store,
-    aggregate: blockSystemEntities.bind(self, self.aggregateEntity),
-    getCollectionName: blockSystemEntities.bind(self, self.getCollectionName)
-  };
+  Object.defineProperty(this, "processorEntityRepo", {
+    enumerable: false,
+    value: {
+      get: blockSystemEntities.bind(self, self.queryEntity),
+      count: self.countEntity.bind(this),
+      update: blockSystemEntities.bind(self, self.updateEntity),
+      delete: blockSystemEntities.bind(self, self.deleteEntity),
+      create: blockSystemEntities.bind(self, self.createEntity),
+      createSchema: self.createConfig.bind(self),
+      updateSchema: self.updateConfig.bind(self),
+      countSchemas: self.countConfig.bind(self),
+      getSchema: _getConfigProxy,
+      getSchemas: _getConfigNamesProxy,
+      createId: self.createId.bind(null),
+      store: self.store,
+      aggregate: blockSystemEntities.bind(self, self.aggregateEntity),
+      getCollectionName: blockSystemEntities.bind(self, self.getCollectionName),
+      getStep: self.queryEntity.bind(self, systemEntities.step),
+      saveLib: self.saveSystemEntity.bind(self, systemEntities.lib, "lib"),
+      getLib: self.queryEntity.bind(self, systemEntities.lib),
+      saveAsyncValidator: self.saveSystemEntity.bind(
+        self,
+        systemEntities.asyncValidator,
+        "asyncValidator"
+      ),
+      getAsyncValidator: self.queryEntity.bind(
+        self,
+        systemEntities.asyncValidator
+      ),
+      saveProcess: self.saveSystemEntity.bind(
+        self,
+        systemEntities.process,
+        "process"
+      ),
+      getProcess: self.queryEntity.bind(self, systemEntities.process),
+      saveProcessor: self.saveSystemEntity.bind(
+        self,
+        systemEntities.processor,
+        "processor"
+      ),
+      getProcessor: (...args) => {
+        //load all the necessary libs.
+        let _processors,
+          loadLibs = !!(args.length == 3 && args[1] && args[1].loadLibs),
+          fn = args.splice(args.length - 1, 1, (er, processors) => {
+            if (er) return fn(er);
+            if (processors) {
+              if (loadLibs) {
+                if (!Array.prototype.isPrototypeOf(processors)) {
+                  _processors = [processors];
+                } else _processors = processors;
+                let refs = _processors.reduce(
+                  (sum, p) => sum.concat(p._references),
+                  []
+                );
+                let context = args[1].context;
+                if (
+                  refs.length > 0 &&
+                  (!context || !context.libs || !context.libs.loadLib)
+                )
+                  return fn(
+                    new Error(
+                      "Processor context is needed to setup a processors references"
+                    )
+                  );
+                if (refs.length > 0)
+                  return context.libs.loadLib.call(context, refs, er => {
+                    if (er) return fn(er);
+                    return fn(null, processors);
+                  });
+              }
+            }
+            return fn(null, processors);
+          })[0];
+        args.unshift(systemEntities.processor);
+        this.queryEntity.apply(self, args);
+      }
+    }
+  });
 
   this.transformers[systemEntities.process] = function(item, fn) {
     if (!(item instanceof FurmlyProcess)) {
@@ -283,7 +349,7 @@ function EntityRepo(opts) {
 
         if (item.stepType == constants.STEPTYPE.CLIENT) {
           item.entityRepo = self.processorEntityRepo;
-          item.infrastructure = self.infrastructure;
+          item.extensions = self.extensions;
           tasks.push(function(callback) {
             self.transformers.form(item.form, function(er, form) {
               if (er) return callback(er);
@@ -456,11 +522,11 @@ function EntityRepo(opts) {
 }
 
 /**
- * This function sets the infrastructure (services provided by Server etc.)
+ * This function sets the extensions to processor context (services provided by Server etc.)
  * @param {Object} manager infrastructure
  */
-EntityRepo.prototype.setInfrastructure = function(manager) {
-  this.infrastructure = manager;
+EntityRepo.prototype.extendProcessorContext = function(extensions) {
+  this.extensions = extensions;
 };
 
 // This function is used to extract values from libs.
@@ -488,9 +554,9 @@ const extractValueFromLib = function() {
 
 /**
  * Used by elements/validators when describing themselves to resolve library values.
- * @param  {[type]}   params [description]
- * @param  {Function} fn     [description]
- * @return {[type]}          [description]
+ * @param  {String}   params library key
+ * @param  {Function} fn     Callback function.
+ * @return {Void}          [description]
  */
 EntityRepo.prototype.getLibValue = function(params, fn) {
   new FurmlySandbox({
@@ -503,7 +569,7 @@ EntityRepo.prototype.getLibValue = function(params, fn) {
         save: () => {}
       })
     ],
-    entityRepo: this.processorEntityRepo
+    entityRepo: this.getProcessorContext()
   }).run({ params }, fn);
 };
 
@@ -513,17 +579,22 @@ EntityRepo.prototype.getLibValue = function(params, fn) {
  * @return {Void}            No return type
  */
 EntityRepo.prototype.init = function(callback) {
+  const connectTimer = misc.timer();
   generator.setDefault("requiresIdentity", function(value) {
     return true;
   });
   const _init = () => {
+    debug(`${connectTimer()} secs to connect to the db`);
+    const initTimer = misc.timer();
     if (typeof this.store == "function") {
       this.store = this.store();
     }
 
-    var self = this,
-      entities = require("./default-entities");
+    let self = this;
+    let entities = require("./default-entities");
 
+    //horrible design.
+    //if mongoose changes their interface this will break.
     this.$schemas = mongoose.connection.db.collection("schemas");
     this.$_schema_Schema = {
       name: "Schema",
@@ -532,24 +603,36 @@ EntityRepo.prototype.init = function(callback) {
         schema: { type: "Mixed" }
       }
     };
+    const updateSchemaTimer = misc.timer();
 
-    async.parallel(
-      entities.map(x =>
-        this.$schemas.update.bind(
-          this.$schemas,
-          { name: x.name },
-          { $set: x },
-          { upsert: true }
-        )
-      ),
+    this.$schemas.bulkWrite(
+      entities.reduce((acc, x) => {
+        acc.push({
+          updateOne: {
+            filter: { name: x.name },
+            update: { $set: x },
+            upsert: true
+          }
+        });
+        return acc;
+      }, []),
       function(er) {
         if (er) return callback(er);
-        self.createSchemas(callback);
+        debug(`${updateSchemaTimer()} seconds to update schemas`);
+        const createSchemasTimer = misc.timer();
+        self.createSchemas((...args) => {
+          debug(`${initTimer()} seconds to complete init`);
+          debug(`${createSchemasTimer()} seconds to create schemas`);
+          callback.apply(null, args);
+        });
       }
     );
   };
   mongoose
-    .connect(this.config.data.furmly_url, { useMongoClient: true })
+    .connect(this.config.data.furmly_url, {
+      useNewUrlParser: true,
+      useCreateIndex: true
+    })
     .then(_init)
     .catch(e => {
       if (e && e.message !== "Trying to open unclosed connection.")
@@ -557,6 +640,10 @@ EntityRepo.prototype.init = function(callback) {
 
       return _init(e);
     });
+};
+
+EntityRepo.prototype.getProcessorContext = function() {
+  return this.processorEntityRepo;
 };
 
 //service injected into domain objects for persistence.
@@ -576,15 +663,27 @@ EntityRepo.prototype.getSaveService = function(entName) {
   return function(info, fn) {
     function transformResult(er, result) {
       if (er) return fn(er);
-      if (!result._id) console.log(arguments);
+      assert.strictEqual(
+        Boolean(result._id),
+        true,
+        "Saved entity must return an _id"
+      );
       fn(null, {
         _id: result._id
       });
     }
 
     if (!info._id) {
+      debug(
+        `${entName} entity does not have an id , creating new ...\n ${JSON.stringify(
+          info
+        )} `
+      );
       self.createEntity(entName, info, transformResult);
-    } else self.updateEntity(entName, info, transformResult);
+    } else {
+      debug(`${entName} entity has an id , updating ${JSON.stringify(info)}`);
+      self.updateEntity(entName, info, transformResult);
+    }
   };
 };
 
@@ -695,7 +794,7 @@ EntityRepo.prototype.getAllConfiguration = function(fn) {
   });
 };
 EntityRepo.prototype.countConfig = function(query = {}, fn) {
-  this.$schemas.count(query, fn);
+  this.$schemas.countDocuments(query, fn);
 };
 
 EntityRepo.prototype.createId = function(string) {
@@ -703,7 +802,7 @@ EntityRepo.prototype.createId = function(string) {
 };
 EntityRepo.prototype.updateConfig = function(name, config, fn) {
   if (!name) return fn(new Error("name must be defined"));
-  debugger;
+
   if (this._systemEntities.indexOf(name) !== -1)
     throw new Error("Cannot Update Entity with that name.");
 
@@ -736,8 +835,7 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
   var self = this,
     circularDepth =
       options && options.circularDepth ? options.circularDepth : 1,
-    referenceCount = {},
-    keys;
+    referenceCount = {};
   if (Array.prototype.slice.call(arguments).length == 3) {
     fn = options;
     options = null;
@@ -780,7 +878,6 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
         }),
         function(er, transformed) {
           if (!fn) {
-            //debugger;;
             debug("no callback");
           }
           if (er) return fn(er);
@@ -793,7 +890,6 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
       return;
     }
     if (!fn) {
-      //debugger;;
       debug("no callback");
     }
     fn(
@@ -803,7 +899,6 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
   }
 
   if (!this.models[name]) {
-    //debugger;;
     debug(`cannot find any model by that name ${name}`);
     return setImmediate(fn, new Error("Model does not exist"));
   }
@@ -815,7 +910,6 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
     this.refs[name].length !== 0
   ) {
     debug(`entity being queried : ${name}`);
-    //debug(self.refs[name]);
     var populateString = populate(self.refs[name], []);
     populateString.forEach(function(string) {
       if ((string.match(/\./gi) || []).length >= 1) {
@@ -913,7 +1007,7 @@ EntityRepo.prototype.updateEntity = function(name, data, fn) {
       });
     });
   } else {
-    this.models[name].update(getQuery(), getData(), { multi }, function(
+    this.models[name].updateOne(getQuery(), getData(), { multi }, function(
       er,
       stat
     ) {
@@ -926,6 +1020,43 @@ EntityRepo.prototype.updateEntity = function(name, data, fn) {
   }
 };
 
+EntityRepo.prototype.saveSystemEntity = function(
+  entName,
+  systemEntityKey,
+  data,
+  options,
+  fn
+) {
+  if (Array.prototype.slice.call(arguments).length == 4) {
+    fn = options;
+    options = null;
+  }
+  if (this.transformers[entName]) {
+    this.transformers[entName](data, (er, model) => {
+      if (er) return fn(er);
+      model.save((er, item) => {
+        if (er) return fn(er);
+        if (options && options.retrieve) {
+          this.queryEntity(entName, item, function(e, x) {
+            fn(e, x && x[0]);
+          });
+          return;
+        }
+        if (typeof fn !== "function") {
+          debug(fn);
+          debug("fn is not a function");
+          debug(data);
+          debug(options);
+        }
+        fn(er, item);
+      });
+    });
+    return;
+  }
+
+  if (!data._id) this.createEntity(systemEntities[key], data, fn);
+  else this.updateEntity(systemEntities[key], data, fn);
+};
 /**
  * Create an entity
  * @param  {String}   name Name of the collection/table entity is located in
@@ -980,7 +1111,7 @@ EntityRepo.prototype.countEntity = function(name, filter, fn) {
     return setImmediate(fn, new Error("Model does not exist"));
   }
   debug(`filter:${JSON.stringify(filter, null, " ")}`);
-  this.models[name].count(filter, fn);
+  this.models[name].countDocuments(filter, fn);
 };
 /**
  * Normalizes mongoose collection names to actual mongodb  collection names
@@ -1024,6 +1155,7 @@ EntityRepo.prototype.deleteEntity = function(name, id, fn) {
  */
 EntityRepo.prototype.createSchemas = function(fn) {
   var self = this;
+  let fetchSchemaTimer = misc.timer();
   function createRunContext(code) {
     return function(value) {
       var sandbox = {
@@ -1053,16 +1185,23 @@ EntityRepo.prototype.createSchemas = function(fn) {
   }
   function assignModel(callback) {
     var that = this;
+    const assignModelTime = misc.timer();
     try {
       var existing = self.models[this.prop] || mongoose.model(this.prop);
       var newSchema = this.item;
+      var diffTimer = misc.timer();
       var diff = _.omitBy(newSchema, function(v, k) {
-          return _.isEqual(self.schemas[that.prop][k], v);
-        }),
-        //check if any keys have been deleted
-        couldBeDeleted = _.omitBy(self.schemas[that.prop], function(v, k) {
-          return _.isEqual(newSchema[k], v);
-        });
+        return _.isEqual(self.schemas[that.prop][k], v);
+      });
+      debug(`${diffTimer()} seconds to calculate the difference in schema`);
+      //check if any keys have been deleted
+      var deletedTimer = misc.timer();
+      var couldBeDeleted = _.omitBy(self.schemas[that.prop], function(v, k) {
+        return _.isEqual(newSchema[k], v);
+      });
+      debug(
+        `${deletedTimer()} seconds to calculated if keys need to be deleted`
+      );
 
       var indexes = removeCompoundIndexes(diff);
       var change = Object.keys(diff);
@@ -1071,7 +1210,6 @@ EntityRepo.prototype.createSchemas = function(fn) {
         if (!diff[k]) existing.schema.remove(k);
       });
       if (diff && change.length) {
-        //debugger;;
         existing.schema.add(generator.convert(diff, mongoose));
         removeCompoundIndexes(newSchema);
         self.models[this.prop] = existing;
@@ -1101,9 +1239,13 @@ EntityRepo.prototype.createSchemas = function(fn) {
         if (indexes.length) {
           setupCompoundIndexes(schema, indexes, self.models[that.prop]);
         }
-      } else return callback(e);
+      } else {
+        debug(`${assignModelTime()} seconds to assign model`);
+        return callback(e);
+      }
     }
     debug(`assigned model ${this.prop}`);
+    debug(`${assignModelTime()} seconds to assign model`);
     callback();
   }
   function setupCompoundIndexes(schema, indexes, model) {
@@ -1177,6 +1319,7 @@ EntityRepo.prototype.createSchemas = function(fn) {
   }
 
   function parseEntities(files, fn) {
+    const parseTimer = misc.timer();
     var tasks = [
         function(callback) {
           return callback(null);
@@ -1275,6 +1418,7 @@ EntityRepo.prototype.createSchemas = function(fn) {
       }
     }
     async.parallel(tasks, function(er, result) {
+      debug(`${parseTimer()} seconds to parse entities`);
       debug(self.refs);
 
       (!!er && fn(er)) || fn();
@@ -1296,7 +1440,7 @@ EntityRepo.prototype.createSchemas = function(fn) {
       callback => {
         this.$schemas.find({}).toArray((er, schemas) => {
           if (er) return callback(er);
-
+          debug(`${fetchSchemaTimer()} seconds to fetch schema...`);
           return callback(
             null,
             schemas.reduce((sum, x) => {

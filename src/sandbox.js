@@ -35,8 +35,8 @@ function FurmlySandbox(opts) {
 
   this.processors = opts instanceof FurmlyProcessor ? [opts] : opts.processors;
   this.entityRepo = opts instanceof FurmlyProcessor ? args[1] : opts.entityRepo;
-  this.infrastructure =
-    opts instanceof FurmlyProcessor ? args[2] : opts.infrastructure;
+  this.extensions =
+    (opts instanceof FurmlyProcessor ? args[2] : opts.extensions) || {};
 }
 /**
  * Run processor(s) created in constructor
@@ -54,15 +54,14 @@ FurmlySandbox.prototype.run = function(context, ttl, fn) {
     requireExternal: false,
     sandbox: {
       context: {
+        ...this.extensions,
         args: context,
         processors: this.processors.slice(),
         entityRepo: this.entityRepo,
-        infrastructure: this.infrastructure,
         postprocessors: [],
         processorsTimeout: ttl || 60000,
         systemEntities,
         constants,
-
         async,
         debug,
         elementFactory,

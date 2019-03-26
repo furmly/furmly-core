@@ -6,6 +6,7 @@
  */
 function FurmlyProcessor(opts) {
   this.debug = require("debug")("processor-constructor");
+  this.assert = require("assert");
   if (!opts.code) {
     this.debug(opts);
     throw new Error("Processor must include code to run.");
@@ -53,6 +54,30 @@ function FurmlyProcessor(opts) {
       callback = result;
       result = null;
     }
+    self.assert.strictEqual(
+      typeof callback === "function",
+      true,
+      "Processor callback must be a function"
+    );
+    const _callback = callback;
+    let callCount = 0;
+    callback = (...args) => {
+      if (callCount) {
+        this.debug(
+          `Processor "${self.title}" id:${
+            self._id
+          } is attempting to return twice`
+        );
+        return;
+      }
+      try {
+        callCount += 1;
+        _callback.apply(null, args);
+      } catch (e) {
+        this.debug("an error occurred in callback function");
+        this.debug(e);
+      }
+    };
     try {
       let code = self._code || self.code;
       self.validate();
@@ -111,6 +136,11 @@ FurmlyProcessor.prototype.save = function(fn) {
   }
   if (this.codeGenerator) {
     let { code, references = {} } = this.codeGenerator.optimize(model.code);
+    this.assert.strictEqual(
+      true,
+      typeof code === "string",
+      "Optimized Code must be a string"
+    );
     model._code = code;
     model._references = Object.keys(references);
   }

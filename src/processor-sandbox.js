@@ -92,7 +92,7 @@ module.exports = {
 			tasks.push(
 				async.timeout(cb => {
 					firstProcessor.process.call(module_context, cb);
-				}, context.processorsTimeout)
+				}, context.processorsTimeout,"Processor failed to return")
 			);
 
 			const process = (i, list, timeout) => {

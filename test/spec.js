@@ -1,9 +1,6 @@
 /*jshint esversion:6 */
 var sinon = require("sinon"),
   fs = require("fs"),
-  Db = require("mongodb").Db,
-  MongoClient = require("mongodb").MongoClient,
-  Server = require("mongodb").Server,
   _ = require("lodash"),
   config = require("../config")[process.env.profile || "unitTest"],
   app = require("../src/index.js")(config),
@@ -23,7 +20,7 @@ function clearCollection(name, fn) {
     delete mongoose.connection.models[name];
     delete mongoose.modelSchemas[name];
     delete mongoose.models[name];
-    //_debug(name);
+ 
     mongoose.connection.db.dropCollection(name.toLowerCase() + "s", function(
       er
     ) {
@@ -42,16 +39,13 @@ function clearCollection(name, fn) {
 }
 
 function wipeMongoSchemas(done) {
-  //mongoose.disconnect().then(() => {
   _debug("schemas wiped");
   mongoose.modelSchemas = {};
   mongoose.models = {};
   done();
-  //});
 }
 
 describe("Process spec", function() {
-  debugger;
   beforeEach(function() {
     var self = this;
     this.processes = {};
@@ -114,7 +108,6 @@ describe("Process spec", function() {
   });
 
   it("can describe its required steps", function(done) {
-    //  new app.Process({_id:'fake'})
     var step1 = {
         _id: "wonderful step"
       },
@@ -149,8 +142,7 @@ describe("Process spec", function() {
 
 describe("Step spec", function() {
   beforeEach(function() {
-    //var fakeForm = sinon.spy(app, 'Form');
-    //form.proto
+
     this.opts = {
       _id: "fake",
       save: function(fn) {
@@ -399,7 +391,7 @@ describe("Processor spec", function() {
     sandbox.getResult(function(er, result) {
       assert.isUndefined(result);
       assert.isNotNull(er);
-      assert.equal(er, "ETIMEDOUT");
+      assert.equal(er.code, "ETIMEDOUT");
     });
   });
 
@@ -439,6 +431,7 @@ describe("Processor spec", function() {
 describe("Entity spec", function() {
   let repo;
   beforeEach(function(done) {
+    this.timeout(10000);
     this.modelName = "User";
     this.modelPath = "./src/entities/{0}.json".replace("{0}", this.modelName);
     this.model = {
@@ -488,14 +481,9 @@ describe("Entity spec", function() {
     });
   });
 
-  function readFile(path) {
-    return JSON.parse(fs.readFileSync(path));
-  }
-
   it("entity configurations can be created", function(done) {
     var fixtures = this,
       spy = sinon.spy(function(er, r) {
-        debugger;
         assert.isNull(er);
         assert.isDefined(repo.refs[fixtures.modelName]);
         assert.equal(repo.refs[fixtures.modelName].length, 1);
@@ -516,7 +504,7 @@ describe("Entity spec", function() {
   });
   it("can embed schemas", function(done) {
     repo.createConfig(this.modelName, this.model, er => {
-      //debugger;
+      //
       assert.isNull(er);
       _debug("created user schema");
       repo.createConfig(this.extraModelName, this.extraModel, er => {
@@ -616,7 +604,7 @@ describe("Entity spec", function() {
         required: true
       };
       //update it
-      debugger;
+
       repo.updateConfig(fixtures.modelName, fixtures.model, function(er) {
         assert.isNull(er);
         //retrieve it
@@ -735,8 +723,8 @@ describe("Entity spec", function() {
   });
 });
 
-describe("Integration", function() {
-  describe("Process integration", function() {
+describe("Integration tests", function() {
+  describe("to confirm moving parts work together", function() {
     let flag = false,
       procCreated;
     before(function() {
@@ -751,6 +739,7 @@ describe("Integration", function() {
       });
     });
     beforeEach(function(done) {
+      this.timeout(10000);
       _debug("before each hook running");
       this.processInstance = {
         title: "Special Task",
@@ -787,7 +776,6 @@ describe("Integration", function() {
                   code: "this.debug('kedu'); callback(null,true)"
                 }
               ],
-              //save: this.elementSaveService,
               description: "This input is used to collect students first name",
               validators: []
             }
@@ -795,11 +783,12 @@ describe("Integration", function() {
         }
       };
       wipeMongoSchemas(() => {
-        //debugger;
+        //
         this.engine.init(done);
       });
     });
     afterEach(function(done) {
+      this.timeout(10000);
       var tasks = [];
       Object.keys(app.systemEntities).forEach(function(e) {
         e = app.systemEntities[e];
@@ -830,8 +819,6 @@ describe("Integration", function() {
     it("a process must be uniquely identifiable system-wide (must have a retrievable id)", function(done) {
       var fixture = this,
         rProc;
-      // fixture.engine.init(function(er) {
-      // 	assert.isUndefined(er);
       assert.equal(fixture.entityRepo.createSchemas.callCount > 0, true);
       _async.waterfall(
         [
@@ -861,7 +848,6 @@ describe("Integration", function() {
           done();
         }
       );
-      //	});
     });
 
     it("a process can describe itself", function(done) {
@@ -946,7 +932,6 @@ describe("Integration", function() {
       fixture.processInstance.steps.push(fixture.stepInstance);
       _async.waterfall(
         [
-          //				fixture.engine.init.bind(fixture.engine),
           fixture.engine.saveProcess.bind(
             fixture.engine,
             fixture.processInstance,
@@ -1040,6 +1025,7 @@ describe("Integration", function() {
     });
 
     it("processors can run optimizations on code", function(done) {
+      this.timeout(10000);
       let repo = new app.EntityRepo({
         config: Object.assign({}, config, {
           codeGenerator: {
@@ -1075,8 +1061,6 @@ describe("Integration", function() {
 
     it("processor sandbox context loads libs", function(done) {
       var fixture = this;
-      // fixture.engine.init(function(er) {
-      // 	assert.isUndefined(er);
       fixture.engine.saveLib(
         {
           code: "exports=function(x){return x * x;}",
@@ -1103,7 +1087,6 @@ describe("Integration", function() {
           );
         }
       );
-      //});
     });
 
     it("processors can load libs dynamically", function(done) {
@@ -1150,12 +1133,9 @@ describe("Integration", function() {
       );
     });
     it("init fires default-process event", function(done) {
-      // fixture.engine.init(function(er) {
-      // 	assert.isUndefined(er);
       assert.isTrue(flag);
       assert.isObject(procCreated);
       done();
-      // });
     });
     it("process can be saved and retrieved", function(done) {
       var fixture = this;
@@ -1191,17 +1171,14 @@ describe("Integration", function() {
       );
     });
     it("can auto generate process for managing an entity while generating schema", function(done) {
-      //this.timeout(300000);
+      
       var fixture = this,
         id = "fake_id",
         server = {
           defaultRole: "admin",
           saveClaim: sinon.spy(function() {
             var args = Array.prototype.slice.call(arguments);
-            // assert.equal(
-            // 	args[0].type,
-            // 	server.constants.CLAIMS.PROCESS
-            // );
+  
             args[0]._id = id;
             args[args.length - 1](null, args[0]);
           }),
@@ -1262,11 +1239,10 @@ describe("Integration", function() {
             ref: "Something"
           }
         };
-      fixture.engine.setInfrastructure({
-        server
+      fixture.engine.extendProcessorContext({
+        infrastructure: { server }
       });
-      // fixture.engine.init(function(er) {
-      // 	assert.isUndefined(er);
+
       fixture.engine.saveProcessor(
         {
           title: "testProc",
@@ -1284,7 +1260,7 @@ describe("Integration", function() {
           assert.isNull(er);
           _debug("crud calling proc");
           _debug(proc);
-          debugger;
+
           fixture.engine.runProcessor(
             {
               name: "Customer",
@@ -1313,7 +1289,6 @@ describe("Integration", function() {
           );
         }
       );
-      //});
     });
     it("processor can create an entity", function(done) {
       var fixture = this;

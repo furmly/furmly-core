@@ -1,8 +1,14 @@
 const _ = require("lodash");
- const  constants = require("./constants");
- const elementFactory = new (require("./element-factory"))();
- const glob = require("glob");
+const constants = require("./constants");
+const elementFactory = new (require("./element-factory"))();
+const glob = require("glob");
 
+function timer() {
+  const startTime = new Date().getTime();
+  return function() {
+    return (new Date().getTime() - startTime) / 1000;
+  };
+}
 Function.prototype.getFunctionBody = function() {
   var entire = this.toString();
   return entire.substring(entire.indexOf("{") + 1, entire.lastIndexOf("}"));
@@ -370,5 +376,6 @@ module.exports = {
   warn,
   freeze,
   knownElementsLocations,
-  searchForList
+  searchForList,
+  timer
 };

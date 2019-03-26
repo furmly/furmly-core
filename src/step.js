@@ -18,16 +18,14 @@ const constants = require("./constants"),
  * @param {Any} opts Object representation of a step or string with _id
  */
 function FurmlyStep(opts) {
-  var self = this;
   this._id = opts._id;
   this.stepType = opts.stepType;
   this._save = opts.save;
   this.mode = opts.mode;
   this.description = opts.description;
   this.commandLabel = opts.commandLabel;
-  var postprocessors = opts.postprocessors || [];
-  var _state = getState.call(this, opts);
-
+  let postprocessors = opts.postprocessors || [];
+  let _state = getState.call(this, opts);
   Object.defineProperties(this, {
     processors: {
       enumerable: false,
@@ -112,7 +110,7 @@ function FurmlyStep(opts) {
 
     this.form = opts.form;
     this.entityRepo = opts.entityRepo;
-    this.infrastructure = opts.infrastructure;
+    this.extensions = opts.extensions || {};
     /**
      * prepare for context for processors.
      * @param  {Object} opts object containing configuration,processors,postprocessors etc.
@@ -149,9 +147,7 @@ function FurmlyStep(opts) {
      * @return {Object}           Result of processor.
      */
     this.run = function(context, fn) {
-      debug(
-        `running client step with context ${misc.toObjectString(context)}`
-      );
+      debug(`running client step with context ${misc.toObjectString(context)}`);
       if (parent.mode == constants.STEPMODE.VIEW)
         return fn(new Error("Cannot process a view step"));
 
@@ -167,8 +163,8 @@ function FurmlyStep(opts) {
         requireExternal: false,
         sandbox: {
           context: Object.assign(_context, {
+            ...this.extensions,
             entityRepo: this.entityRepo,
-            infrastructure: this.infrastructure,
             systemEntities,
             constants,
             async,
