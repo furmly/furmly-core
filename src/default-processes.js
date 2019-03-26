@@ -13,7 +13,8 @@ module.exports = function(constants, systemEntities) {
    * @param  {Object} args        Specific Args of element required by the element type
    * @return {Object}             Object representing an element
    */
-  var createElement = misc.createElement;
+  const createElement = misc.createElement;
+  const required = () => [misc.createRequiredValidator()];
 
   function createId() {
     return createHidden("_id");
@@ -515,11 +516,6 @@ module.exports = function(constants, systemEntities) {
                                       constants.ELEMENTTYPE.SCRIPT
                                     )
                                   ]
-                                },
-                                {
-                                  id: constants.ELEMENTTYPE.MESSENGER,
-                                  displayLabel: "Chat Messenger",
-                                  elements: []
                                 },
                                 {
                                   id: constants.ELEMENTTYPE.WEBVIEW,
@@ -1172,6 +1168,12 @@ module.exports = function(constants, systemEntities) {
                                                 {
                                                   type: "JSON"
                                                 }
+                                              ),
+                                              createElement(
+                                                "keyProperty",
+                                                "Key Property",
+                                                "Property front end uses as the value when selected ( comma seperated )",
+                                                constants.ELEMENTTYPE.INPUT
                                               )
                                             ]
                                           }
@@ -1739,7 +1741,8 @@ module.exports = function(constants, systemEntities) {
               ]
             }
           ]
-        }
+        },
+        required()
       )
     ];
     var gui = createElement(
@@ -1765,7 +1768,8 @@ module.exports = function(constants, systemEntities) {
                     furmly_ref: templateName
                   },
                   itemTemplate: baseItemTemplate
-                }
+                },
+                required()
               )
             ]
           },
@@ -1777,7 +1781,9 @@ module.exports = function(constants, systemEntities) {
                 "value",
                 "Entity Template",
                 "",
-                constants.ELEMENTTYPE.SCRIPT
+                constants.ELEMENTTYPE.SCRIPT,
+                null,
+                required()
               )
             ]
           }
@@ -1827,8 +1833,7 @@ module.exports = function(constants, systemEntities) {
                       constants.ELEMENTTYPE.INPUT
                     )
                   ],
-                  templateConfig:
-                    '{"name":"basic","config":{"displayLabel":"Name"}}',
+                  templateConfig: '{"name":"basic","config":{"name":"Name"}}',
                   commands: [],
                   extra: {
                     createTemplate: [
@@ -1836,7 +1841,9 @@ module.exports = function(constants, systemEntities) {
                         "name",
                         "Entity Name",
                         "",
-                        constants.ELEMENTTYPE.INPUT
+                        constants.ELEMENTTYPE.INPUT,
+                        null,
+                        required()
                       ),
                       createElement(
                         "createCRUD",
@@ -1874,7 +1881,8 @@ module.exports = function(constants, systemEntities) {
                         constants.ELEMENTTYPE.INPUT,
                         {
                           type: constants.INPUTTYPE.PASSWORD
-                        }
+                        },
+                        required()
                       )
                     ],
                     createProcessor:
@@ -1889,7 +1897,8 @@ module.exports = function(constants, systemEntities) {
                         constants.ELEMENTTYPE.INPUT,
                         {
                           type: constants.INPUTTYPE.PASSWORD
-                        }
+                        },
+                        required()
                       )
                     ],
                     fetchSingleItemProcessor:
@@ -1915,12 +1924,23 @@ module.exports = function(constants, systemEntities) {
         constants.ELEMENTTYPE.INPUT,
         {
           type: constants.INPUTTYPE.TEXT
-        }
+        },
+        required()
       ),
+      createElement("uid", "Uid", "", constants.ELEMENTTYPE.INPUT),
       createElement("code", "Enter Code", "", constants.ELEMENTTYPE.SCRIPT),
       createElement(
         "requiresIdentity",
         "Requires Identity",
+        "",
+        constants.ELEMENTTYPE.INPUT,
+        {
+          type: constants.INPUTTYPE.CHECKBOX
+        }
+      ),
+      createElement(
+        "createClaim",
+        "Create claim if it does not exist",
         "",
         constants.ELEMENTTYPE.INPUT,
         {
@@ -1934,16 +1954,8 @@ module.exports = function(constants, systemEntities) {
         constants.ELEMENTTYPE.INPUT,
         {
           type: constants.INPUTTYPE.PASSWORD
-        }
-      ),
-      createElement(
-        "createClaim",
-        "Create claim if it does not exist",
-        "",
-        constants.ELEMENTTYPE.INPUT,
-        {
-          type: constants.INPUTTYPE.CHECKBOX
-        }
+        },
+        required()
       )
     ];
 
@@ -2018,7 +2030,8 @@ module.exports = function(constants, systemEntities) {
         constants.ELEMENTTYPE.INPUT,
         {
           type: constants.INPUTTYPE.PASSWORD
-        }
+        },
+        required()
       )
     ];
 

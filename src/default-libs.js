@@ -305,13 +305,13 @@ module.exports = function(constants) {
               this.async.parallel.bind(this.async, [
                 this.entityRepo.saveProcessor.bind(this.entityRepo, {
                   title: `Create ${entityName}`,
-                  code: `this.debug('creating new ${entityName}...'); \n this.entityRepo.create('${entityName}',this.args.entity,callback)`,
+                  code: `this.debug('creating new ${entityName}...'); \nthis.libs.isAuthorized.call(this,(er)=>{\nif(er) return callback(er);\nthis.entityRepo.create('${entityName}',this.args.entity,callback);\n})`,
                   uid: create_uid
                 }),
                 this.entityRepo.saveProcessor.bind(this.entityRepo, {
                   title: `Update ${entityName}`,
                   uid: update_uid,
-                  code: `this.debug('update ${entityName}...'); \n this.entityRepo.update('${entityName}',this.args.entity,callback)`
+                  code: `this.debug('update ${entityName}...'); \nthis.libs.isAuthorized.call(this,(er)=>{if(er) return callback(er);\nthis.entityRepo.update('${entityName}',this.args.entity,callback);\n})`
                 }),
                 this.entityRepo.saveProcessor.bind(this.entityRepo, {
                   title: `Get ${entityName}`,
@@ -752,6 +752,77 @@ module.exports = function(constants) {
         exports = ElementsConverter;
       }).getFunctionBody(),
       constants.UIDS.LIB.CONVERT_SCHEMA_TO_ELEMENTS
+    )
+    .createLib(
+      (() => {
+        exports = function(entityName, entityLabel, extend, fn) {
+          var options,
+            query = {},
+            self = this,
+            args = this.args,
+            entity = entityName;
+          if (Array.prototype.slice.call(arguments).length == 3) {
+            fn = extend;
+            extend = null;
+          }
+          if (this.args && this.args.count) {
+            options = {
+              limit: this.args.count,
+              sort: this.args.sort || {
+                _id: -1
+              }
+            };
+            if (this.args.depth) {
+              options.full = true;
+            }
+            if (this.args._id)
+              if (this.args.prev) {
+                query._id = {
+                  $gt: this.args._id
+                };
+                options.sort._id = 1;
+              } else {
+                query._id = {
+                  $lt: this.args._id
+                };
+              }
+          }
+
+          if (this.args.query) {
+            this.debug("query exists....");
+            Object.assign(query, this.libs.convertFilter(this.args.query));
+            this.debug(query);
+          }
+
+          if (this.$checkDomain && this.args.$user.domain) {
+            query.domain = { $in: [this.args.$user.domain, undefined, null] };
+          }
+          this.entityRepo.get(entity, query, options, function(er, x) {
+            if (er) return fn(er);
+            var result = !args.full
+              ? x.map(function(z) {
+                  return {
+                    _id: z._id,
+                    displayLabel: z[entityLabel]
+                  };
+                })
+              : extend
+              ? x.map(v => extend(v))
+              : x;
+            if (!args.count) fn(null, result);
+            else {
+              if (query._id) delete query._id;
+              self.entityRepo.count(entity, query, function(er, count) {
+                fn(er, {
+                  items: result,
+                  total: count
+                });
+              });
+            }
+          });
+        };
+      }).getFunctionBody(),
+      constants.UIDS.LIB.GET_ENTITY
     )
     .createLib(
       (() => {
