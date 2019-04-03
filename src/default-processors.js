@@ -57,7 +57,7 @@ module.exports = function(constants, systemEntities) {
                 inf.server.saveClaim.bind(inf.server, {
                   type: inf.server.constants.CLAIMS.PROCESSOR,
                   description: x.title,
-                  value: x.uid || x._id
+                  value: x._id
                 })
               ),
               er => {
@@ -74,36 +74,32 @@ module.exports = function(constants, systemEntities) {
             );
           }
 
-          inf.server.getClaims(
-            { $or: [{ value: proc._id }, { value: proc.uid }] },
-            (er, claim) => {
-              if (er)
-                return (
-                  this.debug("error occurred while querying claims"),
-                  callback(er)
-                );
-              if (!claim || !claim.length)
-                return inf.server.saveClaim(
-                  {
-                    type: inf.server.constants.CLAIMS.PROCESS,
-                    description: `${proc.title}`,
-                    value: proc.uid || proc._id
-                  },
-                  er => {
-                    if (er) return callback(er);
-                    callback(null, {
-                      message: `Successfully saved '${proc.title}' and claim`,
-                      _id: proc._id
-                    });
-                  }
-                );
+          inf.server.getClaims({ value: proc._id }, (er, claim) => {
+            if (er)
+              return (
+                this.debug("error occurred while querying claims"), callback(er)
+              );
+            if (!claim || !claim.length)
+              return inf.server.saveClaim(
+                {
+                  type: inf.server.constants.CLAIMS.PROCESS,
+                  description: `${proc.title}`,
+                  value: proc._id
+                },
+                er => {
+                  if (er) return callback(er);
+                  callback(null, {
+                    message: `Successfully saved '${proc.title}' and claim`,
+                    _id: proc._id
+                  });
+                }
+              );
 
-              return callback(null, {
-                message: `Saved '${this.args.process.title}'`,
-                _id: this.args.process._id
-              });
-            }
-          );
+            return callback(null, {
+              message: `Saved '${this.args.process.title}'`,
+              _id: this.args.process._id
+            });
+          });
         }
       );
     });
@@ -123,30 +119,27 @@ module.exports = function(constants, systemEntities) {
             });
           if (this.args.entity.createClaim) {
             let um = this.infrastructure.server;
-            um.getClaims(
-              { $or: [{ value: _p._id.toString() }, { value: _p.uid }] },
-              (er, claims) => {
-                if (!er && !claims.length) {
-                  return um.saveClaim(
-                    {
-                      type: um.constants.CLAIMS.PROCESSOR,
-                      description: _p.title,
-                      value: _p.uid || _p._id.toString()
-                    },
-                    er => {
-                      if (!er) {
-                        return callback(null, {
-                          message: `Successfully saved ${_p.title} and Claim`,
-                          id: _p._id
-                        });
-                      }
-                      return success();
+            um.getClaims({ value: _p._id.toString() }, (er, claims) => {
+              if (!er && !claims.length) {
+                return um.saveClaim(
+                  {
+                    type: um.constants.CLAIMS.PROCESSOR,
+                    description: _p.title,
+                    value: _p._id.toString()
+                  },
+                  er => {
+                    if (!er) {
+                      return callback(null, {
+                        message: `Successfully saved ${_p.title} and Claim`,
+                        id: _p._id
+                      });
                     }
-                  );
-                }
-                return success();
+                    return success();
+                  }
+                );
               }
-            );
+              return success();
+            });
             return;
           }
 
