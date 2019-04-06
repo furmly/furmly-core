@@ -20,7 +20,7 @@ function clearCollection(name, fn) {
     delete mongoose.connection.models[name];
     delete mongoose.modelSchemas[name];
     delete mongoose.models[name];
- 
+
     mongoose.connection.db.dropCollection(name.toLowerCase() + "s", function(
       er
     ) {
@@ -108,19 +108,21 @@ describe("Process spec", function() {
   });
 
   it("can describe its required steps", function(done) {
-    var step1 = {
-        _id: "wonderful step"
-      },
-      step2 = "awesome step",
-      fixture = this;
-    this.opts.steps[0].describe = sinon.spy(function(fn) {
-      fn(null, step1);
-    });
-    this.opts.steps.push({
+    const step1 = {
+      _id: "wonderful step",
+      describe: sinon.spy(function(fn) {
+        fn(null, step1);
+      })
+    };
+    const step2 = {
+      _id: "awesome step",
       describe: sinon.spy(function(fn) {
         fn(null, step2);
       })
-    });
+    };
+    const fixture = this;
+    this.opts.steps = [step1, step2];
+
     //because it has more than one step.
     this.opts.store = {};
     var processObj = new app.Process(this.opts);
@@ -142,7 +144,6 @@ describe("Process spec", function() {
 
 describe("Step spec", function() {
   beforeEach(function() {
-
     this.opts = {
       _id: "fake",
       save: function(fn) {
@@ -1171,14 +1172,13 @@ describe("Integration tests", function() {
       );
     });
     it("can auto generate process for managing an entity while generating schema", function(done) {
-      
       var fixture = this,
         id = "fake_id",
         server = {
           defaultRole: "admin",
           saveClaim: sinon.spy(function() {
             var args = Array.prototype.slice.call(arguments);
-  
+
             args[0]._id = id;
             args[args.length - 1](null, args[0]);
           }),

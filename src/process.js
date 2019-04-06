@@ -319,17 +319,24 @@ FurmlyProcess.prototype.describe = function(context, fn) {
     that = this,
     proc = Object.assign({}, _.pickBy(self, misc.notAFunction)),
     _allSteps = [];
-  //delete proc.fetchProcessor;
 
-  function collect(er, s) {
+  function collect(index, er, s) {
     if (er) return fn(er);
+    Object.defineProperties(s, {
+      index: {
+        enumerable: false,
+        get: function() {
+          return index;
+        }
+      }
+    });
     _allSteps.push(s);
 
     if (
       self.steps.length == _allSteps.length ||
       (context && context.$uiOnDemand === "true")
     ) {
-      proc.steps = _allSteps;
+      proc.steps = _allSteps.sort((a, b) => a.index - b.index);
       //fetch data if context and fetch processor are defined.
 
       if (self.fetchProcessor && context) {
@@ -347,7 +354,7 @@ FurmlyProcess.prototype.describe = function(context, fn) {
             }
           }
         });
-        //	context.$description = proc;
+
         new FurmlySandbox(self.fetchProcessor, self.entityRepo).run(
           context,
           function(er, result, modifiedProcess) {
@@ -365,11 +372,11 @@ FurmlyProcess.prototype.describe = function(context, fn) {
     }
   }
   if (!context || context.$uiOnDemand !== "true")
-    return self.steps.forEach(function(s) {
-      s.describe(collect);
+    return self.steps.forEach((s, index) => {
+      s.describe(collect.bind(this, index));
     });
 
-  self.steps[0].describe(collect);
+  self.steps[0].describe(collect.bind(this, 0));
 };
 
 module.exports = FurmlyProcess;
