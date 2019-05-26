@@ -22,7 +22,7 @@ const constants = require("./constants"),
   FurmlySandbox = require("./sandbox");
 
 mongoose.Promise = global.Promise;
-_elementFactory = new ElementFactory();
+const _elementFactory = new ElementFactory();
 
 /**
  * @typedef {ProcessorContext}
@@ -45,6 +45,37 @@ function blockSystemEntities() {
   return args[0].apply(this, args.slice(1));
 }
 
+//initialize the sandbox.
+const initSandbox = function() {
+  const params = {
+    entityRepo: this.getProcessorContext(),
+    extensions: this.extensions
+  };
+  this.sandbox = new FurmlySandbox(params);
+};
+
+// This function is used to extract values from libs.
+const extractValueFromLib = function() {
+  if (this.args.params) {
+    this.debug(this.args.params);
+    let [uid, ...params] = this.args.params.split("|");
+    uid = uid && uid.replace("$", "");
+    if (typeof this.libs[uid] == "undefined") {
+      callback(new Error("Undefined lib reference"));
+    } else {
+      if (Function.prototype.isPrototypeOf(this.libs[uid])) {
+        this.libs[uid].apply(this, params.concat(callback));
+      } else
+        callback(
+          null,
+          params.reduce((item, x) => {
+            if (item[x]) return item[x];
+            return item;
+          }, this.libs[uid])
+        );
+    }
+  } else callback();
+}.getFunctionBody();
 /**
  * This class contains the persistence logic for all entities.
  * @class
@@ -169,6 +200,8 @@ function EntityRepo(opts) {
     this.getConfigNames.apply(this, args);
   };
   this.getLibValue = this.getLibValue.bind(this);
+  this.runInSandbox = this.runInSandbox.bind(this);
+  this.runProcessor = this.runProcessor.bind(this);
   /**
    * @type {module:Furmly~ProcessorContext}
    * @property {module:Furmly.EntityRepo#queryEntity} get function for querying objects
@@ -284,7 +317,7 @@ function EntityRepo(opts) {
           //add entityRepo to process to allow fetch processor have an entityRepo while executing.
           //execute.
           if (item.fetchProcessor) {
-            item.entityRepo = self.processorEntityRepo;
+            item.runInSandbox = self.runInSandbox;
           }
           var itasks = [];
           item.steps.forEach(function(step) {
@@ -348,8 +381,7 @@ function EntityRepo(opts) {
         if (!item.save) item.save = self.getSaveService(systemEntities.step);
 
         if (item.stepType == constants.STEPTYPE.CLIENT) {
-          item.entityRepo = self.processorEntityRepo;
-          item.extensions = self.extensions;
+          item.runInSandbox = self.runInSandbox;
           tasks.push(function(callback) {
             self.transformers.form(item.form, function(er, form) {
               if (er) return callback(er);
@@ -433,6 +465,7 @@ function EntityRepo(opts) {
       }
 
       if (!item.getLibValue) item.getLibValue = self.getLibValue;
+      if (!item.runProcessor) item.runProcessor = self.runProcessor;
       if (!item.save) item.save = self.getSaveService(systemEntities.element);
 
       async.parallel(
@@ -526,31 +559,10 @@ function EntityRepo(opts) {
  * @param {Object} manager infrastructure
  */
 EntityRepo.prototype.extendProcessorContext = function(extensions) {
+  const oldEx = this.extensions;
   this.extensions = extensions;
+  this.resetSandbox = oldEx !== extensions && this.sandbox;
 };
-
-// This function is used to extract values from libs.
-const extractValueFromLib = function() {
-  if (this.args.params) {
-    this.debug(this.args.params);
-    let [uid, ...params] = this.args.params.split("|");
-    uid = uid && uid.replace("$", "");
-    if (typeof this.libs[uid] == "undefined") {
-      callback(new Error("Undefined lib reference"));
-    } else {
-      if (Function.prototype.isPrototypeOf(this.libs[uid])) {
-        this.libs[uid].apply(this, params.concat(callback));
-      } else
-        callback(
-          null,
-          params.reduce((item, x) => {
-            if (item[x]) return item[x];
-            return item;
-          }, this.libs[uid])
-        );
-    }
-  } else callback();
-}.getFunctionBody();
 
 /**
  * Used by elements/validators when describing themselves to resolve library values.
@@ -559,18 +571,50 @@ const extractValueFromLib = function() {
  * @return {Void}          [description]
  */
 EntityRepo.prototype.getLibValue = function(params, fn) {
-  new FurmlySandbox({
-    processors: [
-      new FurmlyProcessor({
-        title: "dynamic processor",
-        code: extractValueFromLib,
-        _id: "dynamic",
-        _references: [params.split("|")[0].replace("$", "")],
-        save: () => {}
-      })
-    ],
-    entityRepo: this.getProcessorContext()
-  }).run({ params }, fn);
+  this.runInSandbox(
+    {
+      processors: [
+        new FurmlyProcessor({
+          title: "dynamic processor",
+          code: extractValueFromLib,
+          _id: "dynamic",
+          _references: [params.split("|")[0].replace("$", "")],
+          save: () => {}
+        })
+      ],
+      includeExtensions: true,
+      context: { params }
+    },
+    fn
+  );
+};
+
+EntityRepo.prototype.runInSandbox = function(
+  { processors, postProcessors = [], context = {}, includeExtensions = false },
+  fn
+) {
+  if (!this.sandbox || this.resetSandbox) {
+    initSandbox.call(this);
+  }
+  this.sandbox.run(
+    { processors, postProcessors, includeExtensions, context },
+    fn
+  );
+};
+
+EntityRepo.prototype.runProcessor = function(processor, context, fn) {
+  if (!processor)
+    throw new Error("Either processor _id or uid must be supplied");
+  let query;
+  if (this.isValidID(processor)) {
+    query = { _id: processor };
+  } else {
+    query = { uid: processor };
+  }
+  this.queryEntity(systemEntities.processor, query, (er, processors) => {
+    if (er) return fn(er);
+    this.runInSandbox({ processors, includeExtensions: true, context }, fn);
+  });
 };
 
 /**

@@ -3,7 +3,6 @@ const assert = require("assert"),
   misc = require("./misc"),
   async = require("async"),
   _ = require("lodash"),
-  FurmlySandbox = require("./sandbox"),
   FurmlyStep = require("./step"),
   constants = require("./constants");
 /**
@@ -26,8 +25,8 @@ function FurmlyProcess(opts) {
 
   if (!opts.save) throw new Error("Process needs save service for persistence");
 
-  if (opts.fetchProcessor && !opts.entityRepo)
-    throw new Error("Fetch Processor needs the entityRepo to function");
+  if (opts.fetchProcessor && !opts.runInSandbox)
+    throw new Error("Fetch Processor needs the runInSandbox to function");
 
   this._id = opts._id;
   this.description = opts.description;
@@ -35,7 +34,6 @@ function FurmlyProcess(opts) {
   this.version = opts.version;
   this.requiresIdentity = opts.requiresIdentity;
   this.disableBackwardNavigation = opts.disableBackwardNavigation;
-  //this.fetchProcessor = opts.fetchProcessor;
   this._save = opts.save;
   if (opts.uid) this.uid = opts.uid;
   Object.defineProperties(self, {
@@ -60,10 +58,10 @@ function FurmlyProcess(opts) {
         return opts.fetchProcessor;
       }
     },
-    entityRepo: {
+    runInSandbox: {
       enumerable: false,
       get: function() {
-        return opts.entityRepo;
+        return opts.runInSandbox;
       }
     },
     store: {
@@ -83,24 +81,6 @@ FurmlyProcess.prototype.validate = function(fn) {
   if (!this._id) fn(new Error("Process must have an id"));
 };
 
-/**
- * Utility function for updating a process properties. Primarily used during initialization
- * @param  {Object} opts Object or Type of FurmlyProcess
- * @return {Void}      Nothing.
- */
-FurmlyProcess.prototype.updateProps = function(opts) {
-  if (opts.steps) {
-    let steps = opts.steps;
-    delete opts.steps;
-
-    steps.forEach((x, index) => {
-      if (this.steps.length < index)
-        this.steps[index].updateProps(steps[index]);
-      else this.steps.push(steps[index]);
-    });
-  }
-  Object.assign(this, opts);
-};
 /**
  * This function chooses and runs the current step
  * @param  {Any}   context contains the details of the request in question.
@@ -216,7 +196,7 @@ FurmlyProcess.prototype.run = function(context, fn) {
       if (context.$instanceId && !currentStep) {
         return fn(
           new Error(
-            "We are sorry but we no longer have the previous information you' submitted. Please restart the process..."
+            "We are sorry but we no longer have the previous information you submitted. Please restart the process..."
           )
         );
       }
@@ -250,11 +230,6 @@ FurmlyProcess.prototype.run = function(context, fn) {
   processStep();
 };
 
-FurmlyProcess.prototype.goBack = function(context, fn) {
-  if (context.$instanceId) {
-    this.store.get(context.$instanceId, (er, info) => {});
-  }
-};
 /**
  * saves the process/children using persistence service.
  * @param  {Function} fn callback
@@ -273,7 +248,6 @@ FurmlyProcess.prototype.save = function(fn) {
       async.parallel.bind(async, tasks),
       (ids, callback) => {
         //ids will contain the newly saved ids
-        var fetchProcessorId = null;
         var mergedIds = _.map(ids, "_id");
         callback(null, {
           _id: self._id,
@@ -355,8 +329,8 @@ FurmlyProcess.prototype.describe = function(context, fn) {
           }
         });
 
-        new FurmlySandbox(self.fetchProcessor, self.entityRepo).run(
-          context,
+        self.runInSandbox(
+          { processors: [self.fetchProcessor], context },
           function(er, result, modifiedProcess) {
             if (er)
               return (

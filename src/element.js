@@ -36,6 +36,10 @@ function FurmlyElement(opts) {
       enumerable: false,
       value: opts.getLibValue
     },
+    runProcessor: {
+      enumerable: false,
+      value: opts.runProcessor
+    },
     dynamicFields: {
       enumerable: false,
       value: [
@@ -50,6 +54,12 @@ function FurmlyElement(opts) {
   });
 }
 
+FurmlyElement.prototype.getServices = function() {
+  return {
+    getLibValue: this.getLibValue,
+    runProcessor: this.runProcessor
+  };
+};
 FurmlyElement.prototype.getValue = function(value, fn) {
   if (this.isLibValue(value)) {
     if (!this.getLibValue)

@@ -20,7 +20,6 @@ const constants = require("./constants"),
  * @param {Object} opts Constructor arguments
  */
 function FurmlyEngine(opts) {
-
   debug("constructing furmly engine...");
   if (!opts) throw new Error("opts must be valid");
 
@@ -189,16 +188,13 @@ FurmlyEngine.prototype.isValidID = function(id) {
 };
 FurmlyEngine.prototype.extendProcessorContext = function(extensions) {
   this.entitiesRepository.extendProcessorContext(extensions);
-  this.extensions = extensions;
 };
 
 FurmlyEngine.prototype.runProcessor = function(context, processor, fn) {
-  var sandbox = new FurmlySandbox(
-    processor,
-    this.entitiesRepository.getProcessorContext(),
-    this.extensions
+  this.entitiesRepository.runInSandbox(
+    { processors: [processor], context, includeExtensions: true },
+    fn
   );
-  sandbox.run(context, fn);
 };
 
 /**
@@ -282,7 +278,6 @@ FurmlyEngine.prototype.createId = function(...args) {
   return this.entitiesRepository.createId.apply(null, args);
 };
 
-
 Object.keys(systemEntities).forEach(function(key) {
   var cap = misc.capitalizeText(key);
   var entName = systemEntities[key];
@@ -308,6 +303,5 @@ Object.keys(systemEntities).forEach(function(key) {
     this.entitiesRepository.deleteEntity(systemEntities[key], id, fn);
   };
 });
-
 
 module.exports = FurmlyEngine;

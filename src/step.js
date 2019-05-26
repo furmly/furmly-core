@@ -1,16 +1,10 @@
 const constants = require("./constants"),
-  fs = require("fs"),
   debug = require("debug")("sandbox"),
   async = require("async"),
-  systemEntities = constants.systemEntities,
   misc = require("./misc"),
-  path = require("path"),
-  uuid = require("uuid"),
   assert = require("assert"),
-  _ = require("lodash"),
-  elementFactory = new (require("./element-factory"))(),
-  sandboxCode = fs.readFileSync(__dirname + path.sep + "processor-sandbox.js"),
-  { NodeVM } = require("vm2");
+  _ = require("lodash");
+
 /**
  * This represents a furmly step. Steps could  require user input or not.
  * @constructor
@@ -103,28 +97,15 @@ function FurmlyStep(opts) {
   function Client(parent, opts) {
     if (!opts.form) throw new Error("Client Step must have a form");
 
-    if (!opts.entityRepo)
-      throw new Error("opts.entityRepo is required for this type of processor");
+    if (!opts.runInSandbox)
+      throw new Error(
+        "opts.runInSandbox is required for this type of processor"
+      );
 
     assert.equal(typeof opts.form.describe == "function", true);
 
     this.form = opts.form;
-    this.entityRepo = opts.entityRepo;
-    this.extensions = opts.extensions || {};
-    /**
-     * prepare for context for processors.
-     * @param  {Object} opts object containing configuration,processors,postprocessors etc.
-     * @return {Object}      configured context.
-     */
-    function prepareContext(opts) {
-      var _context = {};
-      _context.args = opts.args;
-      _context.postprocessors = _.cloneDeep(opts.postprocessors);
-      _context.processors = _.cloneDeep(opts.processors);
-      _context.postprocessorsTimeout = parent.config.postprocessors.ttl;
-      _context.processorsTimeout = parent.config.processors.ttl;
-      return _context;
-    }
+    this.runInSandbox = opts.runInSandbox;
 
     /**
      * Called by Step when it is being saved.
@@ -151,37 +132,27 @@ function FurmlyStep(opts) {
       if (parent.mode == constants.STEPMODE.VIEW)
         return fn(new Error("Cannot process a view step"));
 
-      var serverProcessors = parent.processors,
-        _context = prepareContext({
-          processors: serverProcessors,
-          args: context,
-          postprocessors: parent.postprocessors
-        });
+      const processors = _.cloneDeep(parent.processors);
+      const postProcessors = _.cloneDeep(parent.postprocessors);
+      this.runInSandbox(
+        {
+          processors,
+          postProcessors,
+          context,
+          includeExtensions: true,
+          etc: {
+            postprocessorsTimeout: parent.config.postprocessors.ttl,
+            processorsTimeout: parent.config.processors.ttl
+          }
+        },
+        function(er, result) {
+          if (er) return fn(er);
 
-      var vm = new NodeVM({
-        require: false,
-        requireExternal: false,
-        sandbox: {
-          context: Object.assign(_context, {
-            ...this.extensions,
-            entityRepo: this.entityRepo,
-            systemEntities,
-            constants,
-            async,
-            debug,
-            uuid,
-            elementFactory
-          })
+          return (
+            (parent.status = constants.STEPSTATUS.COMPLETED), fn(null, result)
+          );
         }
-      });
-      var handle = vm.run(sandboxCode);
-      handle.getResult(function(er, result) {
-        if (er) return fn(er);
-
-        return (
-          (parent.status = constants.STEPSTATUS.COMPLETED), fn(null, result)
-        );
-      });
+      );
     };
 
     this.describe = function(fn) {

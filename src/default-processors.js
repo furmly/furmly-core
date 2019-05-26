@@ -190,6 +190,7 @@ module.exports = function(constants, systemEntities) {
     else callback(null, null);
   }).getFunctionBody();
   const listEntityTemplate = (() => {
+    debugger;
     var options,
       query = {},
       self = this,

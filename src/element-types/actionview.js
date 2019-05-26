@@ -15,7 +15,7 @@ class ActionView extends FurmlyElement {
     super(opts);
     //add actionview invariants here.
     this.invariants();
-    convert(factory, this.args, "elements");
+    convert(factory, this.args, "elements", super.getServices());
   }
   describe(fn) {
     async.waterfall(

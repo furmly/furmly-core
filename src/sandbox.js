@@ -1,15 +1,14 @@
-const { NodeVM } = require("vm2"),
+const { NodeVM, VMScript } = require("vm2"),
   constants = require("./constants"),
   systemEntities = constants.systemEntities,
   async = require("async"),
+  uuid = require("uuid/v4"),
   debug = require("debug")("sandbox"),
-  FurmlyProcessor = require("./processor"),
   path = require("path"),
   sandboxCode = require("fs").readFileSync(
     __dirname + path.sep + "processor-sandbox.js"
   ),
-  elementFactory = new (require("./element-factory"))(),
-  uuid = require("uuid");
+  elementFactory = new (require("./element-factory"))();
 
 /**
  * Class used for running processors that are not part of a steps chain of processors
@@ -17,59 +16,52 @@ const { NodeVM } = require("vm2"),
  * @memberOf module:Furmly
  * @param {Object} opts Class constructor options , including entityRepo and processors.
  */
-function FurmlySandbox(opts) {
-  var args;
-  if (
-    !opts ||
-    (!(opts instanceof FurmlyProcessor) &&
-      (!opts.processors || !opts.processors.length))
-  )
-    throw new Error("A sandbox needs atleast one processor to run");
+function FurmlySandbox({ entityRepo, extensions = {} }) {
+  if (!entityRepo) throw new Error("EntityRepo is required by all processors");
 
-  if (
-    !opts.entityRepo &&
-    opts instanceof FurmlyProcessor &&
-    (args = Array.prototype.slice.call(arguments)).length == 1
-  )
-    throw new Error("EntityRepo is required by all processors");
-
-  this.processors = opts instanceof FurmlyProcessor ? [opts] : opts.processors;
-  this.entityRepo = opts instanceof FurmlyProcessor ? args[1] : opts.entityRepo;
-  this.extensions =
-    (opts instanceof FurmlyProcessor ? args[2] : opts.extensions) || {};
+  this.script = new VMScript(sandboxCode);
+  this.extensions = extensions;
+  this.entityRepo = entityRepo;
 }
+
+FurmlySandbox.prototype.getSandbox = function(
+  { processors, postProcessors, context, etc = {}, includeExtensions = false },
+  fn
+) {
+  const _c = {
+    processorsTimeout: 60000,
+    ...(etc || {}),
+    args: context,
+    entityRepo: this.entityRepo,
+    systemEntities,
+    constants,
+    processors,
+    postProcessors,
+    async,
+    debug,
+    elementFactory,
+    uuid,
+    returnResult: fn
+  };
+  if (includeExtensions) Object.assign(_c, { ...this.extensions });
+  return new NodeVM({
+    require: false,
+    requireExternal: false,
+    sandbox: {
+      context: _c
+    }
+  });
+};
+
 /**
  * Run processor(s) created in constructor
  * @param  {Object}   context Processor context
  * @param  {Function} fn      Callback
  * @return {Object}           Result of operation
  */
-FurmlySandbox.prototype.run = function(context, ttl, fn) {
-  if (Array.prototype.slice.call(arguments).length == 2) {
-    fn = ttl;
-    ttl = null;
-  }
-  let vm = new NodeVM({
-    require: false,
-    requireExternal: false,
-    sandbox: {
-      context: {
-        ...this.extensions,
-        args: context,
-        processors: this.processors.slice(),
-        entityRepo: this.entityRepo,
-        postprocessors: [],
-        processorsTimeout: ttl || 60000,
-        systemEntities,
-        constants,
-        async,
-        debug,
-        elementFactory,
-        uuid
-      }
-    }
-  });
-  let handle = vm.run(sandboxCode);
-  handle.getResult(fn);
+FurmlySandbox.prototype.run = function(args, fn) {
+  const vm = this.getSandbox(args, fn);
+  // then run script
+  vm.run(this.script);
 };
 module.exports = FurmlySandbox;

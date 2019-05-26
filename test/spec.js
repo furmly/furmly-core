@@ -150,7 +150,7 @@ describe("Step spec", function() {
         fn();
       },
       stepType: app.constants.STEPTYPE.CLIENT,
-      entityRepo: {},
+      runInSandbox: function() {},
       form: {
         describe: function() {}
       },
@@ -386,45 +386,45 @@ describe("Processor spec", function() {
 
   it("can timeout processor after configured period", function() {
     this.locals.context.processors[0].code = " 'did nothing'; ";
-    var sandbox = Sandbox.require("../src/processor-sandbox", {
-      locals: this.locals
-    });
-    sandbox.getResult(function(er, result) {
+    this.locals.context.returnResult = function(er, result) {
       assert.isUndefined(result);
       assert.isNotNull(er);
       assert.equal(er.code, "ETIMEDOUT");
+    };
+    Sandbox.require("../src/processor-sandbox", {
+      locals: this.locals
     });
   });
 
   it("can skip a processor", function(done) {
+    const fixtures = this;
     this.locals.context.processors[0].code =
       "this.skip['faker']=true; " + this.locals.context.processors[0].code;
-    var sandbox = Sandbox.require("../src/processor-sandbox", {
-        locals: this.locals
-      }),
-      fixtures = this;
-    sandbox.getResult(function(er, result) {
+    this.locals.context.returnResult = function(er, result) {
       assert.isDefined(result);
       assert.isNotNull(result);
       assert.isNull(er);
       assert.equal(result.indexOf(fixtures.message1) !== -1, true);
       assert.equal(result.indexOf(fixtures.message2) == -1, true);
       done();
+    };
+    Sandbox.require("../src/processor-sandbox", {
+      locals: this.locals
     });
   });
 
   it("can run multple processors", function(done) {
-    var sandbox = Sandbox.require("../src/processor-sandbox", {
-        locals: this.locals
-      }),
-      fixtures = this;
-    sandbox.getResult(function(er, result) {
+    const fixtures = this;
+    this.locals.context.returnResult = function(er, result) {
       assert.isDefined(result);
       assert.isNotNull(result);
       assert.isNull(er);
       assert.equal(result.indexOf(fixtures.message1) !== -1, true);
       assert.equal(result.indexOf(fixtures.message2) !== -1, true);
       done();
+    };
+    Sandbox.require("../src/processor-sandbox", {
+      locals: this.locals
     });
   });
 });
@@ -883,7 +883,7 @@ describe("Integration tests", function() {
     it("a process can run its processors", function(done) {
       var fixture = this,
         runningProcess;
-
+      this.timeout(10000);
       fixture.processInstance.steps.push(fixture.stepInstance);
       var diffStep = _.cloneDeep(fixture.stepInstance);
       diffStep.processors[0].code =
@@ -1172,6 +1172,8 @@ describe("Integration tests", function() {
       );
     });
     it("can auto generate process for managing an entity while generating schema", function(done) {
+      this.timeout(520000);
+      debugger;
       var fixture = this,
         id = "fake_id",
         server = {
@@ -1261,30 +1263,37 @@ describe("Integration tests", function() {
           _debug("crud calling proc");
           _debug(proc);
 
-          fixture.engine.runProcessor(
-            {
-              name: "Customer",
-              displayProperty: "name",
-              group: "Customer Management",
-              category: "MAINMENU"
-            },
-            proc,
-            function(er, result) {
+          fixture.engine.createEntityConfiguration(
+            "Something",
+            testFixture,
+            er => {
               assert.isNull(er);
-              assert.equal(server.saveClaim.callCount, 4);
-              assert.equal(server.addClaimToRole.callCount, 4);
-              assert.equal(server.saveMenu.callCount, 1);
+              fixture.engine.runProcessor(
+                {
+                  name: "Customer",
+                  displayProperty: "name",
+                  group: "Customer Management",
+                  category: "MAINMENU"
+                },
+                proc,
+                function(er, result) {
+                  assert.isNull(er);
+                  assert.equal(server.saveClaim.callCount, 4);
+                  assert.equal(server.addClaimToRole.callCount, 4);
+                  assert.equal(server.saveMenu.callCount, 1);
 
-              fixture.engine.queryProcess({}, function(er, processes) {
-                processes[processes.length - 1].describe(function(er, res) {
-                  assert.equal(
-                    res.steps[0].form.elements[0].args.extra.editTemplate
-                      .length,
-                    8
-                  );
-                  done();
-                });
-              });
+                  fixture.engine.queryProcess({}, function(er, processes) {
+                    processes[processes.length - 1].describe(function(er, res) {
+                      assert.equal(
+                        res.steps[0].form.elements[0].args.extra.editTemplate
+                          .length,
+                        8
+                      );
+                      done();
+                    });
+                  });
+                }
+              );
             }
           );
         }

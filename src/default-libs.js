@@ -297,7 +297,9 @@ module.exports = function(constants) {
             server = self.infrastructure.server;
           if (!server)
             return fn(
-              new Error("Entity Repo does not provide a means of creating menus")
+              new Error(
+                "Entity Repo does not provide a means of creating menus"
+              )
             );
 
           this.async.waterfall(
@@ -693,9 +695,11 @@ module.exports = function(constants) {
                   config: {
                     value: this.processors[
                       this.constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC
-                    ]._id
-                  },
-                  customArgs: `{"entityName":"${data.ref}",entityLabel:"name"}`
+                    ]._id,
+                    customArgs: `{"entityName":"${
+                      data.ref
+                    }","entityLabel":"name"}`
+                  }
                 }
               );
             }
