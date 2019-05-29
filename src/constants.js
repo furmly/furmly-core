@@ -91,7 +91,8 @@ function createConstants() {
         "CREATE_ENTITY",
         "UPDATE_ENTITY",
         "FETCH_ENTITY",
-        "MENU_FILTER"
+        "MENU_FILTER",
+        "EXPORT_PROCESS"
       ),
       PROCESS: new Constant(
         "MANAGE_ENTITY_SCHEMA",

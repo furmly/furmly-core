@@ -432,7 +432,31 @@ module.exports = function(constants, systemEntities) {
       );
     });
   }).getFunctionBody();
+  const exportProcessCode = (() => {
+    this.entityRepo.getProcess(
+      { _id: { $in: this.args.items.map(x => x._id) } },
+      (er, procs) => {
+        if (er) return callback(er);
 
+        this.async.parallel(
+          procs.map(x => x.describe.bind(x)),
+          (er, result) => {
+            if (er) return callback(er);
+           
+            callback(null, {
+              name: "result",
+              label: "",
+              uid: "JSONVIEW",
+              description: result
+                .map(x => JSON.stringify(x, null, " "))
+                .join("\n"),
+              elementType: this.constants.ELEMENTTYPE.LABEL
+            });
+          }
+        );
+      }
+    );
+  }).getFunctionBody();
   return createProcessor
     .call(
       {},
@@ -443,6 +467,11 @@ module.exports = function(constants, systemEntities) {
         .replace("$parameters", "entity,query")
         .replace("$label", "[args.entityLabel]"),
       constants.UIDS.PROCESSOR.LIST_ENTITY_GENERIC
+    )
+    .createProcessor(
+      "Export Process",
+      exportProcessCode,
+      constants.UIDS.PROCESSOR.EXPORT_PROCESS
     )
     .createProcessor(
       "Lists processors",

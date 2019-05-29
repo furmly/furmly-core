@@ -16,6 +16,7 @@ class Selectset extends FurmlyElement {
       });
     }
     this.dynamicFields.push("args.items.displayLabel");
+    this.factory = factory;
   }
   describe(fn) {
     super.describe((er, description) => {
@@ -25,6 +26,23 @@ class Selectset extends FurmlyElement {
       if (this.args.items && this.args.items.length) {
         description.args.items.forEach(x => {
           tasks.push(misc.describeAll.bind(null, x, "elements"));
+        });
+      } else {
+        tasks.push(cb => {
+          this.runProcessor(this.args.processor, {}, (er, items) => {
+            if (er) return cb(er);
+            const services = this.getServices();
+            items.forEach(option => {
+              misc.convert(this.factory, option, "elements", services);
+            });
+            description.args.items = items;
+            async.parallel(
+              items.map(element =>
+                misc.describeAll.bind(null, element, "elements")
+              ),
+              cb
+            );
+          });
         });
       }
       if (tasks.length)
@@ -40,7 +58,7 @@ class Selectset extends FurmlyElement {
     let element = super.describeSync(),
       args = element.args;
     if (args.items && args.items.length) {
-      args.items.forEach((x, index) => {
+      args.items.forEach(x => {
         misc.describeAllSync(x, "elements");
       });
     }

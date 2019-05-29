@@ -1026,7 +1026,7 @@ describe("Integration tests", function() {
     });
 
     it("processors can run optimizations on code", function(done) {
-      this.timeout(10000);
+      this.timeout(8000);
       let repo = new app.EntityRepo({
         config: Object.assign({}, config, {
           codeGenerator: {
@@ -1172,8 +1172,7 @@ describe("Integration tests", function() {
       );
     });
     it("can auto generate process for managing an entity while generating schema", function(done) {
-      this.timeout(520000);
-      debugger;
+      this.timeout(4000);
       var fixture = this,
         id = "fake_id",
         server = {

@@ -16,7 +16,6 @@ class Select extends FurmlyElement {
         this.args.type === _constants.ELEMENT_SELECT_SOURCETYPE.PROCESSOR &&
         this.args.config.value
       ) {
-		  debugger;
         this.runProcessor(
           this.args.config.value,
           (this.args.config &&
