@@ -1,2 +1,0 @@
-1) NEVER EVER EVER Create a process or a processor without 
-making sure the caller of the method is authorized (i.e by calling this.libs.isAuthorized(fn(er: Error,result: bool)).

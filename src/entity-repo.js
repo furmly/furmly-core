@@ -3,7 +3,6 @@ const constants = require("./constants"),
   systemEntities = constants.systemEntities,
   async = require("async"),
   misc = require("./misc"),
-  vm = require("vm"),
   _ = require("lodash"),
   debug = require("debug")("entity-repo"),
   generator = require("mongoose-gen"),
@@ -823,6 +822,7 @@ EntityRepo.prototype.getConfigNames = function(
       if (includeInternalSchema) {
         schemas.push(this.$_schema_Schema);
       }
+      console.log("got here");
       return fn(null, (!includeSchema && schemas.map(x => x.name)) || schemas);
     });
 };
@@ -928,6 +928,9 @@ EntityRepo.prototype.queryEntity = function(name, filter, options, fn) {
           if (options && options.one && transformed)
             transformed = transformed.length ? transformed[0] : null;
 
+          if (options && !options.one && !transformed.length) {
+            debug(name);
+          }
           fn(null, transformed);
         }
       );
@@ -1066,7 +1069,7 @@ EntityRepo.prototype.updateEntity = function(name, data, fn) {
 
 EntityRepo.prototype.saveSystemEntity = function(
   entName,
-  systemEntityKey,
+  key,
   data,
   options,
   fn
@@ -1081,7 +1084,7 @@ EntityRepo.prototype.saveSystemEntity = function(
       model.save((er, item) => {
         if (er) return fn(er);
         if (options && options.retrieve) {
-          this.queryEntity(entName, item, function(e, x) {
+          this.queryEntity(entName, { _id: item._id }, function(e, x) {
             fn(e, x && x[0]);
           });
           return;
@@ -1200,17 +1203,6 @@ EntityRepo.prototype.deleteEntity = function(name, id, fn) {
 EntityRepo.prototype.createSchemas = function(fn) {
   var self = this;
   let fetchSchemaTimer = misc.timer();
-  function createRunContext(code) {
-    return function(value) {
-      var sandbox = {
-        value: value
-      };
-      var script = new vm.Script(code);
-      var context = new vm.createContext(sandbox);
-      script.runInNewContext(context);
-      return !!sandbox.result;
-    };
-  }
   function containsSchema(string) {
     let exp = /"schema"\s*\:\s*"(\w+)"/gi,
       match,
@@ -1348,20 +1340,18 @@ EntityRepo.prototype.createSchemas = function(fn) {
     return refs;
   }
 
-  function registerValidator(result, callback) {
-    var that = this;
-    self.getValidator(this.name, function(er, v) {
-      if (er) return callback(er);
-      if (!self.validators[that.name])
-        generator.setValidator(
-          that.name,
-          (self.validators[that.name] = createRunContext(v.code))
-        );
-
-      return callback();
-    });
+  function registerValidator(callback) {
+    if (self.config.validators) {
+      if (!self.config.validators[this.name]) {
+        debug(`Unknown validator ${this.name}`);
+        return setImmediate(callback);
+      }
+      this.validators[this.name] = self.config.validators;
+      generator.setValidator(this.name, this.validators[this.name]);
+    }
+    setImmediate(callback);
   }
-
+  const validate_exp = /"validate"\s*\:\s*"(\w+)"/gi;
   function parseEntities(files, fn) {
     const parseTimer = misc.timer();
     var tasks = [
@@ -1376,7 +1366,6 @@ EntityRepo.prototype.createSchemas = function(fn) {
       if (files.hasOwnProperty(prop)) {
         let item = parse(files[prop], files);
 
-        var validate_exp = /"validate"\s*\:\s*"(\w+)"/gi;
         var match = validate_exp.exec(item);
         while (match) {
           tasks.push(
@@ -1390,41 +1379,41 @@ EntityRepo.prototype.createSchemas = function(fn) {
         // Generate the Schema object.
         tasks.push(
           async.timeout(_fn => {
-            let dependencies,
-              _continue = function(callback, prop, er) {
-                if (er) return callback(er);
-                assigned[prop] = 1;
+            let dependencies;
+            let _continue = function(callback, prop, er) {
+              if (er) return callback(er);
+              assigned[prop] = 1;
 
-                //find out if some models have met their conditions required to resolve
-                if (deffered.length) {
-                  let resolve = [],
-                    tobeRemoved = [];
-                  deffered.forEach((x, index) => {
-                    if (_.isMatch(assigned, x)) {
-                      tobeRemoved.push(x);
-                      resolve.push(cb => {
-                        assignModel.call(
-                          {
-                            item: x.description,
-                            prop: x.name
-                          },
-                          _continue.bind(this, cb, x.name)
-                        );
-                      });
-                    }
-                  });
-                  if (resolve.length) {
-                    //remove all the deferred guys about to be executed.
-                    tobeRemoved.forEach(x => {
-                      deffered.splice(deffered.indexOf(x), 1);
-                    });
-                    return async.parallel(resolve, (er, items) => {
-                      return (er && callback(er)) || callback();
+              //find out if some models have met their conditions required to resolve
+              if (deffered.length) {
+                let resolve = [],
+                  tobeRemoved = [];
+                deffered.forEach((x, index) => {
+                  if (_.isMatch(assigned, x)) {
+                    tobeRemoved.push(x);
+                    resolve.push(cb => {
+                      assignModel.call(
+                        {
+                          item: x.description,
+                          prop: x.name
+                        },
+                        _continue.bind(this, cb, x.name)
+                      );
                     });
                   }
+                });
+                if (resolve.length) {
+                  //remove all the deferred guys about to be executed.
+                  tobeRemoved.forEach(x => {
+                    deffered.splice(deffered.indexOf(x), 1);
+                  });
+                  return async.parallel(resolve, (er, items) => {
+                    return (er && callback(er)) || callback();
+                  });
                 }
-                callback();
-              };
+              }
+              callback();
+            };
             if (
               (dependencies = containsSchema(item)) &&
               !debug(dependencies) &&

@@ -849,7 +849,8 @@ module.exports = function(constants) {
                 "Entity Repo does not provide a means of checking user password"
               )
             );
-
+          console.log(this.args);
+          console.log(this.args.$password);
           if (!user || !password) return fn(new Error("Invalid Credentials"));
 
           server.checkPassword(

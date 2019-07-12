@@ -4,8 +4,8 @@
   "description": "This is the backend processor for configurable dynamic tasks",
   "main": "./src/index.js",
   "scripts": {
-    "test": "set profile=unitTest&& mocha --exit --require  test-helpers/chai.js",
-    "test:debug": "set profile=unitTest&& set DEBUG=test&& mocha --inspect-brk --require  test-helpers/chai.js"
+    "test": "set profile=unitTest&& mocha --exit --require  test-helpers/chai.js --require test-helpers/utils.js",
+    "test:debug": "set profile=unitTest&& set DEBUG=test&& mocha --inspect-brk --require  test-helpers/chai.js --require test-helpers/utils.js"
   },
   "keywords": [
     "furmly",

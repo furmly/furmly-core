@@ -4,7 +4,6 @@ const constants = require("./constants"),
   async = require("async"),
   debug = require("debug")("engine"),
   util = require("util"),
-  FurmlySandbox = require("./sandbox"),
   _ = require("lodash"),
   EventEmitter = require("events"),
   defaultProcessors = require("./default-processors")(
@@ -44,6 +43,7 @@ FurmlyEngine.prototype.init = function(fn) {
     dProcesses = Object.keys(defaultProcesses);
 
   //create all system required configs if they dont exist.
+
   async.waterfall(
     [
       this.entitiesRepository.init.bind(this.entitiesRepository),
