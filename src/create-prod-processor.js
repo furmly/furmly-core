@@ -29,6 +29,21 @@ module.exports = (processor, srcPath) => {
             callback=args[1];
           }
           debug("running...");
+          const _callback = callback;
+          let callCount = 0;
+          callback = (...argv) => {
+            if (callCount) {
+              debug("processor ${processor._id} is returning twice");
+              return;
+            }
+            try {
+              callCount += 1;
+              _callback.apply(null, argv);
+            } catch (e) {
+              this.debug("an error occurred in callback function");
+              this.debug(e);
+            }
+          };
           try{
             ${processor._code || processor.code}
           }catch(e){
