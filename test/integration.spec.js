@@ -711,7 +711,6 @@ describe("Integration tests", function() {
             this.engine.runProcessor({}, proc, (er, result) => {
               assert.isNull(er);
               assert.isNotNull(result);
-              console.log(result);
               done();
             });
           }
