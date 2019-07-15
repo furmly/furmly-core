@@ -8,7 +8,14 @@ let resolvedElementTypes = fs.readdirSync(location).reduce((sum, x) => {
     (sum[path.basename(x, path.extname(x))] = require(`${location}/${x}`)), sum
   );
 }, {});
+/**
+ * Used to generate elements.
+ */
 class ElementFactory {
+  /**
+   * Returns an element
+   * @param {Object} opts options
+   */
   get(opts) {
     if (!opts || !opts.elementType)
       throw new Error("All elements must have an elementType");
@@ -26,6 +33,12 @@ class ElementFactory {
       throw e;
     }
   }
+  /**
+   *
+   * @param {ElementFactory} factory factory used to create elements
+   * @param {Array} arr Array of params
+   * @param {Object} extensionParams [optional] used to create specific elements
+   */
   getAll(factory, arr, extensionParams = {}) {
     if (typeof arr == "undefined")
       throw new Error("Array to convert to elements cannot be undefined");

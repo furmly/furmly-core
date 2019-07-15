@@ -1,0 +1,298 @@
+{
+  "!name": "entity-repo.js",
+  "!define": {
+    "!modules": {
+      "entity-repo`js": {
+        "prototype": {
+          "extendProcessorContext": {
+            "!type": "fn(extensions: ?)",
+            "!span": "17440[559:21]-17462[559:43]",
+            "!doc": "This function sets the extensions to processor context (services provided by Server etc.)\n@param {Object} manager infrastructure"
+          },
+          "getLibValue": {
+            "!type": "fn(params: string, fn: !modules.entity-repo`js.prototype.getLibValue.!1) -> ?",
+            "!span": "17873[571:21]-17884[571:32]",
+            "!doc": "Used by elements/validators when describing themselves to resolve library values.\n@param  {String}   params library key\n@param  {Function} fn     Callback function.\n@return {Void}          [description]"
+          },
+          "runInSandbox": {
+            "!type": "fn({processors, postProcessors, context, includeExtensions}: ?, fn: ?)",
+            "!span": "18317[590:21]-18329[590:33]"
+          },
+          "runProcessor": {
+            "!type": "fn(processor: ?, context: ?, fn: ?)",
+            "!span": "18641[603:21]-18653[603:33]"
+          },
+          "init": {
+            "!type": "fn(callback: !modules.entity-repo`js.prototype.getLibValue.!1) -> ?",
+            "!span": "19308[623:21]-19312[623:25]",
+            "!doc": "Function used to initialize components\n@param  {Function} callback Callback called when initialization is completed\n@return {Void}            No return type"
+          },
+          "getProcessorContext": {
+            "!type": "fn() -> !this.processorEntityRepo",
+            "!span": "21119[687:21]-21138[687:40]"
+          },
+          "getSaveService": {
+            "!type": "fn(entName: string) -> fn(info: fn(er: ?, item: ?), fn: ?)|!modules.entity-repo`js.prototype.getLibValue.!1",
+            "!span": "21433[697:21]-21447[697:35]",
+            "!doc": "Service used by entities to save themselves.\n@param  {String} entName Entity Name\n@return {Function}  Object representing save service."
+          },
+          "createConfig": {
+            "!type": "fn(name: ?, config: !modules.entity-repo`js.prototype.createConfig.!1, fn: !modules.entity-repo`js.prototype.getLibValue.!1)",
+            "!span": "22500[739:21]-22512[739:33]",
+            "!doc": "Creates an Entity Schema.\n@param  {some}   name   Config Name\n@param  {Object}   config Object schema\n@param  {Function} fn     Callback"
+          },
+          "getPath": {
+            "!type": "fn(name: ?) -> string",
+            "!span": "22979[755:21]-22986[755:28]"
+          },
+          "getConfig": {
+            "!type": "fn(name: string, fn: !modules.entity-repo`js.prototype.getLibValue.!1)",
+            "!span": "23218[764:21]-23227[764:30]",
+            "!doc": "Get Schema Configuration\n@param  {String}   name Name of Collection/Table\n@param  {Function} fn   Callback"
+          },
+          "getConfigNames": {
+            "!type": "fn(includeSchema: bool|!modules.entity-repo`js.prototype.getConfigNames.!2, includeInternalSchema: bool|!modules.entity-repo`js.prototype.getConfigNames.!2, query: !modules.entity-repo`js.prototype.getConfigNames.!2, options: ?, fn: ?)",
+            "!span": "23625[779:21]-23639[779:35]",
+            "!doc": "Get Schema Configuration Names\n@param  {Function} fn Callback"
+          },
+          "isValidID": {
+            "!type": "fn(id: ?)",
+            "!span": "24700[828:21]-24709[828:30]"
+          },
+          "getAllConfiguration": {
+            "!type": "fn(fn: ?)",
+            "!span": "24800[831:21]-24819[831:40]"
+          },
+          "countConfig": {
+            "!type": "fn(query: ?, fn: ?)",
+            "!span": "25038[839:21]-25049[839:32]"
+          },
+          "createId": {
+            "!type": "fn(string: ?)",
+            "!span": "25151[843:21]-25159[843:29]"
+          },
+          "updateConfig": {
+            "!type": "fn(name: ?, config: ?, fn: ?)",
+            "!span": "25235[846:21]-25247[846:33]"
+          },
+          "queryEntity": {
+            "!type": "fn(name: string, filter: ?, options: ?|string, fn: ?)",
+            "!span": "26108[877:21]-26119[877:32]",
+            "!doc": "Find entity  of type {name} using {filter}\n@param  {String}   name    Name of Collection/Table\n@param  {Object}   filter  Query filter\n@param  {Object}   options sorting,populating extra values etc [optional]\n@param  {Function} fn      Callback"
+          },
+          "updateEntity": {
+            "!type": "fn(name: string, data: !modules.entity-repo`js.prototype.updateEntity.!1, fn: !modules.entity-repo`js.prototype.getLibValue.!1)",
+            "!span": "30042[1020:21]-30054[1020:33]",
+            "!doc": "Update an entity\n@param  {String}   name Name of the collection/table entity is located in\n@param  {Object}   data Update data\n@param  {Function} fn   Callback"
+          },
+          "saveSystemEntity": {
+            "!type": "fn(entName: string, key: string, data: ?, options: ?, fn: ?)",
+            "!span": "31472[1069:21]-31488[1069:37]"
+          },
+          "createEntity": {
+            "!type": "fn(name: string, data: !modules.entity-repo`js.prototype.saveSystemEntity.!2, fn: fn(er: +Error, result: !modules.entity-repo`js.prototype.saveSystemEntity.!4.!1))",
+            "!span": "32611[1113:21]-32623[1113:33]",
+            "!doc": "Create an entity\n@param  {String}   name Name of the collection/table entity is located in\n@param  {Object}   data Update data\n@param  {function} fn   Callback"
+          },
+          "aggregateEntity": {
+            "!type": "fn(name: string, ...rest: ?)",
+            "!span": "33156[1129:21]-33171[1129:36]",
+            "!doc": "Function that runs aggregation query on persistance object.\n@param  {String}    name Name of collection/table to run aggregation on\n@param  {...Object} rest Other Args including aggregation query and callback"
+          },
+          "countEntity": {
+            "!type": "fn(name: string, filter: ?, fn: !modules.entity-repo`js.prototype.getLibValue.!1)",
+            "!span": "33986[1155:21]-33997[1155:32]",
+            "!doc": "Count number of entities that match the filter supplied\n@param  {String}   name   Name of Collection/Table\n@param  {Object}   filter Query\n@param  {Function} fn     Callback"
+          },
+          "getCollectionName": {
+            "!type": "fn(name: string) -> !this.models.<i>",
+            "!span": "34449[1167:21]-34466[1167:38]",
+            "!doc": "Normalizes mongoose collection names to actual mongodb  collection names\n@param  {String} name Name of Collection/Table\n@return {String}      Correct collection name."
+          },
+          "deleteEntity": {
+            "!type": "fn(name: string, id: string, fn: !modules.entity-repo`js.prototype.getLibValue.!1)",
+            "!span": "34785[1177:21]-34797[1177:33]",
+            "!doc": "Delete an entity with the supplied id\n@param  {String}   name Name of Collection/Table\n@param  {String}   id   Id of object to delete\n@param  {Function} fn   Callback"
+          },
+          "createSchemas": {
+            "!type": "fn(fn: !modules.entity-repo`js.prototype.getLibValue.!1) -> ?",
+            "!span": "35465[1202:21]-35478[1202:34]",
+            "!doc": "Create all the system schemas\n@param  {Function} fn callback\n@return {void}"
+          }
+        },
+        "!type": "fn(opts: ?)",
+        "!span": "2763[84:0]-17268[553:1]",
+        "!doc": "This class contains the persistence logic for all entities.\n@class\n\n@memberOf module:Furmly\n@param {Object} opts Class constructor parameters , includes ext,folder,delimiter,store...etc"
+      }
+    },
+    "!modules.entity-repo`js.prototype.getProcessorContext.!ret": {
+      "get": {
+        "!type": "fn() -> !modules.entity-repo`js.prototype.getLibValue.!1",
+        "!span": "6328[210:6]-6331[210:9]"
+      },
+      "count": {
+        "!type": "fn(name: string, filter: ?, fn: !modules.entity-repo`js.prototype.getLibValue.!1)",
+        "!span": "6390[211:6]-6395[211:11]"
+      },
+      "update": {
+        "!type": "fn() -> !modules.entity-repo`js.prototype.getLibValue.!1",
+        "!span": "6433[212:6]-6439[212:12]"
+      },
+      "delete": {
+        "!type": "fn() -> !modules.entity-repo`js.prototype.getLibValue.!1",
+        "!span": "6499[213:6]-6505[213:12]"
+      },
+      "create": {
+        "!type": "fn() -> !modules.entity-repo`js.prototype.getLibValue.!1",
+        "!span": "6565[214:6]-6571[214:12]"
+      },
+      "createSchema": {
+        "!type": "fn(name: ?, config: !modules.entity-repo`js.prototype.createConfig.!1, fn: !modules.entity-repo`js.prototype.getLibValue.!1)",
+        "!span": "6631[215:6]-6643[215:18]"
+      },
+      "updateSchema": {
+        "!type": "fn(name: ?, config: ?, fn: ?)",
+        "!span": "6682[216:6]-6694[216:18]"
+      },
+      "countSchemas": {
+        "!type": "fn(query: ?, fn: ?)",
+        "!span": "6733[217:6]-6745[217:18]"
+      },
+      "getSchema": {
+        "!type": "fn(name: ?, fn: ?)",
+        "!span": "6783[218:6]-6792[218:15]"
+      },
+      "getSchemas": {
+        "!type": "fn(...args: ?)",
+        "!span": "6818[219:6]-6828[219:16]"
+      },
+      "createId": {
+        "!type": "fn(string: ?)",
+        "!span": "6859[220:6]-6867[220:14]"
+      },
+      "aggregate": {
+        "!type": "fn() -> !modules.entity-repo`js.prototype.getLibValue.!1",
+        "!span": "6928[222:6]-6937[222:15]"
+      },
+      "getCollectionName": {
+        "!type": "fn() -> !modules.entity-repo`js.prototype.getLibValue.!1",
+        "!span": "7000[223:6]-7017[223:23]"
+      },
+      "getStep": {
+        "!type": "fn(filter: ?, options: ?|string, fn: ?)",
+        "!span": "7082[224:6]-7089[224:13]"
+      },
+      "saveLib": {
+        "!type": "fn(data: ?, options: ?, fn: ?)",
+        "!span": "7148[225:6]-7155[225:13]"
+      },
+      "getLib": {
+        "!type": "fn(filter: ?, options: ?|string, fn: ?)",
+        "!span": "7225[226:6]-7231[226:12]"
+      },
+      "saveAsyncValidator": {
+        "!type": "fn(data: ?, options: ?, fn: ?)",
+        "!span": "7289[227:6]-7307[227:24]"
+      },
+      "getAsyncValidator": {
+        "!type": "fn(filter: ?, options: ?|string, fn: ?)",
+        "!span": "7435[232:6]-7452[232:23]"
+      },
+      "saveProcess": {
+        "!type": "fn(data: ?, options: ?, fn: ?)",
+        "!span": "7548[236:6]-7559[236:17]"
+      },
+      "getProcess": {
+        "!type": "fn(filter: ?, options: ?|string, fn: ?)",
+        "!span": "7673[241:6]-7683[241:16]"
+      },
+      "saveProcessor": {
+        "!type": "fn(data: ?, options: ?, fn: ?)",
+        "!span": "7745[242:6]-7758[242:19]"
+      },
+      "getProcessor": {
+        "!type": "fn(...args: ?)",
+        "!span": "7876[247:6]-7888[247:18]"
+      },
+      "!span": "6319[209:11]-9349[284:5]",
+      "!doc": "@type {module:Furmly~ProcessorContext}\n@property {module:Furmly.EntityRepo#queryEntity} get function for querying objects"
+    },
+    "!modules.entity-repo`js.prototype.getProcessorContext.!ret.createSchema.!1": {
+      "created": {
+        "type": {
+          "!type": "string",
+          "!span": "22699[743:15]-22703[743:19]"
+        }
+      },
+      "updated": {
+        "type": {
+          "!type": "string",
+          "!span": "22731[744:15]-22735[744:19]"
+        }
+      }
+    },
+    "!modules.entity-repo`js.prototype.createConfig.!1": {
+      "created": {
+        "type": {
+          "!type": "string",
+          "!span": "22699[743:15]-22703[743:19]"
+        },
+        "!span": "22697[743:13]-22713[743:29]"
+      },
+      "updated": {
+        "type": {
+          "!type": "string",
+          "!span": "22731[744:15]-22735[744:19]"
+        },
+        "!span": "22729[744:13]-22745[744:29]"
+      }
+    },
+    "!modules.entity-repo`js.prototype.getConfigNames.!2": {
+      "name": {
+        "$nin": {
+          "!type": "[?]",
+          "!span": "5459[185:29]-5463[185:33]"
+        },
+        "!span": "5451[185:21]-5455[185:25]"
+      },
+      "!span": "5449[185:19]-5497[185:67]"
+    },
+    "!modules.entity-repo`js.prototype.getConfigNames.!3": {
+      "fields": {
+        "name": {
+          "!type": "number",
+          "!span": "23811[787:15]-23815[787:19]"
+        },
+        "schema": {
+          "!type": "number",
+          "!span": "24182[805:11]-24188[805:17]"
+        },
+        "!span": "23809[787:13]-23820[787:24]"
+      },
+      "!span": "24358[814:31]-24360[814:33]"
+    },
+    "!modules.entity-repo`js.prototype.updateEntity.!1": {
+      "updated": "+Date"
+    },
+    "!modules.entity-repo`js.prototype.saveSystemEntity.!2": {
+      "created": "+Date",
+      "updated": "+Date"
+    },
+    "!modules.entity-repo`js.prototype.saveSystemEntity.!4": {
+      "!type": "fn(er: +Error, result: !modules.entity-repo`js.prototype.saveSystemEntity.!4.!1)",
+      "!span": "21662[706:4]-21916[716:5]"
+    },
+    "!modules.entity-repo`js.prototype.saveSystemEntity.!4.!1": {
+      "!span": "31394[1062:15]-31427[1064:7]"
+    },
+    "!modules.entity-repo`js.prototype.getProcessorContext.!ret.saveLib.!0": {
+      "updated": "+Date",
+      "created": "+Date"
+    },
+    "!modules.entity-repo`js.prototype.getProcessorContext.!ret.getSchemas.!0": {
+      "name": {
+        "$nin": "!modules.entity-repo`js.prototype.getConfigNames.!2.name.$nin"
+      }
+    }
+  }
+}

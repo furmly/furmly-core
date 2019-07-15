@@ -1,4 +1,3 @@
-/*jshint loopfunc: true */
 //'use strict';
 
 const {
@@ -7,9 +6,12 @@ const {
   debug,
   systemEntities,
   constants,
-  returnResult
+  task: { processors, postProcessors, returnResult }
 } = context;
-let module_context = context;
+const { task, ...others } = context;
+const processorsTimeout = context.processorsTimeout || 1500;
+const postProcessorsTimeout = context.postProcessorsTimeout || 1500;
+const module_context = others;
 let loaded = {};
 let lib_context = {};
 module_context.skip = {};
@@ -67,14 +69,14 @@ function runLibs(toLoad, loaded, fn) {
 }
 
 function run() {
-  const firstProcessor = context.processors[0];
+  const firstProcessor = processors[0];
   const tasks = [];
   tasks.push(
     async.timeout(
       cb => {
         firstProcessor.process.call(module_context, cb);
       },
-      context.processorsTimeout,
+      processorsTimeout,
       "Processor failed to return"
     )
   );
@@ -93,30 +95,22 @@ function run() {
     }, timeout);
   };
 
-  for (var i = 1; i < context.processors.length; i++) {
-    tasks.push(
-      process(i, context.processors, context.processorsTimeout || 1500)
-    );
+  for (var i = 1; i < processors.length; i++) {
+    tasks.push(process(i, processors, processorsTimeout));
   }
 
   async.waterfall(tasks, (er, result) => {
     if (er) return returnResult(er);
-    if (context.postProcessors && context.postProcessors.length) {
+    if (postProcessors && postProcessors.length) {
       var postTasks = [];
-      var first = context.postProcessors[0];
+      var first = postProcessors[0];
       postTasks.push(
         async.timeout(cb => {
           first.process.call(module_context, cb);
         }, context.postProcessorsTimeout)
       );
-      for (var i = 1; i < context.postProcessors; i++)
-        postTasks.push(
-          process(
-            i,
-            context.postProcessors,
-            context.postProcessorsTimeout || 1500
-          )
-        );
+      for (var i = 1; i < postProcessors; i++)
+        postTasks.push(process(i, postProcessors, postProcessorsTimeout));
 
       async.waterfall(postTasks, (er, result) => {
         if (er) {
@@ -156,7 +150,7 @@ function init() {
     typeof entityRepo !== "undefined"
   ) {
     let query = Object.keys(
-      context.processors.reduce((sum, x) => {
+      processors.reduce((sum, x) => {
         (x._references || []).forEach(k => {
           Object.assign(sum, { [k]: 1 });
         });

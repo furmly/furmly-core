@@ -1,0 +1,223 @@
+{
+  "!name": "processor-scope.js",
+  "!define": {
+    "!modules": {
+      "element-factory`js": {
+        "prototype": {
+          "get": {
+            "!type": "fn(opts: ?) -> ?",
+            "!span": "499[18:2]-502[18:5]",
+            "!doc": "Returns an element\n@param {Object} opts options"
+          },
+          "getAll": {
+            "!type": "fn(factory: +!modules.element-factory`js, arr: [?], extensionParams: ?) -> [?]",
+            "!span": "1225[41:2]-1231[41:8]",
+            "!doc": "@param {ElementFactory} factory factory used to create elements\n@param {Array} arr Array of params\n@param {Object} extensionParams [optional] used to create specific elements"
+          },
+          "!span": "399[13:0]-1506[49:1]"
+        },
+        "!type": "fn()",
+        "!span": "405[13:6]-419[13:20]",
+        "!doc": "Used to generate elements."
+      },
+      "processor-context`js": {
+        "!type": "fn(repo: ?)",
+        "!span": "494[16:6]-510[16:22]",
+        "!doc": "This provides context for querying entities while running a processor.",
+        "get": {
+          "!type": "fn() -> !modules.processor-context`js.get.!ret",
+          "!span": "1440[42:9]-1443[42:12]",
+          "!doc": "Find entity  of type {name} using {filter} . Please note querying system entities is not allowed\n@param  {String}   name    Name of Collection/Table\n@param  {Object}   filter  Query filter\n@param  {Object}   options sorting,populating extra values etc [optional]\n@param  {Function} fn      Callback"
+        },
+        "update": {
+          "!type": "fn() -> !modules.processor-context`js.get.!ret",
+          "!span": "1987[58:9]-1993[58:15]",
+          "!doc": "Update an entity\n@param  {String}   name Name of the collection/table entity is located in\n@param  {Object}   data Update data\n@param  {Function} fn   Callback"
+        },
+        "delete": {
+          "!type": "fn() -> !modules.processor-context`js.get.!ret",
+          "!span": "2274[66:9]-2280[66:15]",
+          "!doc": "Delete an entity with the supplied id\n@param  {String}   name Name of Collection/Table\n@param  {String}   id   Id of object to delete\n@param  {Function} fn   Callback"
+        },
+        "create": {
+          "!type": "fn() -> !modules.processor-context`js.get.!ret",
+          "!span": "2554[74:9]-2560[74:15]",
+          "!doc": "Create an entity\n@param  {String}   name Name of the collection/table entity is located in\n@param  {Object}   data Update data\n@param  {function} fn   Callback"
+        },
+        "getSchema": {
+          "!type": "fn(name: ?, fn: ?)",
+          "!span": "3476[102:9]-3485[102:18]",
+          "!doc": "Get Schema Configuration\n@param  {String}   name Name of Collection/Table\n@param  {Function} fn   Callback"
+        },
+        "getSchemas": {
+          "!type": "fn(...args: ?)",
+          "!span": "3842[111:9]-3852[111:19]",
+          "!doc": "Get Schema Configuration Names\n@param {Boolean} includeSchema - include the actual schema\n@param {Boolean} includeInternalSchema - include internal schemas\n@param {Object} query - filter\n@param {Object} options - options passed with query\n@param  {Function} fn Callback"
+        },
+        "aggregate": {
+          "!type": "fn() -> !modules.processor-context`js.get.!ret",
+          "!span": "4448[129:9]-4457[129:18]",
+          "!doc": "Function that runs aggregation query on persistance object.\n@param  {String}    name Name of collection/table to run aggregation on\n@param  {...Object} rest Other Args including aggregation query and callback"
+        },
+        "getCollectionName": {
+          "!type": "fn() -> !modules.processor-context`js.get.!ret",
+          "!span": "4727[135:9]-4744[135:26]",
+          "!doc": "Normalizes mongoose collection names to actual mongodb  collection names\n@param  {String} name Name of Collection/Table\n@return {String}      Correct collection name."
+        },
+        "getProcessor": {
+          "!type": "fn(...args: ?)",
+          "!span": "7700[221:9]-7712[221:21]",
+          "!doc": "Find entity  of type Processor using {filter}\n@param  {Object}   filter  Query filter\n@param  {Object}   options sorting,populating extra values etc [optional]\n@param  {Function} fn      Callback"
+        }
+      },
+      "processor-scope`js": {
+        "module": {
+          "!span": "0[0:0]-516[22:17]",
+          "exports": "!modules.processor-scope`js"
+        },
+        "!proto": "<top>",
+        "!span": "0[0:0]-516[22:17]"
+      },
+      "entity-store`js": {
+        "prototype": {
+          "get": {
+            "!type": "fn(id: string, fn: !modules.processor-context`js.get.!ret)",
+            "!span": "345[12:2]-348[12:5]",
+            "!doc": "Used to retrieve something from the store.\n@param {String} id - ObjectId or String of store item\n@param {Function} fn Callback"
+          },
+          "update": {
+            "!type": "fn(id: string, info: ?, extra: ?, fn: ?)",
+            "!span": "712[27:2]-718[27:8]",
+            "!doc": "Used to updated store information about an ongoing process\n@param {String} id - Key\n@param {Object} info - Process infor\n@param {Object} extra -[optional] extra process info\n@param {Func} fn - Callback function."
+          },
+          "remove": {
+            "!type": "fn(id: string, fn: ?)",
+            "!span": "1195[51:2]-1201[51:8]",
+            "!doc": "Remove information for a process\n@param {String} id Key\n@param {Func} fn - Callback function"
+          },
+          "keep": {
+            "!type": "fn(info: ?, extra: ?, fn: ?)",
+            "!span": "1565[65:2]-1569[65:6]",
+            "!doc": "Store information about a process and ensure it is wiped after the process goes stale\n@param {Object} info - Information about a process\n@param {Object} extra - Extra information\n@param {Func} fn -Callback function"
+          },
+          "createIndex": {
+            "!type": "fn(fn: ?)",
+            "!span": "1885[81:2]-1896[81:13]"
+          },
+          "!span": "39[2:0]-2049[92:1]"
+        },
+        "!type": "fn(ttl: ?)",
+        "!span": "45[2:6]-62[2:23]"
+      },
+      "constants`js": "constants"
+    },
+    "!modules.element-factory`js.prototype.getAll.!1": "[?]",
+    "!modules.element-factory`js.prototype.getAll.!ret": "[?]",
+    "!modules.processor-context`js.getSchemas.!0": {
+      "name": {
+        "!span": "558[18:23]-562[18:27]"
+      },
+      "!span": "556[18:21]-604[18:69]"
+    }
+  },
+  "constants": {
+    "PROCESSSTATUS": {
+      "!span": "859[31:4]-872[31:17]"
+    },
+    "UIDS": {
+      "!span": "1836[52:4]-1840[52:8]",
+      "LIB": "constants.PROCESSSTATUS",
+      "PROCESSOR": "constants.PROCESSSTATUS",
+      "PROCESS": "constants.PROCESSSTATUS"
+    },
+    "systemEntities": {
+      "step": {
+        "!type": "string",
+        "!span": "4280[137:6]-4284[137:10]"
+      },
+      "processor": {
+        "!type": "string",
+        "!span": "4303[138:6]-4312[138:15]"
+      },
+      "process": {
+        "!type": "string",
+        "!span": "4336[139:6]-4343[139:13]"
+      },
+      "asyncValidator": {
+        "!type": "string",
+        "!span": "4365[140:6]-4379[140:20]"
+      },
+      "lib": {
+        "!type": "string",
+        "!span": "4408[141:6]-4411[141:9]"
+      }
+    },
+    "!span": "0[0:0]-9[0:9]",
+    "COMMANDTYPE": "constants.PROCESSSTATUS",
+    "STEPSTATUS": "constants.PROCESSSTATUS",
+    "PROCESSORTYPE": "constants.PROCESSSTATUS",
+    "GRIDMODE": "constants.PROCESSSTATUS",
+    "GRIDCOMMANDTYPE": "constants.PROCESSSTATUS",
+    "STEPMODE": "constants.PROCESSSTATUS",
+    "STEPTYPE": "constants.PROCESSSTATUS",
+    "ELEMENT_SELECT_SOURCETYPE": "constants.PROCESSSTATUS",
+    "ENTRYMODE": "constants.PROCESSSTATUS",
+    "VALIDATORTYPE": "constants.PROCESSSTATUS",
+    "DATE": "constants.PROCESSSTATUS",
+    "INPUTTYPE": "constants.PROCESSSTATUS",
+    "NAVIGATIONTYPE": "constants.PROCESSSTATUS",
+    "IMAGETYPE": "constants.PROCESSSTATUS",
+    "ENTITYTYPE": "constants.PROCESSSTATUS",
+    "ELEMENTTYPE": "constants.PROCESSSTATUS"
+  },
+  "async": {
+    "!span": "36[1:0]-41[1:5]"
+  },
+  "uuid": {
+    "!type": "fn(options: ?, buf: [number], offset: ?) -> [number]|string",
+    "!span": "62[2:0]-66[2:4]"
+  },
+  "entityRepo": {
+    "!type": "+!modules.processor-context`js",
+    "!span": "188[5:0]-198[5:10]"
+  },
+  "elementFactory": {
+    "!type": "+!modules.element-factory`js",
+    "!span": "214[6:0]-228[6:14]"
+  },
+  "systemEntities": {
+    "step": {
+      "!type": "string",
+      "!span": "4280[137:6]-4284[137:10]"
+    },
+    "processor": {
+      "!type": "string",
+      "!span": "4303[138:6]-4312[138:15]"
+    },
+    "process": {
+      "!type": "string",
+      "!span": "4336[139:6]-4343[139:13]"
+    },
+    "asyncValidator": {
+      "!type": "string",
+      "!span": "4365[140:6]-4379[140:20]"
+    },
+    "lib": {
+      "!type": "string",
+      "!span": "4408[141:6]-4411[141:9]"
+    },
+    "!span": "253[7:0]-267[7:14]"
+  },
+  "args": {
+    "$isAuthorized": {
+      "!type": "bool",
+      "!span": "307[9:2]-320[9:15]"
+    },
+    "!span": "296[8:0]-300[8:4]"
+  },
+  "warn": {
+    "!type": "fn(message: string)",
+    "!span": "442[20:0]-446[20:4]",
+    "!doc": "@param {String} message"
+  }
+}
