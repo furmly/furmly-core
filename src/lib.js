@@ -25,6 +25,12 @@ function FurmlyLib(opts) {
         return opts.save;
       }
     },
+    getCode: {
+      enumerable: false,
+      value: function() {
+        return this._code || this.code;
+      }
+    },
     debug: {
       enumerable: false,
       get: function() {

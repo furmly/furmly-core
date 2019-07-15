@@ -1,0 +1,251 @@
+{
+ "!name": "furmly",
+ "!define": {
+  "ElementFactory": {
+   "prototype": {
+    "get": {
+     "!type": "fn(opts: ?)",
+     "!span": "499[18:2]-502[18:5]",
+     "!doc": "Returns an element\n@param {Object} opts options"
+    },
+    "getAll": {
+     "!type": "fn(factory: +ElementFactory, arr: [?], extensionParams: ?) -> [?]",
+     "!span": "1225[41:2]-1231[41:8]",
+     "!doc": "@param {ElementFactory} factory factory used to create elements\n@param {Array} arr Array of params\n@param {Object} extensionParams [optional] used to create specific elements"
+    },
+    "!span": "399[13:0]-1506[49:1]"
+   },
+   "!type": "fn()",
+   "!span": "405[13:6]-419[13:20]",
+   "!doc": "Used to generate elements."
+  },
+  "ProcessorScope": {
+   "module": {
+    "!span": "0[0:0]-6710[212:0]",
+    "exports": "ProcessorScope"
+   },
+   "Scope": {
+    "prototype": {
+     "get": {
+      "!type": "fn(name: string, filter: ?, options: ?, fn: fn(err: ?, result: ?))",
+      "!span": "670[26:16]-673[26:19]",
+      "!doc": "Find entity  of type {name} using {filter} . Please note querying system entities is not allowed\n@param  {String}   name    Name of Collection/Table\n@param  {object}   filter  Query filter\n@param  {object}   options sorting,populating extra values etc [optional]\n@param  {Callback} fn      Callback"
+     },
+     "count": {
+      "!type": "fn(name: string, filter: ?, fn: fn(err: ?, result: ?))",
+      "!span": "937[34:16]-942[34:21]",
+      "!doc": "Count number of entities that match the filter supplied\n@param  {String}   name   Name of Collection/Table\n@param  {Object}   filter Query\n@param  {Callback} fn     Callback"
+     },
+     "update": {
+      "!type": "fn(name: string, data: ?, fn: fn(err: ?, result: ?))",
+      "!span": "1183[42:16]-1189[42:22]",
+      "!doc": "Update an entity\n@param  {String}   name Name of the collection/table entity is located in\n@param  {Object}   data Update data\n@param  {Callback} fn   Callback"
+     },
+     "delete": {
+      "!type": "fn(name: string, id: string, fn: fn(err: ?, result: ?))",
+      "!span": "1435[50:16]-1441[50:22]",
+      "!doc": "Delete an entity with the supplied id\n@param  {String}   name Name of Collection/Table\n@param  {String}   id   Id of object to delete\n@param  {Callback} fn   Callback"
+     },
+     "create": {
+      "!type": "fn(name: string, data: ?, fn: fn(err: ?, result: ?))",
+      "!span": "1678[58:16]-1684[58:22]",
+      "!doc": "Create an entity\n@param  {String}   name Name of the collection/table entity is located in\n@param  {Object}   data Update data\n@param  {Callback} fn   Callback"
+     },
+     "createSchema": {
+      "!type": "fn(name: string, config: ?, fn: fn(err: ?, result: ?))",
+      "!span": "1902[66:16]-1914[66:28]",
+      "!doc": "Creates an Entity Schema.\n@param  {string}   name   Config Name\n@param  {Object}   config Object schema\n@param  {Callback} fn     Callback"
+     },
+     "updateSchema": {
+      "!type": "fn(name: string, schema: ?, fn: fn(err: ?, result: ?))",
+      "!span": "2145[73:16]-2157[73:28]",
+      "!doc": "Used to update schemas.\n@param {String} name - name of schema to update.\n@param {Object} schema - Schema config.\n@param {Callback} fn - Callback function"
+     },
+     "countSchemas": {
+      "!type": "fn(query: ?, fn: +Function)",
+      "!span": "2348[79:16]-2360[79:28]",
+      "!doc": "Used to count schema using a query.\n@param {Object} query - search criteria.\n@param {Function} fn - Callback function"
+     },
+     "getSchema": {
+      "!type": "fn(name: string, fn: +Function)",
+      "!span": "2533[85:16]-2542[85:25]",
+      "!doc": "Get Schema Configuration\n@param  {String}   name Name of Collection/Table\n@param  {Function} fn   Callback"
+     },
+     "getSchemas": {
+      "!type": "fn(includeSchema: bool, includeInternalSchema: bool, query: ?, options: ?, fn: fn(err: ?, result: ?))",
+      "!span": "2889[94:16]-2899[94:26]",
+      "!doc": "Get Schema Configuration Names\n@param {Boolean} includeSchema - include the actual schema\n@param {Boolean} includeInternalSchema - include internal schemas\n@param {Object} query - filter\n@param {Object} options - options passed with query\n@param  {Callback} fn Callback"
+     },
+     "createId": {
+      "!type": "fn(id: string) -> ?",
+      "!span": "3128[106:16]-3136[106:24]",
+      "!doc": "Used to create an entity id from a string\n@param {string} id - entity id string\n@returns {Object}"
+     },
+     "aggregate": {
+      "!type": "fn(name: string, ...rest: ?)",
+      "!span": "3529[118:16]-3538[118:25]",
+      "!doc": "Function that runs aggregation query on persistance object.\n@param  {String}    name Name of collection/table to run aggregation on\n@param  {...Object} rest Other Args including aggregation query and callback"
+     },
+     "getCollectionName": {
+      "!type": "fn(name: string) -> string",
+      "!span": "3775[124:16]-3792[124:33]",
+      "!doc": "Normalizes mongoose collection names to actual mongodb  collection names\n@param  {String} name Name of Collection/Table\n@return {String}      Correct collection name."
+     },
+     "getStep": {
+      "!type": "fn(filter: ?, options: ?, fn: fn(err: ?, result: ?))",
+      "!span": "4052[132:16]-4059[132:23]",
+      "!doc": "Find entity  of type Step using {filter}\n@param  {Object}   filter  Query filter\n@param  {Object}   options sorting,populating extra values etc [optional]\n@param  {Callback} fn      Callback"
+     },
+     "saveLib": {
+      "!type": "fn(data: ?, options: ?, fn: fn(err: ?, result: ?))",
+      "!span": "4311[139:16]-4318[139:23]",
+      "!doc": "Save Lib (NOTE:this would only work in development)\n@param {Object} data - System entity to save\n@param {Object} options - options\n@param {Callback} fn - Callback function"
+     },
+     "getLib": {
+      "!type": "fn(filter: ?, options: ?, fn: fn(err: ?, result: ?))",
+      "!span": "4590[147:16]-4596[147:22]",
+      "!doc": "Find entity  of type Lib using {filter}\n@param  {Object}   filter  Query filter\n@param  {Object}   options sorting,populating extra values etc [optional]\n@param  {Callback} fn      Callback"
+     },
+     "saveAsyncValidator": {
+      "!type": "fn(data: ?, options: ?, fn: fn(err: ?, result: ?))",
+      "!span": "4860[154:16]-4878[154:34]",
+      "!doc": "Save Async Validator (NOTE:this would only work in development)\n@param {Object} data - System entity to save\n@param {Object} options - options\n@param {Callback} fn - Callback function"
+     },
+     "getAsyncValidator": {
+      "!type": "fn(filter: ?, options: ?, fn: fn(err: ?, result: ?))",
+      "!span": "5161[162:16]-5178[162:33]",
+      "!doc": "Find entity  of type AsyncValidator using {filter}\n@param  {Object}   filter  Query filter\n@param  {Object}   options sorting,populating extra values etc [optional]\n@param  {Callback} fn      Callback"
+     },
+     "saveProcess": {
+      "!type": "fn(data: ?, options: ?, fn: fn(err: ?, result: ?))",
+      "!span": "5434[169:16]-5445[169:27]",
+      "!doc": "Save Process (NOTE:this would only work in development)\n@param {Object} data - System entity to save\n@param {Object} options - options\n@param {Callback} fn - Callback function"
+     },
+     "getProcess": {
+      "!type": "fn(filter: ?, options: ?, fn: fn(err: ?, result: ?))",
+      "!span": "5721[177:16]-5731[177:26]",
+      "!doc": "Find entity  of type Process using {filter}\n@param  {Object}   filter  Query filter\n@param  {Object}   options sorting,populating extra values etc [optional]\n@param  {Callback} fn      Callback"
+     },
+     "saveProcessor": {
+      "!type": "fn(data: ?, options: ?, fn: fn(err: ?, result: ?))",
+      "!span": "5989[184:16]-6002[184:29]",
+      "!doc": "Save Processor (NOTE:this would only work in development)\n@param {Object} data - System entity to save\n@param {Object} options - options\n@param {Callback} fn - Callback function"
+     },
+     "getProcessor": {
+      "!type": "fn(filter: ?, options: ?, fn: fn(err: ?, result: ?))",
+      "!span": "6280[192:16]-6292[192:28]",
+      "!doc": "Find entity  of type Processor using {filter}\n@param  {Object}   filter  Query filter\n@param  {Object}   options sorting,populating extra values etc [optional]\n@param  {Callback} fn      Callback"
+     }
+    },
+    "!type": "fn()",
+    "!span": "236[12:9]-241[12:14]",
+    "!doc": "Processor sentityRepo\n@class"
+   },
+   "!proto": "<top>",
+   "!span": "0[0:0]-6710[212:0]"
+  },
+  "Constants": "constants"
+ },
+ "constants": {
+  "PROCESSSTATUS": {
+   "!span": "859[31:4]-872[31:17]"
+  },
+  "UIDS": {
+   "!span": "1836[52:4]-1840[52:8]",
+   "LIB": "constants.PROCESSSTATUS",
+   "PROCESSOR": "constants.PROCESSSTATUS",
+   "PROCESS": "constants.PROCESSSTATUS"
+  },
+  "systemEntities": {
+   "step": {
+    "!type": "string",
+    "!span": "4280[137:6]-4284[137:10]"
+   },
+   "processor": {
+    "!type": "string",
+    "!span": "4303[138:6]-4312[138:15]"
+   },
+   "process": {
+    "!type": "string",
+    "!span": "4336[139:6]-4343[139:13]"
+   },
+   "asyncValidator": {
+    "!type": "string",
+    "!span": "4365[140:6]-4379[140:20]"
+   },
+   "lib": {
+    "!type": "string",
+    "!span": "4408[141:6]-4411[141:9]"
+   }
+  },
+  "!span": "32[3:0]-41[3:9]",
+  "!doc": "all the constants",
+  "COMMANDTYPE": "constants.PROCESSSTATUS",
+  "STEPSTATUS": "constants.PROCESSSTATUS",
+  "PROCESSORTYPE": "constants.PROCESSSTATUS",
+  "GRIDMODE": "constants.PROCESSSTATUS",
+  "GRIDCOMMANDTYPE": "constants.PROCESSSTATUS",
+  "STEPMODE": "constants.PROCESSSTATUS",
+  "STEPTYPE": "constants.PROCESSSTATUS",
+  "ELEMENT_SELECT_SOURCETYPE": "constants.PROCESSSTATUS",
+  "ENTRYMODE": "constants.PROCESSSTATUS",
+  "VALIDATORTYPE": "constants.PROCESSSTATUS",
+  "DATE": "constants.PROCESSSTATUS",
+  "INPUTTYPE": "constants.PROCESSSTATUS",
+  "NAVIGATIONTYPE": "constants.PROCESSSTATUS",
+  "IMAGETYPE": "constants.PROCESSSTATUS",
+  "ENTITYTYPE": "constants.PROCESSSTATUS",
+  "ELEMENTTYPE": "constants.PROCESSSTATUS"
+ },
+ "entityRepo": {
+  "!type": "+ProcessorScope.Scope",
+  "!span": "6332[194:0]-6342[194:10]"
+ },
+ "elementFactory": {
+  "!type": "+ElementFactory",
+  "!span": "6359[195:0]-6373[195:14]"
+ },
+ "systemEntities": {
+  "step": {
+   "!type": "string",
+   "!span": "4280[137:6]-4284[137:10]"
+  },
+  "processor": {
+   "!type": "string",
+   "!span": "4303[138:6]-4312[138:15]"
+  },
+  "process": {
+   "!type": "string",
+   "!span": "4336[139:6]-4343[139:13]"
+  },
+  "asyncValidator": {
+   "!type": "string",
+   "!span": "4365[140:6]-4379[140:20]"
+  },
+  "lib": {
+   "!type": "string",
+   "!span": "4408[141:6]-4411[141:9]"
+  },
+  "!span": "6399[196:0]-6413[196:14]"
+ },
+ "args": {
+  "$isAuthorized": {
+   "!type": "bool",
+   "!span": "6455[198:2]-6468[198:15]"
+  },
+  "!span": "6443[197:0]-6447[197:4]"
+ },
+ "skip": {
+  "processorName": {
+   "!type": "bool",
+   "!span": "6588[205:2]-6601[205:15]"
+  },
+  "!span": "6576[204:0]-6580[204:4]",
+  "!doc": "Used to skip processors by setting processor uid/_id on this object"
+ },
+ "warn": {
+  "!type": "fn(message: string)",
+  "!span": "6651[210:0]-6655[210:4]",
+  "!doc": "@param {string} message"
+ }
+}

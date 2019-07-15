@@ -6,7 +6,7 @@ const { NodeVM, VMScript } = require("vm2"),
   debug = require("debug")("sandbox"),
   path = require("path"),
   sandboxCode = require("fs").readFileSync(
-    __dirname + path.sep + "processor-sandbox.js"
+    __dirname + path.sep + "sandbox-queue.js"
   ),
   elementFactory = new (require("./element-factory"))();
 
@@ -35,13 +35,15 @@ FurmlySandbox.prototype.getSandbox = function(
     entityRepo: this.entityRepo,
     systemEntities,
     constants,
-    processors,
-    postProcessors,
     async,
     debug,
     elementFactory,
     uuid,
-    returnResult: fn
+    task: {
+      processors,
+      postProcessors,
+      returnResult: fn
+    }
   };
   if (includeExtensions) Object.assign(_c, { ...this.extensions });
   return new NodeVM({

@@ -39,6 +39,12 @@ function FurmlyProcessor(opts) {
         return opts.save;
       }
     },
+    getCode: {
+      enumerable: false,
+      value: function() {
+        return this._code || this.code;
+      }
+    },
     codeGenerator: { enumerable: false, value: opts.codeGenerator }
   });
 
@@ -79,7 +85,7 @@ function FurmlyProcessor(opts) {
       }
     };
     try {
-      let code = self._code || self.code;
+      let code = self.getCode();
       self.validate();
       /* jshint ignore:start */
       if (this.SANDBOX_CONTEXT) {

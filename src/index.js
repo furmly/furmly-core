@@ -17,6 +17,7 @@ function init(config) {
     constants,
     systemEntities: constants.systemEntities,
     EntityRepo: require("./entity-repo"),
+    TernServer: require("./tern-server"),
     Element: require("./element"),
     LocalEntityRepo: require("./prod-entity-repo")
   };

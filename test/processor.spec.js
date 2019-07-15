@@ -11,23 +11,25 @@ describe("Processor spec", function() {
       context: {
         debug: _debug,
         async: require("async"),
-        processors: [
-          new app.Processor({
-            _id: "fake",
-            title: "Returns a message",
-            save: save,
-            code: "callback(null,'{0}')".replace("{0}", fixtures.message1)
-          }),
-          new app.Processor({
-            _id: "faker",
-            title: "Returns a message",
-            save: save,
-            code: "callback(null,'{0} ' + result);".replace(
-              "{0}",
-              fixtures.message2
-            )
-          })
-        ]
+        task: {
+          processors: [
+            new app.Processor({
+              _id: "fake",
+              title: "Returns a message",
+              save: save,
+              code: "callback(null,'{0}')".replace("{0}", fixtures.message1)
+            }),
+            new app.Processor({
+              _id: "faker",
+              title: "Returns a message",
+              save: save,
+              code: "callback(null,'{0} ' + result);".replace(
+                "{0}",
+                fixtures.message2
+              )
+            })
+          ]
+        }
       }
     };
   });
@@ -67,22 +69,22 @@ describe("Processor spec", function() {
   });
 
   it("can timeout processor after configured period", function() {
-    this.locals.context.processors[0].code = " 'did nothing'; ";
-    this.locals.context.returnResult = function(er, result) {
+    this.locals.context.task.processors[0].code = " 'did nothing'; ";
+    this.locals.context.task.returnResult = function(er, result) {
       assert.isUndefined(result);
       assert.isNotNull(er);
       assert.equal(er.code, "ETIMEDOUT");
     };
-    Sandbox.require("../src/processor-sandbox", {
+    Sandbox.require("../src/sandbox-queue", {
       locals: this.locals
     });
   });
 
   it("can skip a processor", function(done) {
     const fixtures = this;
-    this.locals.context.processors[0].code =
-      "this.skip['faker']=true; " + this.locals.context.processors[0].code;
-    this.locals.context.returnResult = function(er, result) {
+    this.locals.context.task.processors[0].code =
+      "this.skip['faker']=true; " + this.locals.context.task.processors[0].code;
+    this.locals.context.task.returnResult = function(er, result) {
       assert.isDefined(result);
       assert.isNotNull(result);
       assert.isNull(er);
@@ -90,14 +92,14 @@ describe("Processor spec", function() {
       assert.equal(result.indexOf(fixtures.message2) == -1, true);
       done();
     };
-    Sandbox.require("../src/processor-sandbox", {
+    Sandbox.require("../src/sandbox-queue", {
       locals: this.locals
     });
   });
 
   it("can run multple processors", function(done) {
     const fixtures = this;
-    this.locals.context.returnResult = function(er, result) {
+    this.locals.context.task.returnResult = function(er, result) {
       assert.isDefined(result);
       assert.isNotNull(result);
       assert.isNull(er);
@@ -105,7 +107,7 @@ describe("Processor spec", function() {
       assert.equal(result.indexOf(fixtures.message2) !== -1, true);
       done();
     };
-    Sandbox.require("../src/processor-sandbox", {
+    Sandbox.require("../src/sandbox-queue", {
       locals: this.locals
     });
   });

@@ -5,7 +5,8 @@
   "main": "./src/index.js",
   "scripts": {
     "test": "set profile=unitTest&& mocha --exit --require  test-helpers/chai.js --require test-helpers/utils.js",
-    "test:debug": "set profile=unitTest&& set DEBUG=test&& mocha --inspect-brk --require  test-helpers/chai.js --require test-helpers/utils.js"
+    "test:debug": "set profile=unitTest&& set DEBUG=test&& mocha --inspect-brk --require  test-helpers/chai.js --require test-helpers/utils.js",
+    "parse:processor": "cd src && node ..\\node_modules\\tern\\bin\\condense processor-scope.js constants.js  element-factory.js --plugin commonjs --plugin doc_comment={\\\"strong\\\":true} | node ../scripts/parse.js > ../res/processor.json"
   },
   "keywords": [
     "furmly",
@@ -18,7 +19,7 @@
   "license": "ISC",
   "devDependencies": {
     "chai": "^3.5.0",
-    "mocha": "^6.0.2",
+    "mocha": "^6.1.4",
     "sandboxed-module": "^2.0.3",
     "sinon": "^2.3.1",
     "tern": "^0.21.0"
