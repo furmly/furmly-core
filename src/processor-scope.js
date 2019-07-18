@@ -20,4 +20,3 @@ skip = {};
  */
 warn = function(message) {};
 this.module.exports = this;
-async.parallel();

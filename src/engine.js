@@ -26,6 +26,7 @@ function FurmlyEngine(opts) {
     throw new Error("opts.entitiesRepository must be valid");
 
   this.entitiesRepository = opts.entitiesRepository;
+  this.ternServers = opts.ternServers;
 }
 
 util.inherits(FurmlyEngine, EventEmitter);
@@ -178,11 +179,32 @@ FurmlyEngine.prototype.init = function(fn) {
     ],
     er => {
       if (er) return fn(er);
+      if (this.ternServers)
+        // initialize tern servers
+        async.parallel(
+          Object.keys(this.ternServers).map(x => cb =>
+            this.ternServers[x].init(cb)
+          ),
+          er => {
+            if (er) return fn(er);
+            fn();
+          }
+        );
       fn();
     }
   );
 };
 
+FurmlyEngine.prototype.addDocToTern = function(context, _id, doc) {
+  this.ternServers[context].addDoc(_id, doc);
+};
+
+FurmlyEngine.prototype.delDocFromTern = function(context, _id) {
+  this.ternServers[context].delDoc(_id);
+};
+FurmlyEngine.prototype.requestForTern = function(context, body, fn) {
+  this.ternServers[context].request(body, fn);
+};
 FurmlyEngine.prototype.isValidID = function(id) {
   return this.entitiesRepository.isValidID(id);
 };
