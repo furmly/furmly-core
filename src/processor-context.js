@@ -49,7 +49,7 @@ class ProcessorContext {
      * @param  {Function} fn     Callback
      *
      */
-    this.count = repo.countEntity.bind(this);
+    this.count = repo.countEntity.bind(repo);
     /**
      * Update an entity
      * @param  {String}   name Name of the collection/table entity is located in

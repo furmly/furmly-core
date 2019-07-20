@@ -267,9 +267,8 @@ function EntityRepo(opts) {
     item.codeGenerator = self.codeGenerator;
     basicTransformer(item, FurmlyProcessor, systemEntities.processor, fn);
   };
-  this.transformers[systemEntities.element] = function(item, fn) {
+  this.transformers.element = function(item, fn) {
     if (!(item instanceof FurmlyElement)) {
-      //this shouldnt happen now , elements are part of steps.
       if (isIDOnly(item)) {
         return self.queryEntity(
           systemEntities.element,
@@ -317,10 +316,7 @@ function EntityRepo(opts) {
         );
       async.parallel(
         _.map(item.elements, function(element) {
-          return self.transformers[systemEntities.element].bind(
-            self.transformers,
-            element
-          );
+          return self.transformers.element.bind(self.transformers, element);
         }),
         function(er, elements) {
           if (er) return fn(er);
@@ -647,7 +643,7 @@ EntityRepo.prototype.getConfigNames = function(
       if (includeInternalSchema) {
         schemas.push(this.$_schema_Schema);
       }
-     
+
       return fn(null, (!includeSchema && schemas.map(x => x.name)) || schemas);
     });
 };
@@ -655,7 +651,6 @@ EntityRepo.prototype.isValidID = function(id) {
   return mongoose.Types.ObjectId.isValid(id);
 };
 EntityRepo.prototype.getAllConfiguration = function(fn) {
-  
   this.$schemas.find({}, { schema: 1 }).toArray((er, schemas) => {
     if (er) return fn(er);
 
@@ -1294,7 +1289,7 @@ EntityRepo.prototype.createSchemas = function(fn) {
           }, 1500)
         );
 
-        self[prop] = item;
+        // self[prop] = item;
         //this more or less caches the expansion
         files[prop] = item;
       }
