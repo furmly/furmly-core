@@ -179,7 +179,7 @@ FurmlyEngine.prototype.init = function(fn) {
     ],
     er => {
       if (er) return fn(er);
-      if (this.ternServers)
+      if (this.ternServers) {
         // initialize tern servers
         async.parallel(
           Object.keys(this.ternServers).map(x => cb =>
@@ -190,6 +190,9 @@ FurmlyEngine.prototype.init = function(fn) {
             fn();
           }
         );
+        return;
+      }
+
       fn();
     }
   );

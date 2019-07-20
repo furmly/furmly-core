@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const ObjectID = require("mongodb").ObjectID;
 
 class SimpleEntityStore {
   constructor(ttl) {
@@ -68,7 +69,7 @@ class SimpleEntityStore {
       fn = extra;
       extra = null;
     }
-    createIndex(() => {
+    this.createIndex(() => {
       this.collection.insertOne(
         {
           value: info,

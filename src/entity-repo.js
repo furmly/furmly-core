@@ -647,7 +647,7 @@ EntityRepo.prototype.getConfigNames = function(
       if (includeInternalSchema) {
         schemas.push(this.$_schema_Schema);
       }
-      console.log("got here");
+     
       return fn(null, (!includeSchema && schemas.map(x => x.name)) || schemas);
     });
 };
@@ -655,7 +655,7 @@ EntityRepo.prototype.isValidID = function(id) {
   return mongoose.Types.ObjectId.isValid(id);
 };
 EntityRepo.prototype.getAllConfiguration = function(fn) {
-  var self = this;
+  
   this.$schemas.find({}, { schema: 1 }).toArray((er, schemas) => {
     if (er) return fn(er);
 

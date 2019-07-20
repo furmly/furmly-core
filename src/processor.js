@@ -41,7 +41,7 @@ function FurmlyProcessor(opts) {
     },
     getCode: {
       enumerable: false,
-      get: function() {
+      value: function() {
         return this._code || this.code;
       }
     },

@@ -1,3 +1,4 @@
+const { systemEntities } = require("./constants");
 /**
  * Proxy function used to restrict access to system entities.
  * @return {Function} Constructed proxy function.
