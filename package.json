@@ -1,6 +1,6 @@
 {
   "name": "furmly-core",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "This is the backend processor for configurable dynamic tasks",
   "main": "./src/index.js",
   "scripts": {
