@@ -22,12 +22,13 @@
     "mocha": "^6.1.4",
     "sandboxed-module": "^2.0.3",
     "sinon": "^2.3.1",
-    "tern": "^0.21.0"
+
   },
   "dependencies": {
     "acorn": "^5.5.3",
     "async": "^2.4.1",
     "debug": "^3.0.0",
+    "tern": "^0.21.0",
     "glob": "^7.1.2",
     "lodash": "^4.17.15",
     "mongoose": "^5.4.20",
