@@ -6,7 +6,7 @@
   "scripts": {
     "test": "set profile=unitTest&& mocha --exit --require  test-helpers/chai.js --require test-helpers/utils.js",
     "test:debug": "set profile=unitTest&& set DEBUG=test&& mocha --inspect-brk --require  test-helpers/chai.js --require test-helpers/utils.js",
-    "parse:processor": "cd src && node ..\\node_modules\\tern\\bin\\condense processor-scope.js constants.js  element-factory.js processor-context.js --plugin commonjs | node ../scripts/parse.js > ../res/processor.json"
+    "parse:processor": "cd src && node ..\\node_modules\\tern\\bin\\condense processor-scope.js constants.js  element-factory.js --plugin commonjs --plugin doc_comment={\\\"strong\\\":true} | node ../scripts/parse.js > ../res/processor.json"
   },
   "keywords": [
     "furmly",

@@ -12,9 +12,8 @@ function blockSystemEntities() {
 
   return args[0].apply(this, args.slice(1));
 }
-/**
- * This provides context for querying entities while running a processor.
- */
+
+
 class ProcessorContext {
   constructor(repo) {
     const notQuery = { name: { $nin: repo._systemEntities.slice() } };

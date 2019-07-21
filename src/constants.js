@@ -29,6 +29,13 @@ function createConstants() {
   };
 
   return {
+    EVENTS: {
+      ENTITY_REPO: {
+        CREATE: "new-entity",
+        UPDATE: "updated-entity",
+        DELETE: "deleted-entity"
+      }
+    },
     PROCESSSTATUS: new Constant("COMPLETED", "RUNNING"),
     COMMANDTYPE: new Constant("DEFAULT", "DOWNLOAD"),
     STEPSTATUS: new Constant("COMPLETED", "RUNNING"),

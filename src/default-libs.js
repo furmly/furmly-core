@@ -26,6 +26,11 @@ module.exports = function(constants) {
     .call(
       {},
       (() => {
+        /**
+         * This function is used to convert external queries to db filter objects.
+         * @param {Object} data filter object used in a query
+         * @param {Object} parent parent of the filter object[optional]
+         */
         function convertFilter(data, parent) {
           var query = {};
           Object.keys(data).forEach(function(key) {
@@ -65,6 +70,11 @@ module.exports = function(constants) {
     )
     .createLib(
       (() => {
+        /**
+         * This function converts a list of items to a selectable list the UI can understand using the "prop" as the label for each item.
+         * @param {string} prop This is the propertyName used as the label for each item in the list
+         * @param {Array} list Array of items to be displayed in a list
+         */
         function convert(prop, list) {
           if (Array.prototype.slice.call(arguments).length == 1) {
             list = prop;
@@ -82,6 +92,20 @@ module.exports = function(constants) {
     )
     .createLib(
       (() => {
+        /**
+         *
+         * @param {string} entityName This is the name of the entity to be created for each row
+         * @param {string} file location of the file
+         * @param {Object} context extra information to add to every row.
+         * @param {function(obj:Object)} checks custom validation to be performed on every row.
+         * @param {function} extend can be used to customize the output before saving
+         * @param {FileUpload} fileUpload used to retrieve the uploaded file.
+         * @param {FileParser} fileParser used to parse the uploaded file
+         * @param {Object} threadPool [deprecated] used to run the function in a differnt thread context.
+         * @param {ProcessorContext} entityRepo entityRepo
+         * @param {User} user the user making this request
+         * @param {Callback} fn callback function
+         */
         function convert(
           entityName,
           file,
@@ -273,6 +297,15 @@ module.exports = function(constants) {
     )
     .createLib(
       (() => {
+        /**
+         * Create a default C(reate)R(ead)U(pdate)D(elete) process for an an entity
+         * @param {string} entityName Entity name e.g Student
+         * @param {string} entityLabel The prop that can be used as a label if the entity is to be selected from a list
+         * @param {string} menuGroup The menu group the created process would belong to e.g MAINMENU
+         * @param {string} menuCategory The menu category the process would belong to
+         * @param {Object} schema The schema definition object e.g {name:{type:"String"}}
+         * @param {Callback} fn The callback function
+         */
         function create(
           entityName,
           entityLabel,
@@ -529,6 +562,11 @@ module.exports = function(constants) {
     )
     .createLib(
       (() => {
+        /**
+         * Load a libs
+         * @param {string|ObjectID|Array.<string>|Array.<ObjectID>} toLoad Id of library to load
+         * @param {Callback} fn
+         */
         function loadLibs(toLoad, fn) {
           //load reusable libs
           if (typeof toLoad == "string") toLoad = [toLoad];
@@ -570,11 +608,29 @@ module.exports = function(constants) {
       constants.UIDS.LIB.LOAD
     )
     .createLib(
-      `exports=${misc.toCamelCase.toString()}`,
+      `
+      /**
+       * Turn string camel case
+       * @param {string} str string to be turned
+       * @returns {string}
+       **/
+      exports=${misc.toCamelCase.toString()}`,
       constants.UIDS.LIB.TO_CAMEL_CASE
     )
     .createLib(
-      `exports=${misc.createElement.toString()}`,
+      `
+      /**
+       * Used to create elements
+       * @param  {String} name        Name of element
+       * @param  {String} label       Element label
+       * @param  {Strirng} description Description of the elements use
+       * @param  {String} type        Element type  eg INPUT,SELECT etc
+       * @param  {Object} args        Elements custom arguments
+       * @param  {Array} validators  Element validators
+       * @param  {Array} asyncVals   Elements asyncValidators
+       * @return {Object}             New Element.
+       */
+      exports=${misc.createElement.toString()}`,
       constants.UIDS.LIB.CREATE_ELEMENT
     )
     .createLib(
@@ -599,6 +655,10 @@ module.exports = function(constants) {
     )
     .createLib(
       (() => {
+        /**
+         * Used to create an element of hidden elementType
+         * @returns {Element}
+         */
         exports = function() {
           return this.createElement(
             "_id",
@@ -612,6 +672,13 @@ module.exports = function(constants) {
     )
     .createLib(
       (() => {
+        /**
+         * Used to convert an entity to its reasonable equivalent elements.
+         * @constructor
+         * @param {Object} libs libs
+         * @param {Object} processors some default processors
+         * @param {*} constants
+         */
         function ElementsConverter(libs, processors, constants) {
           this.libs = libs;
           this.processors = processors;
@@ -759,6 +826,13 @@ module.exports = function(constants) {
     )
     .createLib(
       (() => {
+        /**
+         * Retrieves an entity
+         * @param {string} entityName Name of the entity to fetch
+         * @param {string} entityLabel Prop used to the label for each entity fetched
+         * @param {function} extend Function used to extend each item feched [optional]
+         * @param {Callback} fn Callback function
+         */
         exports = function(entityName, entityLabel, extend, fn) {
           var options,
             query = {},
@@ -831,6 +905,10 @@ module.exports = function(constants) {
     .createLib(
       (() => {
         //should be called with request scope.
+        /**
+         * Checks user authorization and password if required
+         * @param {Callback} fn callback function
+         */
         exports = function(fn) {
           //when using only password authentication.
           if (

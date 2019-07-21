@@ -1,8 +1,10 @@
 const constants = require("./constants"),
   assert = require("assert"),
   systemEntities = constants.systemEntities,
+  EventEmitter = require("events").EventEmitter,
   async = require("async"),
   misc = require("./misc"),
+  util = require("util"),
   _ = require("lodash"),
   debug = require("debug")("entity-repo"),
   generator = require("mongoose-gen"),
@@ -369,6 +371,8 @@ function EntityRepo(opts) {
     return fn(null, item);
   }
 }
+
+util.inherits(EntityRepo, EventEmitter);
 
 /**
  * This function sets the extensions to processor context (services provided by Server etc.)
@@ -877,7 +881,7 @@ EntityRepo.prototype.updateEntity = function(name, data, fn) {
         : (isArray && { _id: { $in: data._id } }) || data.$query;
     };
   if (this._changeDetection[name]) {
-    this.models[name].find(getQuery(), function(er, v) {
+    this.models[name].find(getQuery(), (er, v) => {
       if (er) return fn(er);
       if (!v.length) return fn(new Error("That entity does not exist"));
 
@@ -887,20 +891,29 @@ EntityRepo.prototype.updateEntity = function(name, data, fn) {
         self._changeDetection[name].forEach(function(field) {
           merged.set(field, getData()[field]);
         });
-        merged.save(fn);
+        merged.save((...result) => {
+          if (result[0]) return fn(result[0]);
+          this.emit(constants.EVENTS.ENTITY_REPO.UPDATE, { name, data });
+          fn.apply(null, result);
+        });
       });
     });
   } else {
-    this.models[name].updateOne(getQuery(), getData(), { multi }, function(
-      er,
-      stat
-    ) {
-      if (er) return fn(er);
-      if (stat <= 0) return fn(new Error("that entity does not exist"));
-      fn(null, {
-        _id: data._id
-      });
-    });
+    this.models[name].updateOne(
+      getQuery(),
+      getData(),
+      { multi },
+      (er, stat) => {
+        if (er) return fn(er);
+        if (stat <= 0) return fn(new Error("that entity does not exist"));
+
+        this.emit(constants.EVENTS.ENTITY_REPO.UPDATE, { name, data });
+
+        fn(null, {
+          _id: data._id
+        });
+      }
+    );
   }
 };
 
@@ -963,7 +976,11 @@ EntityRepo.prototype.createEntity = function(name, data, fn) {
   var item = new this.models[name](
     Object.assign(data, { created: now, updated: now })
   );
-  item.save(fn);
+  item.save((...result) => {
+    if (result[0]) return fn(result[0]);
+    this.emit(constants.EVENTS.ENTITY_REPO.UPDATE, { name, data });
+    fn.apply(null, result);
+  });
 };
 /**
  * Function that runs aggregation query on persistance object.

@@ -1,26 +1,36 @@
 const TernServer = require("tern").Server;
-const browser = require("tern/defs/ecmascript.json");
+const javascript_def = require("tern/defs/ecmascript.json");
+require("tern/plugin/doc_comment");
 const path = require("path");
-const { systemEntities } = require("./constants");
+const { systemEntities, EVENTS } = require("./constants");
 
 const wrapLib = function(uid, code) {
-  return `(function(args){ ${code}\n args["${uid}"]=exports; })(libs)`;
+  return `(function(args){ let exports; ${code}\n args["${uid}"]=exports; })(libs)`;
 };
 class Server {
   constructor(repo, context) {
     this.repo = repo;
     this.context = context;
+    this.repo.on(EVENTS.ENTITY_REPO.UPDATE, ({ name, data }) => {
+      if (this.server && name == systemEntities.lib) {
+        this.server.addFile(
+          data._id,
+          wrapLib(data.uid, data._code || data.code)
+        );
+      }
+    });
   }
   init(cb) {
     const options = {
-      defs: [browser],
+      defs: [javascript_def],
       async: true,
       getFile: () => {
         console.log("getting files");
       },
       ecmaVersion: 6,
-      plugins: { doc_comment: { strong: true }, node: {} }
+      plugins: { doc_comment: { strong: true } }
     };
+
     switch (this.context) {
       case Server.LIB:
         options.defs.push(require(path.join(__dirname, "../res/lib.json")));
