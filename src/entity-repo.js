@@ -978,7 +978,7 @@ EntityRepo.prototype.createEntity = function(name, data, fn) {
   );
   item.save((...result) => {
     if (result[0]) return fn(result[0]);
-    this.emit(constants.EVENTS.ENTITY_REPO.UPDATE, { name, data });
+    this.emit(constants.EVENTS.ENTITY_REPO.UPDATE, { name, data: result[1] });
     fn.apply(null, result);
   });
 };
