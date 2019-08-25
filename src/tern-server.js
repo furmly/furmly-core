@@ -14,7 +14,7 @@ class Server {
     this.repo.on(EVENTS.ENTITY_REPO.UPDATE, ({ name, data }) => {
       if (this.server && name == systemEntities.lib) {
         this.server.addFile(
-          data._id,
+          data._id.toString(),
           wrapLib(data.uid, data._code || data.code)
         );
       }
